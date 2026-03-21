@@ -5,7 +5,8 @@ import com.ledga.app.util.DateUtils
 enum class TransactionType {
     SEND, BUY_GOODS, PAY_BILL, WITHDRAW_AGENT, WITHDRAW_ATM,
     DEPOSIT, RECEIVED, AIRTIME_SELF, AIRTIME_OTHER, MPESA_GLOBAL,
-    FULIZA, FULIZA_REPAYMENT, FULIZA_REVERSAL, MSHWARI, KCB_MPESA,
+    FULIZA, FULIZA_REPAYMENT, FULIZA_REVERSAL, FULIZA_AUTO_PAY,
+    MSHWARI, KCB_MPESA,
     REVERSAL, UNKNOWN
 }
 
@@ -36,49 +37,77 @@ sealed interface ParseResult {
 
 object MpesaSmsParser {
 
-    private val AMOUNT_REGEX = Regex("""Ksh([\d,]+\.\d{2})""")
+    // Amount: handles "Ksh500.00", "Ksh 500.00", "Ksh5,000.00"
+    private val AMOUNT_REGEX = Regex("""Ksh\s?([\d,]+\.\d{2})""")
+    // Transaction code: 10 alphanumeric chars at start, may have newline/space after
     private val TRANSACTION_CODE_REGEX = Regex("""^([A-Z0-9]{10})\s""")
-    private val DATE_REGEX = Regex("""on (\d{1,2}/\d{1,2}/\d{2,4} at \d{1,2}:\d{2} [AP]M)""")
-    private val BALANCE_REGEX = Regex("""(?:balance is|account balance is)\s*Ksh([\d,]+\.\d{2})""", RegexOption.IGNORE_CASE)
-    private val COST_REGEX = Regex("""Transaction cost,?\s*Ksh([\d,]+\.\d{2})""", RegexOption.IGNORE_CASE)
-    private val FULIZA_AMOUNT_REGEX = Regex("""Fuliza M-PESA amount is Ksh([\d,]+\.\d{2})""")
-    private val FULIZA_OUTSTANDING_REGEX = Regex("""Fuliza M-PESA outstanding amount is Ksh([\d,]+\.\d{2})""")
+    // Date: handles both 2-digit and 4-digit year
+    private val DATE_REGEX = Regex("""on\s+(\d{1,2}/\d{1,2}/\d{2,4}\s+at\s+\d{1,2}:\d{2}\s+[AP]M)""", RegexOption.IGNORE_CASE)
+    // Balance: multiple formats
+    private val BALANCE_REGEX = Regex("""(?:M-PESA balance is|account balance is|M-PESA balance is|MPESA balance is)\s*Ksh\s?([\d,]+\.\d{2})""", RegexOption.IGNORE_CASE)
+    private val COST_REGEX = Regex("""Transaction cost,?\s*Ksh\s?([\d,]+\.\d{2})""", RegexOption.IGNORE_CASE)
+    private val FULIZA_AMOUNT_REGEX = Regex("""Fuliza M-PESA amount is Ksh\s?([\d,]+\.\d{2})""", RegexOption.IGNORE_CASE)
+    private val FULIZA_OUTSTANDING_REGEX = Regex("""(?:Fuliza M-PESA outstanding amount is|Total Fuliza M-PESA outstanding amount is)\s*Ksh\s?([\d,]+\.\d{2})""", RegexOption.IGNORE_CASE)
+    private val FULIZA_LIMIT_REGEX = Regex("""(?:Available |available )Fuliza M-PESA limit is Ksh\s?([\d,]+\.\d{2})""", RegexOption.IGNORE_CASE)
 
     fun isMpesaMessage(sender: String): Boolean {
         return sender.equals("MPESA", ignoreCase = true)
     }
 
     fun parse(smsBody: String, smsTimestamp: Long = System.currentTimeMillis()): ParseResult {
-        val code = extractTransactionCode(smsBody)
+        // Normalize: trim, collapse newlines/extra spaces
+        val sms = smsBody.trim().replace(Regex("""\s*\n\s*"""), " ")
+
+        val code = extractTransactionCode(sms)
             ?: return ParseResult.Failure(smsBody, "No transaction code found")
 
-        if (!smsBody.contains("Confirmed", ignoreCase = true)) {
+        if (!sms.contains("confirmed", ignoreCase = true)) {
             return ParseResult.Failure(smsBody, "Not a confirmed transaction")
         }
 
-        val timestamp = extractDate(smsBody) ?: smsTimestamp
-        val balance = extractBalance(smsBody) ?: 0.0
-        val cost = extractCost(smsBody) ?: 0.0
+        // Skip balance check messages (not transactions)
+        if (sms.contains("Your account balance was", ignoreCase = true) ||
+            sms.contains("account balance was:", ignoreCase = true)) {
+            return ParseResult.Failure(smsBody, "Balance check — not a transaction")
+        }
+
+        val timestamp = extractDate(sms) ?: smsTimestamp
+        val balance = extractBalance(sms) ?: 0.0
+        val cost = extractCost(sms) ?: 0.0
 
         return try {
             val transaction = when {
-                isReversal(smsBody) -> parseReversal(smsBody, code, balance, timestamp)
-                isFulizaReversal(smsBody) -> parseFulizaReversal(smsBody, code, timestamp)
-                isFulizaRepayment(smsBody) -> parseFulizaRepayment(smsBody, code, timestamp)
-                isMshwari(smsBody) -> parseMshwari(smsBody, code, balance, cost, timestamp)
-                isKcbMpesa(smsBody) -> parseKcbMpesa(smsBody, code, balance, cost, timestamp)
-                isMpesaGlobal(smsBody) -> parseMpesaGlobal(smsBody, code, balance, cost, timestamp)
-                isFuliza(smsBody) -> parseFuliza(smsBody, code, balance, cost, timestamp)
-                isDeposit(smsBody) -> parseDeposit(smsBody, code, balance, timestamp)
-                isReceived(smsBody) -> parseReceived(smsBody, code, balance, timestamp)
-                isAirtimeSelf(smsBody) -> parseAirtimeSelf(smsBody, code, balance, cost, timestamp)
-                isAirtimeOther(smsBody) -> parseAirtimeOther(smsBody, code, balance, cost, timestamp)
-                isWithdrawAtm(smsBody) -> parseWithdrawAtm(smsBody, code, balance, cost, timestamp)
-                isWithdrawAgent(smsBody) -> parseWithdrawAgent(smsBody, code, balance, cost, timestamp)
-                isPayBill(smsBody) -> parsePayBill(smsBody, code, balance, cost, timestamp)
-                isBuyGoods(smsBody) -> parseBuyGoods(smsBody, code, balance, cost, timestamp)
-                isSendMoney(smsBody) -> parseSendMoney(smsBody, code, balance, cost, timestamp)
-                else -> parseUnknown(smsBody, code, balance, cost, timestamp)
+                // Reversals (check before Fuliza since some reversals mention Fuliza)
+                isReversalAlt(sms) -> parseReversalAlt(sms, code, balance, timestamp)
+                isReversal(sms) -> parseReversal(sms, code, balance, timestamp)
+                isFulizaReversal(sms) -> parseFulizaReversal(sms, code, timestamp)
+
+                // Fuliza auto-deductions (must check before generic Fuliza)
+                isFulizaAutoPay(sms) -> parseFulizaAutoPay(sms, code, balance, timestamp)
+                isFulizaRepayment(sms) -> parseFulizaRepayment(sms, code, timestamp)
+
+                // Savings products
+                isMshwari(sms) -> parseMshwari(sms, code, balance, cost, timestamp)
+                isKcbMpesa(sms) -> parseKcbMpesa(sms, code, balance, cost, timestamp)
+
+                // International
+                isMpesaGlobal(sms) -> parseMpesaGlobal(sms, code, balance, cost, timestamp)
+
+                // Fuliza borrow (has "Fuliza M-PESA amount is" or "Total Fuliza M-PESA outstanding")
+                isFuliza(sms) -> parseFuliza(sms, code, balance, cost, timestamp)
+
+                // Standard types
+                isDeposit(sms) -> parseDeposit(sms, code, balance, timestamp)
+                isReceived(sms) -> parseReceived(sms, code, balance, timestamp)
+                isAirtimeSelf(sms) -> parseAirtimeSelf(sms, code, balance, cost, timestamp)
+                isAirtimeOther(sms) -> parseAirtimeOther(sms, code, balance, cost, timestamp)
+                isWithdrawAtm(sms) -> parseWithdrawAtm(sms, code, balance, cost, timestamp)
+                isWithdrawAlt(sms) -> parseWithdrawAlt(sms, code, balance, cost, timestamp)
+                isWithdrawAgent(sms) -> parseWithdrawAgent(sms, code, balance, cost, timestamp)
+                isPayBill(sms) -> parsePayBill(sms, code, balance, cost, timestamp)
+                isBuyGoods(sms) -> parseBuyGoods(sms, code, balance, cost, timestamp)
+                isSendMoney(sms) -> parseSendMoney(sms, code, balance, cost, timestamp)
+                else -> parseUnknown(sms, code, balance, cost, timestamp)
             }
             ParseResult.Success(transaction)
         } catch (e: Exception) {
@@ -89,10 +118,19 @@ object MpesaSmsParser {
     // --- Type detection ---
 
     private fun isReversal(sms: String) =
-        sms.contains("has been reversed") && !sms.contains("Fuliza", ignoreCase = true)
+        sms.contains("has been reversed") && !sms.contains("Fuliza", ignoreCase = true) &&
+                !sms.contains("Reversal of transaction", ignoreCase = true)
+
+    private fun isReversalAlt(sms: String) =
+        sms.contains("Reversal of transaction", ignoreCase = true) &&
+                sms.contains("has been successfully reversed", ignoreCase = true)
 
     private fun isFulizaReversal(sms: String) =
         sms.contains("Fuliza M-PESA of", ignoreCase = true) && sms.contains("has been reversed")
+
+    private fun isFulizaAutoPay(sms: String) =
+        sms.contains("from your M-PESA has been used to", ignoreCase = true) &&
+                sms.contains("pay your outstanding Fuliza", ignoreCase = true)
 
     private fun isFulizaRepayment(sms: String) =
         sms.contains("paid", ignoreCase = true) && sms.contains("to Fuliza M-PESA", ignoreCase = true)
@@ -107,16 +145,25 @@ object MpesaSmsParser {
         sms.contains("M-PESA Global", ignoreCase = true) || sms.contains("MPESA Global", ignoreCase = true)
 
     private fun isFuliza(sms: String) =
-        sms.contains("Fuliza M-PESA amount is", ignoreCase = true)
+        sms.contains("Fuliza M-PESA amount is", ignoreCase = true) ||
+                sms.contains("Total Fuliza M-PESA outstanding", ignoreCase = true)
 
     private fun isDeposit(sms: String) =
-        sms.contains("You have deposited", ignoreCase = true)
+        sms.contains("You have deposited", ignoreCase = true) ||
+                sms.contains("deposited", ignoreCase = true)
 
     private fun isReceived(sms: String) =
         sms.contains("You have received", ignoreCase = true)
 
-    private fun isAirtimeSelf(sms: String) =
-        sms.contains("airtime purchased", ignoreCase = true)
+    // "airtime purchased" OR "bought...of airtime" without a phone number after
+    private fun isAirtimeSelf(sms: String): Boolean {
+        if (sms.contains("airtime purchased", ignoreCase = true)) return true
+        if (sms.contains("bought", ignoreCase = true) && sms.contains("of airtime", ignoreCase = true)) {
+            // Self if no phone number after "airtime for"
+            return !sms.contains("airtime for", ignoreCase = true)
+        }
+        return false
+    }
 
     private fun isAirtimeOther(sms: String) =
         sms.contains("bought", ignoreCase = true) && sms.contains("airtime for", ignoreCase = true)
@@ -124,14 +171,20 @@ object MpesaSmsParser {
     private fun isWithdrawAtm(sms: String) =
         sms.contains("withdrawn", ignoreCase = true) && sms.contains("from an ATM", ignoreCase = true)
 
+    // Alt format: "Withdraw Ksh6,500.00 from 031824 - Agent Name"
+    private fun isWithdrawAlt(sms: String) =
+        Regex("""Withdraw\s+Ksh""", RegexOption.IGNORE_CASE).containsMatchIn(sms)
+
     private fun isWithdrawAgent(sms: String) =
         sms.contains("withdrawn", ignoreCase = true) && sms.contains("from ", ignoreCase = true)
 
     private fun isPayBill(sms: String) =
-        sms.contains("paid to", ignoreCase = true) && sms.contains("Account Number", ignoreCase = true)
+        sms.contains("paid to", ignoreCase = true) &&
+                (sms.contains("Account Number", ignoreCase = true) || sms.contains("for account", ignoreCase = true))
 
     private fun isBuyGoods(sms: String) =
-        sms.contains("paid to", ignoreCase = true) && !sms.contains("Account Number", ignoreCase = true)
+        sms.contains("paid to", ignoreCase = true) && !sms.contains("Account Number", ignoreCase = true) &&
+                !sms.contains("for account", ignoreCase = true)
 
     private fun isSendMoney(sms: String) =
         sms.contains("sent to", ignoreCase = true)
@@ -140,13 +193,20 @@ object MpesaSmsParser {
 
     private fun parseSendMoney(sms: String, code: String, balance: Double, cost: Double, timestamp: Long): ParsedTransaction {
         val amount = extractFirstAmount(sms) ?: 0.0
+        // Try standard: "sent to NAME PHONE on"
         val sendToRegex = Regex("""sent to\s+(.+?)\s+(\d{10,})\s+on""", RegexOption.IGNORE_CASE)
         val match = sendToRegex.find(sms)
+        // Try alt: "sent to NAME on" (no phone, e.g. Hustler Fund)
+        val sendToAltRegex = Regex("""sent to\s+(.+?)\s+(?:on|for)""", RegexOption.IGNORE_CASE)
+        val altMatch = if (match == null) sendToAltRegex.find(sms) else null
+
         return ParsedTransaction(
             transactionCode = code, type = TransactionType.SEND, amount = amount,
-            transactionCost = cost, recipientName = match?.groupValues?.get(1)?.trim(),
-            recipientPhone = match?.groupValues?.get(2), accountNumber = null,
-            destinationCountry = null, balance = balance, direction = TransactionDirection.OUTFLOW,
+            transactionCost = cost,
+            recipientName = match?.groupValues?.get(1)?.trim() ?: altMatch?.groupValues?.get(1)?.trim(),
+            recipientPhone = match?.groupValues?.get(2),
+            accountNumber = null, destinationCountry = null, balance = balance,
+            direction = TransactionDirection.OUTFLOW,
             fulizaAmount = null, fulizaOutstanding = null, reversedTransactionCode = null,
             timestamp = timestamp, rawSms = sms
         )
@@ -168,12 +228,19 @@ object MpesaSmsParser {
 
     private fun parsePayBill(sms: String, code: String, balance: Double, cost: Double, timestamp: Long): ParsedTransaction {
         val amount = extractFirstAmount(sms) ?: 0.0
+        // Standard: "paid to BUSINESS. Account Number 12345. on"
         val paidToRegex = Regex("""paid to\s+(.+?)\.\s*Account Number\s+(\S+?)\.?\s+on""", RegexOption.IGNORE_CASE)
         val match = paidToRegex.find(sms)
+        // Alt: "sent to NAME for account ACCOUNT on"
+        val altRegex = Regex("""sent to\s+(.+?)\s+for account\s+(.+?)\s+on""", RegexOption.IGNORE_CASE)
+        val altMatch = if (match == null) altRegex.find(sms) else null
+
         return ParsedTransaction(
             transactionCode = code, type = TransactionType.PAY_BILL, amount = amount,
-            transactionCost = cost, recipientName = match?.groupValues?.get(1)?.trim(),
-            recipientPhone = null, accountNumber = match?.groupValues?.get(2)?.trim(),
+            transactionCost = cost,
+            recipientName = match?.groupValues?.get(1)?.trim() ?: altMatch?.groupValues?.get(1)?.trim(),
+            recipientPhone = null,
+            accountNumber = match?.groupValues?.get(2)?.trim() ?: altMatch?.groupValues?.get(2)?.trim(),
             destinationCountry = null, balance = balance, direction = TransactionDirection.OUTFLOW,
             fulizaAmount = null, fulizaOutstanding = null, reversedTransactionCode = null,
             timestamp = timestamp, rawSms = sms
@@ -189,6 +256,23 @@ object MpesaSmsParser {
             transactionCost = cost, recipientName = match?.groupValues?.get(1)?.trim(),
             recipientPhone = match?.groupValues?.get(2), accountNumber = null,
             destinationCountry = null, balance = balance, direction = TransactionDirection.OUTFLOW,
+            fulizaAmount = null, fulizaOutstanding = null, reversedTransactionCode = null,
+            timestamp = timestamp, rawSms = sms
+        )
+    }
+
+    // Alt: "Withdraw Ksh6,500.00 from 031824 - Agent Name Street"
+    private fun parseWithdrawAlt(sms: String, code: String, balance: Double, cost: Double, timestamp: Long): ParsedTransaction {
+        val amount = extractFirstAmount(sms) ?: 0.0
+        val altRegex = Regex("""Withdraw\s+Ksh\s?[\d,]+\.\d{2}\s+from\s+(\d+)\s*-\s*(.+?)\s+(?:New |new )""", RegexOption.IGNORE_CASE)
+        val match = altRegex.find(sms)
+        return ParsedTransaction(
+            transactionCode = code, type = TransactionType.WITHDRAW_AGENT, amount = amount,
+            transactionCost = cost,
+            recipientName = match?.groupValues?.get(2)?.trim(),
+            recipientPhone = match?.groupValues?.get(1),
+            accountNumber = null, destinationCountry = null, balance = balance,
+            direction = TransactionDirection.OUTFLOW,
             fulizaAmount = null, fulizaOutstanding = null, reversedTransactionCode = null,
             timestamp = timestamp, rawSms = sms
         )
@@ -277,11 +361,28 @@ object MpesaSmsParser {
         val match = sendToRegex.find(sms)
 
         return ParsedTransaction(
-            transactionCode = code, type = TransactionType.FULIZA, amount = amount,
+            transactionCode = code, type = TransactionType.FULIZA,
+            amount = fulizaAmt ?: amount,
             transactionCost = cost, recipientName = match?.groupValues?.get(1)?.trim(),
             recipientPhone = match?.groupValues?.get(2), accountNumber = null,
             destinationCountry = null, balance = balance, direction = TransactionDirection.OUTFLOW,
             fulizaAmount = fulizaAmt, fulizaOutstanding = fulizaOut,
+            reversedTransactionCode = null, timestamp = timestamp, rawSms = sms
+        )
+    }
+
+    // "Ksh X from your M-PESA has been used to fully/partially pay your outstanding Fuliza"
+    private fun parseFulizaAutoPay(sms: String, code: String, balance: Double, timestamp: Long): ParsedTransaction {
+        val amount = extractFirstAmount(sms) ?: 0.0
+        val fulizaLimit = FULIZA_LIMIT_REGEX.find(sms)?.groupValues?.get(1)?.let { parseAmount(it) }
+        val isFullPay = sms.contains("fully pay", ignoreCase = true)
+
+        return ParsedTransaction(
+            transactionCode = code, type = TransactionType.FULIZA_AUTO_PAY, amount = amount,
+            transactionCost = 0.0, recipientName = if (isFullPay) "Fuliza Full Payment" else "Fuliza Partial Payment",
+            recipientPhone = null, accountNumber = null, destinationCountry = null,
+            balance = balance, direction = TransactionDirection.OUTFLOW,
+            fulizaAmount = null, fulizaOutstanding = fulizaLimit,
             reversedTransactionCode = null, timestamp = timestamp, rawSms = sms
         )
     }
@@ -315,6 +416,20 @@ object MpesaSmsParser {
         val match = reversedCodeRegex.find(sms)
         return ParsedTransaction(
             transactionCode = code, type = TransactionType.REVERSAL, amount = 0.0,
+            transactionCost = 0.0, recipientName = null, recipientPhone = null,
+            accountNumber = null, destinationCountry = null, balance = balance,
+            direction = TransactionDirection.INFLOW, fulizaAmount = null, fulizaOutstanding = null,
+            reversedTransactionCode = match?.groupValues?.get(1), timestamp = timestamp, rawSms = sms
+        )
+    }
+
+    // "Reversal of transaction X has been successfully reversed ... Ksh200.00 is credited"
+    private fun parseReversalAlt(sms: String, code: String, balance: Double, timestamp: Long): ParsedTransaction {
+        val reversedCodeRegex = Regex("""Reversal of transaction\s+([A-Z0-9]{10})""", RegexOption.IGNORE_CASE)
+        val match = reversedCodeRegex.find(sms)
+        val amount = extractFirstAmount(sms) ?: 0.0
+        return ParsedTransaction(
+            transactionCode = code, type = TransactionType.REVERSAL, amount = amount,
             transactionCost = 0.0, recipientName = null, recipientPhone = null,
             accountNumber = null, destinationCountry = null, balance = balance,
             direction = TransactionDirection.INFLOW, fulizaAmount = null, fulizaOutstanding = null,

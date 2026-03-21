@@ -1,9 +1,9 @@
 package com.ledga.app.ui.home
 
+import android.content.Context
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import android.app.Application
 import com.ledga.app.BuildConfig
 import com.ledga.app.data.db.dao.CategorySpending
 import com.ledga.app.data.db.entity.Category
@@ -18,15 +18,23 @@ import com.ledga.app.worker.GitHubRelease
 import com.ledga.app.worker.UpdateChecker
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import android.content.Context
 import javax.inject.Inject
+
+data class CategoryBreakdownItem(
+    val name: String,
+    val color: String,
+    val icon: String,
+    val amount: Double
+)
 
 data class HomeUiState(
     val greeting: String = "",
@@ -34,12 +42,14 @@ data class HomeUiState(
     val totalSpending: Double = 0.0,
     val totalFees: Double = 0.0,
     val donutSegments: List<DonutSegment> = emptyList(),
+    val categoryBreakdown: List<CategoryBreakdownItem> = emptyList(),
     val recentTransactions: List<TransactionWithCategory> = emptyList(),
     val selectedPeriod: Period = Period.THIS_MONTH,
     val monthLabel: String = "",
     val updateAvailable: GitHubRelease? = null
 )
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     @ApplicationContext private val appContext: Context,
@@ -70,18 +80,15 @@ class HomeViewModel @Inject constructor(
             Period.THIS_WEEK -> DateUtils.getStartOfWeek(now)
             Period.THIS_MONTH -> DateUtils.getStartOfMonth(now)
         }
-        kotlinx.coroutines.flow.flowOf(start to now)
+        flowOf(start to now)
     }
 
     val uiState: StateFlow<HomeUiState> = combine(
         _selectedPeriod,
-        timeRange,
-        transactionRepository.getLatestTransaction(),
+        transactionRepository.getLatestTransactionWithBalance(),
         transactionRepository.getRecentTransactions(10),
         categoryRepository.getAllCategories()
-    ) { period, (start, end), latestTransaction, recentTransactions, categories ->
-        val categoryMap = categories.associateBy { it.id }
-
+    ) { period, latestTransaction, recentTransactions, categories ->
         HomeUiState(
             greeting = DateUtils.greeting(),
             balance = latestTransaction?.balance,
@@ -97,14 +104,29 @@ class HomeViewModel @Inject constructor(
                 transactionRepository.getSpendingByCategory(start, end),
                 categoryRepository.getAllCategories()
             ) { spending, fees, categorySpending, categories ->
-                Triple(spending, fees, buildDonutSegments(categorySpending, categories))
+                val catMap = categories.associateBy { it.id }
+                val segments = buildDonutSegments(categorySpending, categories)
+                val breakdown = categorySpending
+                    .sortedByDescending { it.totalAmount }
+                    .mapNotNull { cs ->
+                        val cat = catMap[cs.categoryId] ?: return@mapNotNull null
+                        CategoryBreakdownItem(
+                            name = cat.name,
+                            color = cat.color,
+                            icon = cat.icon,
+                            amount = cs.totalAmount
+                        )
+                    }
+                Triple(spending, fees, segments) to breakdown
             }
         }
-    ) { state, (spending, fees, segments) ->
+    ) { state, (triple, breakdown) ->
+        val (spending, fees, segments) = triple
         state.copy(
             totalSpending = spending,
             totalFees = fees,
-            donutSegments = segments
+            donutSegments = segments,
+            categoryBreakdown = breakdown
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), HomeUiState())
 

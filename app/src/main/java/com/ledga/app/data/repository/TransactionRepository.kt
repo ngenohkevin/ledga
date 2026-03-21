@@ -51,6 +51,9 @@ class TransactionRepository @Inject constructor(
     fun getLatestTransaction(): Flow<TransactionEntity?> =
         transactionDao.getLatestTransaction()
 
+    fun getLatestTransactionWithBalance(): Flow<TransactionEntity?> =
+        transactionDao.getLatestTransactionWithBalance()
+
     fun getSpendingByCategory(startTime: Long, endTime: Long): Flow<List<CategorySpending>> =
         transactionDao.getSpendingByCategory(startTime, endTime)
 
@@ -92,7 +95,7 @@ class TransactionRepository @Inject constructor(
             TransactionType.DEPOSIT -> 9L // Deposit
             TransactionType.MPESA_GLOBAL -> 11L // International
             TransactionType.MSHWARI, TransactionType.KCB_MPESA -> 12L // Savings & Loans
-            TransactionType.FULIZA, TransactionType.FULIZA_REPAYMENT, TransactionType.FULIZA_REVERSAL -> 12L
+            TransactionType.FULIZA, TransactionType.FULIZA_REPAYMENT, TransactionType.FULIZA_REVERSAL, TransactionType.FULIZA_AUTO_PAY -> 12L
             TransactionType.REVERSAL -> 13L // Other
             TransactionType.UNKNOWN -> 13L
             else -> null

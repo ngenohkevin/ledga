@@ -6,6 +6,7 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.ledga.app.data.parser.TransactionDirection
 import com.ledga.app.data.parser.TransactionType
+// TransactionType includes: FULIZA_AUTO_PAY (auto-deduction from balance)
 
 @Entity(
     tableName = "transactions",

@@ -7,11 +7,20 @@ import java.util.Locale
 
 object DateUtils {
 
-    private val mpesaDateFormat = SimpleDateFormat("d/M/yy 'at' h:mm a", Locale.ENGLISH)
+    private val mpesaDateFormat2 = SimpleDateFormat("d/M/yy 'at' h:mm a", Locale.ENGLISH)
+    private val mpesaDateFormat4 = SimpleDateFormat("d/M/yyyy 'at' h:mm a", Locale.ENGLISH)
+    // Alt format with extra spaces: "20/05/2024  at 03:23 PM"
+    private val mpesaDateFormatAlt = SimpleDateFormat("d/M/yyyy 'at' hh:mm a", Locale.ENGLISH)
 
     fun parseMpesaDate(dateStr: String): Long {
+        val cleaned = dateStr.trim().replace(Regex("""\s+"""), " ")
         return try {
-            mpesaDateFormat.parse(dateStr)?.time ?: System.currentTimeMillis()
+            // Try 4-digit year first
+            if (cleaned.matches(Regex("""\d{1,2}/\d{1,2}/\d{4}\s.*"""))) {
+                mpesaDateFormat4.parse(cleaned)?.time ?: mpesaDateFormatAlt.parse(cleaned)?.time ?: System.currentTimeMillis()
+            } else {
+                mpesaDateFormat2.parse(cleaned)?.time ?: System.currentTimeMillis()
+            }
         } catch (e: Exception) {
             System.currentTimeMillis()
         }

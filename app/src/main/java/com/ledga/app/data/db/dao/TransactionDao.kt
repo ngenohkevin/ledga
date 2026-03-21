@@ -46,6 +46,9 @@ interface TransactionDao {
     @Query("SELECT * FROM transactions ORDER BY timestamp DESC LIMIT 1")
     fun getLatestTransaction(): Flow<TransactionEntity?>
 
+    @Query("SELECT * FROM transactions WHERE balance > 0 ORDER BY timestamp DESC LIMIT 1")
+    fun getLatestTransactionWithBalance(): Flow<TransactionEntity?>
+
     @Query("""
         SELECT categoryId, SUM(amount) as totalAmount
         FROM transactions

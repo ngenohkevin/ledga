@@ -1,6 +1,8 @@
 package com.ledga.app.ui.components
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -8,8 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -54,14 +55,25 @@ fun TransactionCard(
                 .padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Category icon
-            Icon(
-                imageVector = Icons.Default.ShoppingCart,
-                contentDescription = category?.name,
-                modifier = Modifier.size(40.dp),
-                tint = category?.color?.let { parseColor(it) }
-                    ?: MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            // Category icon with colored background
+            val iconColor = category?.color?.let { parseColor(it) }
+                ?: MaterialTheme.colorScheme.onSurfaceVariant
+            Box(
+                modifier = Modifier
+                    .size(42.dp)
+                    .background(
+                        color = iconColor.copy(alpha = 0.15f),
+                        shape = RoundedCornerShape(12.dp)
+                    ),
+                contentAlignment = androidx.compose.ui.Alignment.Center
+            ) {
+                Icon(
+                    imageVector = categoryIcon(category?.icon ?: "category"),
+                    contentDescription = category?.name,
+                    modifier = Modifier.size(22.dp),
+                    tint = iconColor
+                )
+            }
 
             Spacer(modifier = Modifier.width(12.dp))
 
