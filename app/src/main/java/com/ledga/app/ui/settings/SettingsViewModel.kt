@@ -9,6 +9,7 @@ import com.ledga.app.data.repository.ExportResult
 import com.ledga.app.data.repository.FontScale
 import com.ledga.app.data.repository.ImportFromFileResult
 import com.ledga.app.data.repository.ImportResult
+import com.ledga.app.data.repository.ReparseResult
 import com.ledga.app.data.repository.SettingsRepository
 import com.ledga.app.data.repository.SmsImporter
 import com.ledga.app.data.repository.TransactionRepository
@@ -96,6 +97,15 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             val result = smsImporter.importHistory()
             _importStatus.value = result
+        }
+    }
+
+    private val _reparseResult = MutableStateFlow<ReparseResult?>(null)
+    val reparseResult: StateFlow<ReparseResult?> = _reparseResult
+
+    fun reparseUnknown() {
+        viewModelScope.launch {
+            _reparseResult.value = transactionRepository.reparseUnknownTransactions()
         }
     }
 

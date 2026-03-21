@@ -102,4 +102,10 @@ interface TransactionDao {
 
     @Query("SELECT COUNT(*) FROM transactions WHERE type = 'UNKNOWN'")
     fun getUnparsedCount(): Flow<Int>
+
+    @Query("SELECT * FROM transactions WHERE type = 'UNKNOWN'")
+    suspend fun getUnparsedSync(): List<TransactionEntity>
+
+    @Query("DELETE FROM transactions WHERE id = :id")
+    suspend fun deleteById(id: Long)
 }

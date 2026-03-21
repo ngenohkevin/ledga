@@ -45,6 +45,7 @@ fun SettingsScreen(
     val largeTxnAlert by viewModel.largeTxnAlertEnabled.collectAsState()
     val unparsedCount by viewModel.unparsedCount.collectAsState()
     val importStatus by viewModel.importStatus.collectAsState()
+    val reparseResult by viewModel.reparseResult.collectAsState()
     val exportResult by viewModel.exportResult.collectAsState()
     val fileImportResult by viewModel.fileImportResult.collectAsState()
 
@@ -160,8 +161,22 @@ fun SettingsScreen(
             }
 
             if (unparsedCount > 0) {
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedButton(
+                    onClick = { viewModel.reparseUnknown() },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Re-parse Unparsed Messages ($unparsedCount)")
+                }
+                if (reparseResult != null) {
+                    Text(
+                        text = "Fixed ${reparseResult!!.fixed} of ${reparseResult!!.total} (${reparseResult!!.stillUnknown} still unknown)",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
                 Text(
-                    text = "Unparsed Messages ($unparsedCount)",
+                    text = "View Unparsed Messages",
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier

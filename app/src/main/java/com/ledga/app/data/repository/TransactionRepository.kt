@@ -85,6 +85,35 @@ class TransactionRepository @Inject constructor(
         transactionDao.updateCategory(transactionId, categoryId)
     }
 
+    suspend fun reparseUnknownTransactions(): ReparseResult {
+        val unknowns = transactionDao.getUnparsedSync()
+        var fixed = 0
+        var stillUnknown = 0
+
+        for (entity in unknowns) {
+            val result = com.ledga.app.data.parser.MpesaSmsParser.parse(entity.rawSms, entity.timestamp)
+            when (result) {
+                is com.ledga.app.data.parser.ParseResult.Success -> {
+                    if (result.transaction.type != com.ledga.app.data.parser.TransactionType.UNKNOWN) {
+                        // Delete old UNKNOWN entry, insert re-parsed one
+                        transactionDao.deleteById(entity.id)
+                        insertTransaction(result.transaction)
+                        fixed++
+                    } else {
+                        stillUnknown++
+                    }
+                }
+                is com.ledga.app.data.parser.ParseResult.Failure -> {
+                    // Balance checks etc get filtered — delete the UNKNOWN entry
+                    transactionDao.deleteById(entity.id)
+                    fixed++
+                }
+            }
+        }
+
+        return ReparseResult(total = unknowns.size, fixed = fixed, stillUnknown = stillUnknown)
+    }
+
     private suspend fun autoCategorize(parsed: ParsedTransaction): Long? {
         // 1. Type-based defaults
         val typeDefault = when (parsed.type) {
@@ -130,3 +159,5 @@ class TransactionRepository @Inject constructor(
         return typeDefault ?: 13L // Default to "Other"
     }
 }
+
+data class ReparseResult(val total: Int, val fixed: Int, val stillUnknown: Int)
