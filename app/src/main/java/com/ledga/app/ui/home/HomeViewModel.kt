@@ -128,6 +128,8 @@ class HomeViewModel @Inject constructor(
             donutSegments = segments,
             categoryBreakdown = breakdown
         )
+    }.combine(_updateAvailable) { state, update ->
+        state.copy(updateAvailable = update)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), HomeUiState())
 
     fun selectPeriod(period: Period) {

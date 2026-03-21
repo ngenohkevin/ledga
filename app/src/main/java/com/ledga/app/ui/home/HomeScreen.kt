@@ -38,6 +38,7 @@ import com.ledga.app.ui.components.TransactionCard
 import com.ledga.app.ui.components.categoryIcon
 import com.ledga.app.ui.components.parseColor
 import com.ledga.app.ui.theme.MpesaGreen
+import com.ledga.app.ui.theme.MpesaGreenDark
 import com.ledga.app.util.CurrencyFormatter
 
 @Composable
@@ -52,9 +53,46 @@ fun HomeScreen(
             .padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        // Update banner
+        if (state.updateAvailable != null) {
+            item {
+                Spacer(modifier = Modifier.height(12.dp))
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MpesaGreenDark
+                    )
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Update Available",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = androidx.compose.ui.graphics.Color.White
+                            )
+                            Text(
+                                text = "Version ${state.updateAvailable!!.tag_name}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.8f)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
         // Greeting
         item {
-            Spacer(modifier = Modifier.height(12.dp))
+            if (state.updateAvailable == null) {
+                Spacer(modifier = Modifier.height(12.dp))
+            }
             Text(
                 text = state.greeting,
                 style = MaterialTheme.typography.headlineMedium,

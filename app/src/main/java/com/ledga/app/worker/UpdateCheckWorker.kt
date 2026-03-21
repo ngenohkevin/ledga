@@ -47,6 +47,7 @@ object UpdateChecker {
     private val json = Json { ignoreUnknownKeys = true }
     private const val PREFS_NAME = "update_prefs"
     private const val LAST_CHECK_KEY = "last_check"
+    private const val LAST_VERSION_KEY = "last_version"
 
     suspend fun checkForUpdate(
         context: Context,
@@ -54,11 +55,21 @@ object UpdateChecker {
         repo: String,
         currentVersion: String
     ): GitHubRelease? = withContext(Dispatchers.IO) {
-        // Rate limit: max once per day
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val lastCheck = prefs.getLong(LAST_CHECK_KEY, 0)
+        val lastVersion = prefs.getString(LAST_VERSION_KEY, "") ?: ""
         val oneDayMs = 24 * 60 * 60 * 1000L
-        if (System.currentTimeMillis() - lastCheck < oneDayMs) return@withContext null
+
+        // Reset rate limit if app version changed (just updated)
+        val versionChanged = lastVersion != currentVersion
+        if (versionChanged) {
+            prefs.edit().putString(LAST_VERSION_KEY, currentVersion).apply()
+        }
+
+        // Rate limit: max once per day (skip if version just changed)
+        if (!versionChanged && System.currentTimeMillis() - lastCheck < oneDayMs) {
+            return@withContext null
+        }
 
         prefs.edit().putLong(LAST_CHECK_KEY, System.currentTimeMillis()).apply()
 
