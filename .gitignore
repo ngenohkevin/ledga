@@ -17,3 +17,7 @@ build/
 *.class
 .kotlin/
 .claude/
+
+# Internal planning docs — kept locally, not pushed.
+LEDGA_REDESIGN.md
+PROJECT_PLAN.md
