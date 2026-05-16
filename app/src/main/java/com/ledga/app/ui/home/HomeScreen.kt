@@ -34,11 +34,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.ledga.app.ui.components.DonutChart
+import com.ledga.app.ui.components.Period
 import com.ledga.app.ui.components.parseColor
 import com.ledga.app.ui.components.v2.AccountChip
 import com.ledga.app.ui.components.v2.AccountSwitcherSheet
 import com.ledga.app.ui.components.v2.Avatar
 import com.ledga.app.ui.components.v2.BentoCard
+import com.ledga.app.ui.components.v2.LedgaChip
 import com.ledga.app.ui.components.v2.LedgaTopBar
 import com.ledga.app.ui.components.v2.StatCard
 import com.ledga.app.ui.components.v2.TopBarIconButton
@@ -151,10 +153,29 @@ fun HomeScreen(
                 )
             }
 
-            // ---- HERO: spent this month ----
+            // ---- Period selector ----
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(Space.s3),
+            ) {
+                Period.entries.forEach { period ->
+                    LedgaChip(
+                        label = period.label,
+                        selected = state.selectedPeriod == period,
+                        onClick = { viewModel.selectPeriod(period) },
+                    )
+                }
+            }
+
+            // ---- HERO: spent for selected period ----
             BentoCard(onClick = onNavigateToActivity) {
+                val overlineLabel = when (state.selectedPeriod) {
+                    Period.TODAY -> "SPENT TODAY"
+                    Period.THIS_WEEK -> "SPENT THIS WEEK"
+                    Period.THIS_MONTH -> "SPENT THIS MONTH"
+                }
                 Text(
-                    text = "SPENT THIS MONTH",
+                    text = overlineLabel,
                     style = LedgaText.Overline,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
