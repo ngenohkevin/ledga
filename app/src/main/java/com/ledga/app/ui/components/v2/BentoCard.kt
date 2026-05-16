@@ -20,8 +20,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import com.ledga.app.ui.theme.LedgaInk
+import com.ledga.app.ui.theme.LedgaInkDark
+import com.ledga.app.ui.theme.LedgaMuted
+import com.ledga.app.ui.theme.LedgaMutedDark
 import com.ledga.app.ui.theme.LedgaText
 import com.ledga.app.ui.theme.Radius
 import com.ledga.app.ui.theme.Space
@@ -52,6 +57,13 @@ fun BentoCard(
 ) {
     val container = if (tonal) tonalColor else MaterialTheme.colorScheme.surface
     val border = if (tonal) null else BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+
+    // For tonal cards we pick text colors that contrast with the tonal bg
+    // rather than the theme's default onSurface — otherwise a light tonal
+    // (e.g. accent-soft) in dark mode renders near-white text on a near-white
+    // bg and disappears.
+    val titleColor = if (tonal) onTonal(tonalColor) else MaterialTheme.colorScheme.onSurface
+    val overlineColor = if (tonal) onTonalMuted(tonalColor) else MaterialTheme.colorScheme.onSurfaceVariant
 
     Surface(
         modifier = modifier
@@ -88,14 +100,14 @@ fun BentoCard(
                             Text(
                                 text = overline.uppercase(),
                                 style = LedgaText.Overline,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                color = overlineColor,
                             )
                         }
                         if (title != null) {
                             Text(
                                 text = title,
                                 style = LedgaText.TitleS,
-                                color = MaterialTheme.colorScheme.onSurface,
+                                color = titleColor,
                             )
                         }
                     }
@@ -106,6 +118,21 @@ fun BentoCard(
         }
     }
 }
+
+/**
+ * Pick a primary text color that has decent contrast against [background].
+ * Hand-rolled rather than relying on theme onSurface because tonal bgs
+ * are explicit colors set by the caller, not picked from MaterialTheme.
+ *
+ * Public so screens can render their own content slot in the matching ink
+ * (e.g. body text inside a tonal card).
+ */
+fun onTonal(background: Color): Color =
+    if (background.luminance() > 0.5f) LedgaInk else LedgaInkDark
+
+/** Muted variant of [onTonal] for captions / overlines. */
+fun onTonalMuted(background: Color): Color =
+    if (background.luminance() > 0.5f) LedgaMuted else LedgaMutedDark
 
 /**
  * Small 40×40 icon tile with rounded corners, category-color tint.
