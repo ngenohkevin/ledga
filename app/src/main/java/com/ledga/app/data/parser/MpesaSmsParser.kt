@@ -150,7 +150,10 @@ object MpesaSmsParser {
 
     private fun isDeposit(sms: String) =
         sms.contains("You have deposited", ignoreCase = true) ||
-                sms.contains("deposited", ignoreCase = true)
+                sms.contains("deposited", ignoreCase = true) ||
+                // "Give KshX cash to AGENT" — agent-deposit format, user hands cash in
+                Regex("""Give\s+Ksh\s?[\d,]+\.\d{2}\s+cash\s+to""", RegexOption.IGNORE_CASE)
+                    .containsMatchIn(sms)
 
     private fun isReceived(sms: String) =
         sms.contains("You have received", ignoreCase = true)
@@ -186,24 +189,37 @@ object MpesaSmsParser {
         sms.contains("paid to", ignoreCase = true) && !sms.contains("Account Number", ignoreCase = true) &&
                 !sms.contains("for account", ignoreCase = true)
 
-    private fun isSendMoney(sms: String) =
-        sms.contains("sent to", ignoreCase = true)
+    private fun isSendMoney(sms: String): Boolean {
+        // Standard: "Ksh500.00 sent to JOHN ..."
+        if (sms.contains("sent to", ignoreCase = true)) return true
+        // Variant: "You have sent Ksh500.00 to Hustler Fund on ..."
+        // Amount sits between "sent" and "to", so the literal "sent to" miss.
+        return Regex("""\bsent\s+Ksh\s?[\d,]+\.\d{2}\s+to\b""", RegexOption.IGNORE_CASE)
+            .containsMatchIn(sms)
+    }
 
     // --- Parsers ---
 
     private fun parseSendMoney(sms: String, code: String, balance: Double, cost: Double, timestamp: Long): ParsedTransaction {
         val amount = extractFirstAmount(sms) ?: 0.0
-        // Try standard: "sent to NAME PHONE on"
+        // Standard: "sent to NAME PHONE on"
         val sendToRegex = Regex("""sent to\s+(.+?)\s+(\d{10,})\s+on""", RegexOption.IGNORE_CASE)
         val match = sendToRegex.find(sms)
-        // Try alt: "sent to NAME on" (no phone, e.g. Hustler Fund)
+        // Alt 1: "sent to NAME on" (no phone)
         val sendToAltRegex = Regex("""sent to\s+(.+?)\s+(?:on|for)""", RegexOption.IGNORE_CASE)
-        val altMatch = if (match == null) sendToAltRegex.find(sms) else null
+        // Alt 2: "sent KshX to NAME on" — Hustler Fund and similar products
+        val sendAmountToRegex = Regex(
+            """sent\s+Ksh\s?[\d,]+\.\d{2}\s+to\s+(.+?)\s+on""",
+            RegexOption.IGNORE_CASE,
+        )
+        val altMatch = match
+            ?: sendToAltRegex.find(sms)
+            ?: sendAmountToRegex.find(sms)
 
         return ParsedTransaction(
             transactionCode = code, type = TransactionType.SEND, amount = amount,
             transactionCost = cost,
-            recipientName = match?.groupValues?.get(1)?.trim() ?: altMatch?.groupValues?.get(1)?.trim(),
+            recipientName = (match ?: altMatch)?.groupValues?.get(1)?.trim(),
             recipientPhone = match?.groupValues?.get(2),
             accountNumber = null, destinationCountry = null, balance = balance,
             direction = TransactionDirection.OUTFLOW,
@@ -291,9 +307,17 @@ object MpesaSmsParser {
 
     private fun parseDeposit(sms: String, code: String, balance: Double, timestamp: Long): ParsedTransaction {
         val amount = extractFirstAmount(sms) ?: 0.0
+        // "Give Ksh300.00 cash to Jamag Holdings ... New M-PESA balance" — extract the agent.
+        val giveCashRegex = Regex(
+            """Give\s+Ksh\s?[\d,]+\.\d{2}\s+cash\s+to\s+(.+?)\s+New M-PESA balance""",
+            RegexOption.IGNORE_CASE,
+        )
+        val giveCashMatch = giveCashRegex.find(sms)
         return ParsedTransaction(
             transactionCode = code, type = TransactionType.DEPOSIT, amount = amount,
-            transactionCost = 0.0, recipientName = null, recipientPhone = null,
+            transactionCost = 0.0,
+            recipientName = giveCashMatch?.groupValues?.get(1)?.trim(),
+            recipientPhone = null,
             accountNumber = null, destinationCountry = null, balance = balance,
             direction = TransactionDirection.INFLOW, fulizaAmount = null, fulizaOutstanding = null,
             reversedTransactionCode = null, timestamp = timestamp, rawSms = sms
@@ -372,6 +396,8 @@ object MpesaSmsParser {
     }
 
     // "Ksh X from your M-PESA has been used to fully/partially pay your outstanding Fuliza"
+    // Fuliza is M-Pesa's overdraft loan; when fresh money lands, the wallet
+    // auto-deducts to repay it.
     private fun parseFulizaAutoPay(sms: String, code: String, balance: Double, timestamp: Long): ParsedTransaction {
         val amount = extractFirstAmount(sms) ?: 0.0
         val fulizaLimit = FULIZA_LIMIT_REGEX.find(sms)?.groupValues?.get(1)?.let { parseAmount(it) }
@@ -379,7 +405,9 @@ object MpesaSmsParser {
 
         return ParsedTransaction(
             transactionCode = code, type = TransactionType.FULIZA_AUTO_PAY, amount = amount,
-            transactionCost = 0.0, recipientName = if (isFullPay) "Fuliza Full Payment" else "Fuliza Partial Payment",
+            transactionCost = 0.0,
+            recipientName = if (isFullPay) "Fuliza overdraft (auto-cleared)"
+                            else "Fuliza overdraft (auto-partial)",
             recipientPhone = null, accountNumber = null, destinationCountry = null,
             balance = balance, direction = TransactionDirection.OUTFLOW,
             fulizaAmount = null, fulizaOutstanding = fulizaLimit,

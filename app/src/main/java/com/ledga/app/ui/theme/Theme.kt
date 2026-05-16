@@ -1,35 +1,91 @@
 package com.ledga.app.ui.theme
 
-import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
 
 enum class ThemeMode { SYSTEM, LIGHT, DARK }
 
-private val LightColorScheme = lightColorScheme(
-    primary = MpesaGreen,
-    onPrimary = androidx.compose.ui.graphics.Color.White,
-    primaryContainer = MpesaGreenLight,
-    onPrimaryContainer = MpesaGreenDark,
+private val LedgaLightColorScheme = lightColorScheme(
+    primary = LedgaAccent,
+    onPrimary = LedgaInkOnAccent,
+    primaryContainer = LedgaAccentSoft,
+    onPrimaryContainer = LedgaAccentDeep,
+
+    secondary = LedgaInk2,
+    onSecondary = LedgaSurface,
+    secondaryContainer = LedgaSurface2,
+    onSecondaryContainer = LedgaInk,
+
+    tertiary = LedgaWarning,
+    onTertiary = LedgaInk,
+    tertiaryContainer = LedgaWarningSoft,
+    onTertiaryContainer = LedgaInk,
+
+    error = LedgaDanger,
+    onError = LedgaInkOnAccent,
+    errorContainer = LedgaDangerSoft,
+    onErrorContainer = LedgaInk,
+
+    background = LedgaBg,
+    onBackground = LedgaInk,
+    surface = LedgaSurface,
+    onSurface = LedgaInk,
+    surfaceVariant = LedgaSurface2,
+    onSurfaceVariant = LedgaMuted,
+    surfaceContainerLowest = LedgaBg,
+    surfaceContainerLow = LedgaSurface,
+    surfaceContainer = LedgaSurface,
+    surfaceContainerHigh = LedgaSurface2,
+    surfaceContainerHighest = LedgaSurface2,
+
+    outline = LedgaLine,
+    outlineVariant = LedgaLine,
 )
 
-private val DarkColorScheme = darkColorScheme(
-    primary = MpesaGreenLight,
-    onPrimary = MpesaGreenDark,
-    primaryContainer = MpesaGreen,
-    onPrimaryContainer = MpesaGreenLight,
+private val LedgaDarkColorScheme = darkColorScheme(
+    primary = LedgaAccentDark,
+    onPrimary = LedgaInkOnAccentDark,
+    primaryContainer = LedgaAccentSoftDark,
+    onPrimaryContainer = LedgaAccentDeepDark,
+
+    secondary = LedgaInk2Dark,
+    onSecondary = LedgaSurfaceDark,
+    secondaryContainer = LedgaSurface2Dark,
+    onSecondaryContainer = LedgaInkDark,
+
+    tertiary = LedgaWarningDark,
+    onTertiary = LedgaInkDark,
+    tertiaryContainer = LedgaWarningSoftDark,
+    onTertiaryContainer = LedgaInkDark,
+
+    error = LedgaDangerDark,
+    onError = LedgaInkOnAccentDark,
+    errorContainer = LedgaDangerSoftDark,
+    onErrorContainer = LedgaInkDark,
+
+    background = LedgaBgDark,
+    onBackground = LedgaInkDark,
+    surface = LedgaSurfaceDark,
+    onSurface = LedgaInkDark,
+    surfaceVariant = LedgaSurface2Dark,
+    onSurfaceVariant = LedgaMutedDark,
+    surfaceContainerLowest = LedgaBgDark,
+    surfaceContainerLow = LedgaSurfaceDark,
+    surfaceContainer = LedgaSurfaceDark,
+    surfaceContainerHigh = LedgaSurface2Dark,
+    surfaceContainerHighest = LedgaSurface2Dark,
+
+    outline = LedgaLineDark,
+    outlineVariant = LedgaLineDark,
 )
 
 @Composable
 fun LedgaTheme(
     themeMode: ThemeMode = ThemeMode.SYSTEM,
-    dynamicColor: Boolean = true,
+    @Suppress("UNUSED_PARAMETER") dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val darkTheme = when (themeMode) {
@@ -38,14 +94,8 @@ fun LedgaTheme(
         ThemeMode.DARK -> true
     }
 
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
-    }
+    // v2: brand identity is too specific to defer to dynamic color — always use Ledga palette.
+    val colorScheme = if (darkTheme) LedgaDarkColorScheme else LedgaLightColorScheme
 
     MaterialTheme(
         colorScheme = colorScheme,

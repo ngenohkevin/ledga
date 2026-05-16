@@ -7,9 +7,15 @@ import androidx.lifecycle.viewModelScope
 import com.ledga.app.BuildConfig
 import com.ledga.app.data.db.dao.CategorySpending
 import com.ledga.app.data.db.entity.Category
+import com.ledga.app.data.db.entity.Insight
+import com.ledga.app.data.db.entity.MpesaAccount
 import com.ledga.app.data.db.entity.TransactionWithCategory
+import com.ledga.app.data.repository.AccountsRepository
 import com.ledga.app.data.repository.CategoryRepository
+import com.ledga.app.data.repository.InsightsRepository
+import com.ledga.app.data.repository.SettingsRepository
 import com.ledga.app.data.repository.TransactionRepository
+import com.ledga.app.data.repository.UpdateRepository
 import com.ledga.app.ui.components.DonutSegment
 import com.ledga.app.ui.components.Period
 import com.ledga.app.ui.components.parseColor
@@ -23,6 +29,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
@@ -46,7 +53,12 @@ data class HomeUiState(
     val recentTransactions: List<TransactionWithCategory> = emptyList(),
     val selectedPeriod: Period = Period.THIS_MONTH,
     val monthLabel: String = "",
-    val updateAvailable: GitHubRelease? = null
+    val updateAvailable: GitHubRelease? = null,
+    /** True when the background worker has already downloaded the APK. */
+    val updatePrefetched: Boolean = false,
+    val topInsight: Insight? = null,
+    val accounts: List<MpesaAccount> = emptyList(),
+    val selectedAccountId: Long? = null,
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -54,10 +66,19 @@ data class HomeUiState(
 class HomeViewModel @Inject constructor(
     @ApplicationContext private val appContext: Context,
     private val transactionRepository: TransactionRepository,
-    private val categoryRepository: CategoryRepository
+    private val categoryRepository: CategoryRepository,
+    private val insightsRepository: InsightsRepository,
+    private val accountsRepository: AccountsRepository,
+    private val settingsRepository: SettingsRepository,
+    private val updateRepository: UpdateRepository,
 ) : ViewModel() {
 
+    fun selectAccount(id: Long?) {
+        viewModelScope.launch { settingsRepository.setSelectedAccountId(id) }
+    }
+
     private val _updateAvailable = MutableStateFlow<GitHubRelease?>(null)
+    private val _updatePrefetched = MutableStateFlow(false)
 
     init {
         viewModelScope.launch {
@@ -67,7 +88,14 @@ class HomeViewModel @Inject constructor(
                 repo = "ledga",
                 currentVersion = BuildConfig.VERSION_NAME
             )
-            _updateAvailable.value = release
+            // Respect the user's "Remind me later" snooze: hide the banner if
+            // they dismissed this exact version. Newer versions still surface.
+            val dismissed = settingsRepository.getDismissedUpdateVersion().first()
+            val surfaced = release?.takeIf { it.tag_name != dismissed }
+            _updateAvailable.value = surfaced
+            // Did the background worker already pull the APK?
+            _updatePrefetched.value = surfaced != null &&
+                    updateRepository.findCachedApk(surfaced) != null
         }
     }
 
@@ -130,6 +158,14 @@ class HomeViewModel @Inject constructor(
         )
     }.combine(_updateAvailable) { state, update ->
         state.copy(updateAvailable = update)
+    }.combine(_updatePrefetched) { state, prefetched ->
+        state.copy(updatePrefetched = prefetched)
+    }.combine(insightsRepository.observeTop()) { state, insight ->
+        state.copy(topInsight = insight)
+    }.combine(accountsRepository.observeAll()) { state, accounts ->
+        state.copy(accounts = accounts)
+    }.combine(settingsRepository.getSelectedAccountId()) { state, accountId ->
+        state.copy(selectedAccountId = accountId)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), HomeUiState())
 
     fun selectPeriod(period: Period) {

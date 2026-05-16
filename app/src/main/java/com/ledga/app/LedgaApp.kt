@@ -3,8 +3,10 @@ package com.ledga.app
 import android.app.Application
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
+import com.ledga.app.worker.InsightScheduler
 import com.ledga.app.worker.NotificationHelper
 import com.ledga.app.worker.NotificationScheduler
+import com.ledga.app.worker.UpdateScheduler
 import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject
 
@@ -24,5 +26,7 @@ class LedgaApp : Application(), Configuration.Provider {
         NotificationHelper.createChannels(this)
         NotificationScheduler.scheduleDailySummary(this)
         NotificationScheduler.scheduleWeeklySummary(this)
+        InsightScheduler.schedulePeriodic(this)
+        UpdateScheduler.schedulePeriodic(this)
     }
 }

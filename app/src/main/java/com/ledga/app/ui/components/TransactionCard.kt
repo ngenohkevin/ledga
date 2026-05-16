@@ -24,8 +24,7 @@ import androidx.compose.ui.unit.dp
 import com.ledga.app.data.db.entity.Category
 import com.ledga.app.data.db.entity.TransactionEntity
 import com.ledga.app.data.parser.TransactionDirection
-import com.ledga.app.ui.theme.InflowGreen
-import com.ledga.app.ui.theme.OutflowRed
+import com.ledga.app.ui.theme.LedgaInflow
 import com.ledga.app.util.CurrencyFormatter
 import com.ledga.app.util.DateUtils
 
@@ -37,7 +36,7 @@ fun TransactionCard(
     modifier: Modifier = Modifier
 ) {
     val isInflow = transaction.direction == TransactionDirection.INFLOW
-    val amountColor = if (isInflow) InflowGreen else OutflowRed
+    val amountColor = if (isInflow) LedgaInflow else MaterialTheme.colorScheme.onSurface
     val displayName = transaction.recipientName ?: transaction.type.name.replace("_", " ")
 
     Card(
