@@ -88,6 +88,9 @@ interface InsightDao {
     @Query("DELETE FROM insights WHERE id = :id")
     suspend fun deleteById(id: Long)
 
+    @Query("DELETE FROM insights WHERE naturalKey = :key")
+    suspend fun deleteByKey(key: String)
+
     @Query("DELETE FROM insights WHERE generatedAt < :before AND dismissedAt IS NOT NULL")
     suspend fun pruneOldDismissed(before: Long)
 }

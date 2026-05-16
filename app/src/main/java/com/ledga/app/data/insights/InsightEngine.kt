@@ -49,6 +49,13 @@ class InsightEngine @Inject constructor(
         }
 
         candidates.forEach { upsert(it, now) }
+        // Stateful keys: if a rule that "owns" a singleton key didn't emit
+        // this run, the underlying condition is gone — delete the stale row
+        // outright (vs leaving it to expire 30 days post-dismiss).
+        val emittedKeys = candidates.map { it.naturalKey }.toSet()
+        STATEFUL_KEYS.forEach { key ->
+            if (key !in emittedKeys) insightDao.deleteByKey(key)
+        }
         insightDao.pruneOldDismissed(before = now - 30L * DAY_MS)
         return candidates.size
     }
@@ -85,5 +92,19 @@ class InsightEngine @Inject constructor(
 
     companion object {
         private const val DAY_MS = 86_400_000L
+
+        /**
+         * Natural keys whose underlying condition is stateful — only true when
+         * a current event matches. If a rule using one of these keys returns
+         * no candidates this run, the existing insight is stale and should
+         * be deleted, not just re-emitted.
+         *
+         * Per-period keys (anomaly:1:2026-W12, nudge:2:2026-04, fees:2026-04)
+         * are NOT stateful in this sense — they refer to a fixed past period
+         * and should persist in history.
+         */
+        private val STATEFUL_KEYS = setOf(
+            "fuliza:outstanding",
+        )
     }
 }
