@@ -12,8 +12,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.ledga.app.ui.theme.InflowGreen
-import com.ledga.app.ui.theme.OutflowRed
+import com.ledga.app.ui.theme.LedgaAccent
+import com.ledga.app.ui.theme.LedgaDanger
+import com.ledga.app.ui.theme.LedgaWarning
 import com.ledga.app.util.CurrencyFormatter
 
 @Composable
@@ -26,9 +27,9 @@ fun BudgetProgressBar(
     val progress = if (limit > 0) (spent / limit).toFloat().coerceIn(0f, 1f) else 0f
     val percentage = if (limit > 0) ((spent / limit) * 100).toInt() else 0
     val color = when {
-        percentage >= 100 -> OutflowRed
-        percentage >= 80 -> MaterialTheme.colorScheme.error.copy(alpha = 0.7f)
-        else -> InflowGreen
+        percentage >= 100 -> LedgaDanger
+        percentage >= 80 -> LedgaWarning
+        else -> LedgaAccent
     }
 
     Column(modifier = modifier.fillMaxWidth()) {

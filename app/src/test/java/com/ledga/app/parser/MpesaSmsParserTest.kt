@@ -31,6 +31,86 @@ class MpesaSmsParserTest {
         assertFalse(MpesaSmsParser.isMpesaMessage("SAFARICOM"))
     }
 
+    // --- Real-world regression fixtures ---
+    // Sanitized from /Documents/ledga-export — phone numbers and account
+    // balances replaced with placeholders to keep real-world fidelity without
+    // committing live data.
+
+    @Test
+    fun `real Hustler Fund send — amount-first phrasing`() {
+        val sms = "SEK8U08F14 Confirmed. You have sent Ksh1,002.84 to Hustler Fund on 20/05/2024  at 03:23 PM. New MPESA balance is Ksh9,429.84."
+        val t = assertSuccess(sms).transaction
+        assertEquals(TransactionType.SEND, t.type)
+        assertEquals(1002.84, t.amount, 0.01)
+        assertEquals("Hustler Fund", t.recipientName)
+        assertEquals(TransactionDirection.OUTFLOW, t.direction)
+    }
+
+    @Test
+    fun `real Give-cash agent deposit`() {
+        val sms = "TGE6WZSMPY Confirmed. On 14/7/25 at 11:50 AM Give Ksh300.00 cash to Jamag Holdings Harrysal Mali Mali Street Busia New M-PESA balance is Ksh300.00. You can now access M-PESA via *334#"
+        val t = assertSuccess(sms).transaction
+        assertEquals(TransactionType.DEPOSIT, t.type)
+        assertEquals(300.0, t.amount, 0.01)
+        assertEquals(TransactionDirection.INFLOW, t.direction)
+        assertTrue("recipientName should mention the agent, got: ${t.recipientName}",
+            t.recipientName?.contains("Jamag", ignoreCase = true) == true)
+    }
+
+    @Test
+    fun `real Fuliza auto-pay full`() {
+        val sms = "UCHIE9OIM9  Confirmed. Ksh 1738.92 from your M-PESA has been used to fully pay your outstanding Fuliza M-PESA. Available Fuliza M-PESA limit is Ksh 11000.00. Your M-PESA balance is 8581.08."
+        val t = assertSuccess(sms).transaction
+        assertEquals(TransactionType.FULIZA_AUTO_PAY, t.type)
+        assertEquals(1738.92, t.amount, 0.01)
+        assertEquals(TransactionDirection.OUTFLOW, t.direction)
+    }
+
+    @Test
+    fun `real Fuliza auto-pay partial`() {
+        val sms = "UC3IE8BHFR  Confirmed. Ksh 200.00 from your M-PESA has been used to partially pay your outstanding Fuliza M-PESA. Your available Fuliza M-PESA limit is Ksh 8018.37. M-PESA balance is Ksh0.00."
+        val t = assertSuccess(sms).transaction
+        assertEquals(TransactionType.FULIZA_AUTO_PAY, t.type)
+        assertEquals(200.0, t.amount, 0.01)
+    }
+
+    @Test
+    fun `real withdraw alt format with merchant code`() {
+        val sms = "UCEIE9EQ8H Confirmed.on 14/3/26 at 7:17 PMWithdraw Ksh6,500.00 from 031824 - Jamag Holdings Harrysal Mali Mali Street Busia New M-PESA balance is Ksh1,200.10. Transaction cost, Ksh87.00."
+        val t = assertSuccess(sms).transaction
+        assertEquals(TransactionType.WITHDRAW_AGENT, t.type)
+        assertEquals(6500.0, t.amount, 0.01)
+        assertEquals(87.0, t.transactionCost, 0.01)
+        assertEquals("031824", t.recipientPhone)
+        assertTrue("merchant name should contain 'Jamag', got: ${t.recipientName}",
+            t.recipientName?.contains("Jamag", ignoreCase = true) == true)
+    }
+
+    @Test
+    fun `real airtime self with no-space confirmed`() {
+        val sms = "UC2IE88HZW confirmed.You bought Ksh200.00 of airtime on 2/3/26 at 2:52 PM.New M-PESA balance is Ksh5,240.88. Transaction cost, Ksh0.00."
+        val t = assertSuccess(sms).transaction
+        assertEquals(TransactionType.AIRTIME_SELF, t.type)
+        assertEquals(200.0, t.amount, 0.01)
+    }
+
+    @Test
+    fun `real reversal alt`() {
+        val sms = "SH37SPJZKZ confirmed. Reversal of transaction SH38SP5YUQ has been successfully reversed  on 3/8/24  at 2:30 PM and Ksh200.00 is credited to your M-PESA account. New M-PESA account balance is Ksh1,770.00."
+        val t = assertSuccess(sms).transaction
+        assertEquals(TransactionType.REVERSAL, t.type)
+        assertEquals("SH38SP5YUQ", t.reversedTransactionCode)
+        assertEquals(TransactionDirection.INFLOW, t.direction)
+    }
+
+    @Test
+    fun `real balance inquiry is filtered, not stored as UNKNOWN`() {
+        val sms = "UCJQF9UGN5 Confirmed. Your account balance was: M-PESA Account : Ksh458.00 Business Account : Ksh0.00 on 19/3/26 at 1:33 PM. Transaction cost, Ksh0.00."
+        val result = MpesaSmsParser.parse(sms)
+        assertTrue("Expected balance inquiry to be Failure, got: $result",
+            result is ParseResult.Failure)
+    }
+
     // --- Send Money ---
 
     @Test

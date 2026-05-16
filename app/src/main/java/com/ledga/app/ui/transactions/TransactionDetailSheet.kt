@@ -25,11 +25,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.ledga.app.data.db.entity.Category
+import com.ledga.app.data.db.entity.Goal
+import com.ledga.app.data.db.entity.MpesaAccount
 import com.ledga.app.data.db.entity.TransactionEntity
 import com.ledga.app.data.parser.TransactionDirection
 import com.ledga.app.ui.components.parseColor
-import com.ledga.app.ui.theme.InflowGreen
-import com.ledga.app.ui.theme.OutflowRed
+import com.ledga.app.ui.components.v2.LedgaChip
+import com.ledga.app.ui.theme.LedgaInflow
 import com.ledga.app.util.CurrencyFormatter
 import com.ledga.app.util.DateUtils
 
@@ -40,7 +42,12 @@ fun TransactionDetailSheet(
     category: Category?,
     categories: List<Category>,
     onDismiss: () -> Unit,
-    onCategoryChange: (Long) -> Unit
+    onCategoryChange: (Long) -> Unit,
+    accounts: List<MpesaAccount> = emptyList(),
+    onAccountChange: ((Long?) -> Unit)? = null,
+    manualGoals: List<Goal> = emptyList(),
+    goalIdsForTransaction: List<Long> = emptyList(),
+    onToggleGoal: ((goalId: Long, currentlyIn: Boolean) -> Unit)? = null,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val isInflow = transaction.direction == TransactionDirection.INFLOW
@@ -58,7 +65,7 @@ fun TransactionDetailSheet(
             Text(
                 text = CurrencyFormatter.formatKshSigned(transaction.amount, isInflow),
                 style = MaterialTheme.typography.headlineMedium,
-                color = if (isInflow) InflowGreen else OutflowRed,
+                color = if (isInflow) LedgaInflow else MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.Bold
             )
 
@@ -136,6 +143,58 @@ fun TransactionDetailSheet(
                                 style = MaterialTheme.typography.bodySmall
                             )
                         }
+                    }
+                }
+            }
+
+            // ---- Add to goal (only when user has manual-rule goals) ----
+            if (manualGoals.isNotEmpty() && onToggleGoal != null) {
+                Spacer(modifier = Modifier.height(16.dp))
+                HorizontalDivider()
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = "Add to goal",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    items(manualGoals) { goal ->
+                        val isIn = goalIdsForTransaction.contains(goal.id)
+                        LedgaChip(
+                            label = goal.name,
+                            selected = isIn,
+                            onClick = { onToggleGoal(goal.id, isIn) },
+                        )
+                    }
+                }
+            }
+
+            // ---- Account selector (only when 2+ accounts exist) ----
+            if (accounts.size >= 2 && onAccountChange != null) {
+                Spacer(modifier = Modifier.height(16.dp))
+                HorizontalDivider()
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = "Account",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    item {
+                        LedgaChip(
+                            label = "Unassigned",
+                            selected = transaction.accountId == null,
+                            onClick = { onAccountChange(null) },
+                        )
+                    }
+                    items(accounts) { acc ->
+                        LedgaChip(
+                            label = acc.displayName,
+                            selected = transaction.accountId == acc.id,
+                            onClick = { onAccountChange(acc.id) },
+                        )
                     }
                 }
             }

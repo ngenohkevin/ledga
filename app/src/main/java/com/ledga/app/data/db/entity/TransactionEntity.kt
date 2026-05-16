@@ -13,6 +13,7 @@ import com.ledga.app.data.parser.TransactionType
     indices = [
         Index(value = ["transactionCode"], unique = true),
         Index(value = ["categoryId"]),
+        Index(value = ["accountId"]),
         Index(value = ["timestamp"]),
         Index(value = ["type"])
     ],
@@ -21,6 +22,12 @@ import com.ledga.app.data.parser.TransactionType
             entity = Category::class,
             parentColumns = ["id"],
             childColumns = ["categoryId"],
+            onDelete = ForeignKey.SET_NULL
+        ),
+        ForeignKey(
+            entity = MpesaAccount::class,
+            parentColumns = ["id"],
+            childColumns = ["accountId"],
             onDelete = ForeignKey.SET_NULL
         )
     ]
@@ -44,5 +51,8 @@ data class TransactionEntity(
     val reversedTransactionCode: String?,
     val rawSms: String,
     val timestamp: Long,
-    val createdAt: Long = System.currentTimeMillis()
+    val createdAt: Long = System.currentTimeMillis(),
+    // v2 additions (DB v2)
+    val accountId: Long? = null,
+    val note: String? = null,
 )

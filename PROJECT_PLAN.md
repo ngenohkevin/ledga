@@ -682,9 +682,33 @@ First launch experience for non-technical users. Only shown once — a `hasCompl
 ## APK Signing & CI/CD
 
 ### Keystore
+- Path: `mobile/ledga/keystore/ledga-release.jks` (gitignored)
+- Key alias: `ledga`
 - Generate a release keystore and store it securely
-- **CRITICAL:** Back up the keystore — if lost, existing installs can never receive updates (Android requires consistent signing)
+- **CRITICAL:** Back up the keystore — if lost, existing installs can never receive updates (Android requires consistent signing). The VPS backup job does not cover this file; back it up manually to a password manager or offline storage.
 - Store keystore password and key alias in a secure location (not in the repo)
+
+### Build Commands
+```bash
+cd ~/dev/mobile/ledga
+
+# Debug APK
+./gradlew assembleDebug
+# -> app/build/outputs/apk/debug/app-debug.apk
+
+# Release APK (signed, requires keystore + secrets)
+./gradlew assembleRelease
+# -> app/build/outputs/apk/release/app-release.apk
+
+# Tests
+./gradlew testDebugUnitTest
+```
+
+### Release a Version
+```bash
+git tag v1.0.0 && git push origin v1.0.0
+# GitHub Action builds signed APK and creates release automatically
+```
 
 ### GitHub Actions
 ```yaml

@@ -26,6 +26,11 @@ data class TopMerchant(
     val transactionCount: Int
 )
 
+/**
+ * Every account-aware query takes a nullable `accountId` — null means
+ * "Combined view" (all accounts). The repository wires this from the
+ * user's selected-account preference.
+ */
 @Dao
 interface TransactionDao {
 
@@ -35,41 +40,104 @@ interface TransactionDao {
     @Query("UPDATE transactions SET categoryId = :categoryId WHERE id = :id")
     suspend fun updateCategory(id: Long, categoryId: Long?)
 
-    @Transaction
-    @Query("SELECT * FROM transactions ORDER BY timestamp DESC LIMIT :limit")
-    fun getRecentTransactions(limit: Int = 10): Flow<List<TransactionWithCategory>>
+    @Query("UPDATE transactions SET accountId = :accountId WHERE id = :id")
+    suspend fun updateAccount(id: Long, accountId: Long?)
+
+    /**
+     * Bulk-attribute transactions in a timestamp range to an account.
+     * Used by the historical-tagging backfill (date-range fallback).
+     */
+    @Query("""
+        UPDATE transactions SET accountId = :accountId
+        WHERE timestamp BETWEEN :startTime AND :endTime
+    """)
+    suspend fun updateAccountForRange(accountId: Long?, startTime: Long, endTime: Long): Int
+
+    /**
+     * Bulk-attribute by transaction code list — used by the SMS-DB backfill
+     * after we match codes to subscription ids.
+     */
+    @Query("""
+        UPDATE transactions SET accountId = :accountId
+        WHERE transactionCode IN (:codes)
+    """)
+    suspend fun updateAccountForCodes(accountId: Long, codes: List<String>): Int
 
     @Transaction
-    @Query("SELECT * FROM transactions WHERE timestamp BETWEEN :startTime AND :endTime ORDER BY timestamp DESC")
-    fun getTransactions(startTime: Long, endTime: Long): Flow<List<TransactionWithCategory>>
+    @Query("""
+        SELECT * FROM transactions
+        WHERE (:accountId IS NULL OR accountId = :accountId)
+        ORDER BY timestamp DESC
+        LIMIT :limit
+    """)
+    fun getRecentTransactions(limit: Int = 10, accountId: Long? = null): Flow<List<TransactionWithCategory>>
 
-    @Query("SELECT * FROM transactions ORDER BY timestamp DESC LIMIT 1")
-    fun getLatestTransaction(): Flow<TransactionEntity?>
+    @Transaction
+    @Query("""
+        SELECT * FROM transactions
+        WHERE timestamp BETWEEN :startTime AND :endTime
+          AND (:accountId IS NULL OR accountId = :accountId)
+        ORDER BY timestamp DESC
+    """)
+    fun getTransactions(startTime: Long, endTime: Long, accountId: Long? = null): Flow<List<TransactionWithCategory>>
 
-    @Query("SELECT * FROM transactions WHERE balance > 0 ORDER BY timestamp DESC LIMIT 1")
-    fun getLatestTransactionWithBalance(): Flow<TransactionEntity?>
+    @Query("""
+        SELECT * FROM transactions
+        WHERE (:accountId IS NULL OR accountId = :accountId)
+        ORDER BY timestamp DESC LIMIT 1
+    """)
+    fun getLatestTransaction(accountId: Long? = null): Flow<TransactionEntity?>
+
+    @Query("""
+        SELECT * FROM transactions
+        WHERE balance > 0
+          AND (:accountId IS NULL OR accountId = :accountId)
+        ORDER BY timestamp DESC LIMIT 1
+    """)
+    fun getLatestTransactionWithBalance(accountId: Long? = null): Flow<TransactionEntity?>
 
     @Query("""
         SELECT categoryId, SUM(amount) as totalAmount
         FROM transactions
-        WHERE direction = 'OUTFLOW' AND timestamp BETWEEN :startTime AND :endTime
+        WHERE direction = 'OUTFLOW'
+          AND timestamp BETWEEN :startTime AND :endTime
+          AND (:accountId IS NULL OR accountId = :accountId)
         GROUP BY categoryId
     """)
-    fun getSpendingByCategory(startTime: Long, endTime: Long): Flow<List<CategorySpending>>
+    fun getSpendingByCategory(startTime: Long, endTime: Long, accountId: Long? = null): Flow<List<CategorySpending>>
 
-    @Query("SELECT COALESCE(SUM(amount), 0.0) FROM transactions WHERE direction = 'OUTFLOW' AND timestamp BETWEEN :startTime AND :endTime")
-    fun getTotalSpending(startTime: Long, endTime: Long): Flow<Double>
+    @Query("""
+        SELECT COALESCE(SUM(amount), 0.0) FROM transactions
+        WHERE direction = 'OUTFLOW'
+          AND timestamp BETWEEN :startTime AND :endTime
+          AND (:accountId IS NULL OR accountId = :accountId)
+    """)
+    fun getTotalSpending(startTime: Long, endTime: Long, accountId: Long? = null): Flow<Double>
 
-    @Query("SELECT COALESCE(SUM(transactionCost), 0.0) FROM transactions WHERE timestamp BETWEEN :startTime AND :endTime")
-    fun getTotalFees(startTime: Long, endTime: Long): Flow<Double>
+    @Query("""
+        SELECT COALESCE(SUM(transactionCost), 0.0) FROM transactions
+        WHERE timestamp BETWEEN :startTime AND :endTime
+          AND (:accountId IS NULL OR accountId = :accountId)
+    """)
+    fun getTotalFees(startTime: Long, endTime: Long, accountId: Long? = null): Flow<Double>
 
     @Transaction
-    @Query("SELECT * FROM transactions WHERE recipientName LIKE '%' || :query || '%' ORDER BY timestamp DESC")
-    fun searchTransactions(query: String): Flow<List<TransactionWithCategory>>
+    @Query("""
+        SELECT * FROM transactions
+        WHERE recipientName LIKE '%' || :query || '%'
+          AND (:accountId IS NULL OR accountId = :accountId)
+        ORDER BY timestamp DESC
+    """)
+    fun searchTransactions(query: String, accountId: Long? = null): Flow<List<TransactionWithCategory>>
 
     @Transaction
-    @Query("SELECT * FROM transactions WHERE type IN (:types) ORDER BY timestamp DESC")
-    fun getTransactionsByType(types: List<TransactionType>): Flow<List<TransactionWithCategory>>
+    @Query("""
+        SELECT * FROM transactions
+        WHERE type IN (:types)
+          AND (:accountId IS NULL OR accountId = :accountId)
+        ORDER BY timestamp DESC
+    """)
+    fun getTransactionsByType(types: List<TransactionType>, accountId: Long? = null): Flow<List<TransactionWithCategory>>
 
     @Query("SELECT * FROM transactions WHERE transactionCode = :code LIMIT 1")
     suspend fun getTransactionByCode(code: String): TransactionEntity?
@@ -78,30 +146,84 @@ interface TransactionDao {
     @Query("SELECT * FROM transactions WHERE type = 'UNKNOWN' ORDER BY timestamp DESC")
     fun getUnparsedTransactions(): Flow<List<TransactionWithCategory>>
 
-    // Trends: daily spending totals for a period
     @Query("""
         SELECT (timestamp / 86400000) * 86400000 as dayTimestamp, SUM(amount) as totalAmount
         FROM transactions
-        WHERE direction = 'OUTFLOW' AND timestamp BETWEEN :startTime AND :endTime
+        WHERE direction = 'OUTFLOW'
+          AND timestamp BETWEEN :startTime AND :endTime
+          AND (:accountId IS NULL OR accountId = :accountId)
         GROUP BY dayTimestamp
         ORDER BY dayTimestamp ASC
     """)
-    fun getDailySpending(startTime: Long, endTime: Long): Flow<List<DailySpending>>
+    fun getDailySpending(startTime: Long, endTime: Long, accountId: Long? = null): Flow<List<DailySpending>>
 
-    // Trends: top merchants by total spending
     @Query("""
         SELECT recipientName, SUM(amount) as totalAmount, COUNT(*) as transactionCount
         FROM transactions
         WHERE direction = 'OUTFLOW' AND recipientName IS NOT NULL
             AND timestamp BETWEEN :startTime AND :endTime
+            AND (:accountId IS NULL OR accountId = :accountId)
         GROUP BY recipientName
         ORDER BY totalAmount DESC
         LIMIT :limit
     """)
-    fun getTopMerchants(startTime: Long, endTime: Long, limit: Int = 5): Flow<List<TopMerchant>>
+    fun getTopMerchants(startTime: Long, endTime: Long, accountId: Long? = null, limit: Int = 5): Flow<List<TopMerchant>>
 
     @Query("SELECT COUNT(*) FROM transactions WHERE type = 'UNKNOWN'")
     fun getUnparsedCount(): Flow<Int>
+
+    // ---- Goal progress helpers (Phase D) ----
+    // These are account-agnostic by design: a goal spans every line.
+
+    @Query("""
+        SELECT COALESCE(SUM(amount), 0.0) FROM transactions
+        WHERE type IN ('MSHWARI', 'KCB_MPESA')
+          AND direction = 'OUTFLOW'
+          AND timestamp >= :since
+    """)
+    fun observeSavingsContributionsSince(since: Long): Flow<Double>
+
+    @Query("""
+        SELECT COALESCE(SUM(amount), 0.0) FROM transactions
+        WHERE recipientName LIKE '%' || :recipientFragment || '%' COLLATE NOCASE
+          AND direction = 'OUTFLOW'
+          AND timestamp >= :since
+    """)
+    fun observeRecipientContributionsSince(recipientFragment: String, since: Long): Flow<Double>
+
+    /** All transactions in a window — used by Goal detail to list contributors. */
+    @Transaction
+    @Query("""
+        SELECT * FROM transactions
+        WHERE timestamp >= :since
+          AND type IN ('MSHWARI', 'KCB_MPESA')
+          AND direction = 'OUTFLOW'
+        ORDER BY timestamp DESC
+    """)
+    fun observeSavingsTransactionsSince(since: Long): Flow<List<TransactionWithCategory>>
+
+    @Transaction
+    @Query("""
+        SELECT * FROM transactions
+        WHERE timestamp >= :since
+          AND recipientName LIKE '%' || :recipientFragment || '%' COLLATE NOCASE
+          AND direction = 'OUTFLOW'
+        ORDER BY timestamp DESC
+    """)
+    fun observeRecipientTransactionsSince(recipientFragment: String, since: Long): Flow<List<TransactionWithCategory>>
+
+    /** Per-recipient outflow totals, used to suggest recipient candidates when building a goal. */
+    @Query("""
+        SELECT recipientName as recipientName, SUM(amount) as totalAmount, COUNT(*) as transactionCount
+        FROM transactions
+        WHERE direction = 'OUTFLOW'
+          AND recipientName IS NOT NULL
+          AND timestamp >= :since
+        GROUP BY recipientName
+        ORDER BY totalAmount DESC
+        LIMIT :limit
+    """)
+    fun observeRecipientsSince(since: Long, limit: Int = 20): Flow<List<TopMerchant>>
 
     @Query("SELECT * FROM transactions WHERE type = 'UNKNOWN'")
     suspend fun getUnparsedSync(): List<TransactionEntity>

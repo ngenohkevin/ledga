@@ -5,9 +5,12 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
 import androidx.compose.runtime.collectAsState
@@ -24,7 +27,6 @@ import com.ledga.app.ui.navigation.AppNavigation
 import com.ledga.app.ui.navigation.HomeRoute
 import com.ledga.app.ui.navigation.LedgaBottomNavBar
 import com.ledga.app.ui.navigation.OnboardingRoute
-import com.ledga.app.ui.navigation.UnparsedSmsRoute
 import com.ledga.app.ui.theme.LedgaTheme
 import com.ledga.app.ui.theme.ThemeMode
 import dagger.hilt.android.AndroidEntryPoint
@@ -67,30 +69,42 @@ class MainActivity : ComponentActivity() {
                 else Density(density.density, fontScale.scale)
 
                 CompositionLocalProvider(LocalDensity provides scaledDensity) {
-                val navController = rememberNavController()
-                val navBackStackEntry by navController.currentBackStackEntryAsState()
-                val currentRoute = navBackStackEntry?.destination?.route
+                    val navController = rememberNavController()
+                    val navBackStackEntry by navController.currentBackStackEntryAsState()
+                    val currentRoute = navBackStackEntry?.destination?.route
 
-                val startDestination: Any = if (hasCompletedOnboarding) HomeRoute else OnboardingRoute
+                    val startDestination: Any = if (hasCompletedOnboarding) HomeRoute else OnboardingRoute
 
-                val showBottomBar = currentRoute != null &&
-                        !currentRoute.contains("Onboarding") &&
-                        !currentRoute.contains("UnparsedSms") &&
-                        !currentRoute.contains("Budget")
+                    // Tabs are visible on tab roots only (Home / Activity / Insights / You).
+                    val showBottomBar = currentRoute != null &&
+                            (currentRoute.endsWith(".HomeRoute") ||
+                                    currentRoute.endsWith(".ActivityRoute") ||
+                                    currentRoute.endsWith(".InsightsRoute") ||
+                                    currentRoute.endsWith(".YouRoute"))
 
-                Scaffold(
-                    bottomBar = {
+                    // Box overlay — the PillTabBar is floating, so it sits ON TOP of
+                    // content rather than displacing it. Screens add 120dp bottom
+                    // padding themselves to clear the bar.
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(MaterialTheme.colorScheme.background),
+                    ) {
+                        AppNavigation(
+                            navController = navController,
+                            startDestination = startDestination,
+                            modifier = Modifier.fillMaxSize(),
+                        )
                         if (showBottomBar) {
-                            LedgaBottomNavBar(navController = navController)
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize(),
+                                contentAlignment = Alignment.BottomCenter,
+                            ) {
+                                LedgaBottomNavBar(navController = navController)
+                            }
                         }
                     }
-                ) { innerPadding ->
-                    AppNavigation(
-                        navController = navController,
-                        startDestination = startDestination,
-                        modifier = Modifier.padding(innerPadding)
-                    )
-                }
                 }
             }
         }

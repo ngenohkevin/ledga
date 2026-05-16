@@ -1,6 +1,8 @@
 package com.ledga.app.data.db
 
 import androidx.room.TypeConverter
+import com.ledga.app.data.db.entity.InsightSeverity
+import com.ledga.app.data.db.entity.InsightType
 import com.ledga.app.data.db.entity.MatchType
 import com.ledga.app.data.parser.TransactionDirection
 import com.ledga.app.data.parser.TransactionType
@@ -24,4 +26,16 @@ class Converters {
 
     @TypeConverter
     fun toMatchType(value: String): MatchType = MatchType.valueOf(value)
+
+    @TypeConverter
+    fun fromInsightType(value: InsightType): String = value.name
+
+    @TypeConverter
+    fun toInsightType(value: String): InsightType = InsightType.valueOf(value)
+
+    @TypeConverter
+    fun fromInsightSeverity(value: InsightSeverity): String = value.name
+
+    @TypeConverter
+    fun toInsightSeverity(value: String): InsightSeverity = InsightSeverity.valueOf(value)
 }

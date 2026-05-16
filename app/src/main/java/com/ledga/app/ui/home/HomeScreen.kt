@@ -1,23 +1,22 @@
 package com.ledga.app.ui.home
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -25,286 +24,379 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.ledga.app.ui.components.DonutChart
-import com.ledga.app.ui.components.PeriodSelector
-import com.ledga.app.ui.components.TransactionCard
-import com.ledga.app.ui.components.categoryIcon
 import com.ledga.app.ui.components.parseColor
-import com.ledga.app.ui.theme.MpesaGreen
-import com.ledga.app.ui.theme.MpesaGreenDark
+import com.ledga.app.ui.components.v2.AccountChip
+import com.ledga.app.ui.components.v2.AccountSwitcherSheet
+import com.ledga.app.ui.components.v2.Avatar
+import com.ledga.app.ui.components.v2.BentoCard
+import com.ledga.app.ui.components.v2.LedgaTopBar
+import com.ledga.app.ui.components.v2.StatCard
+import com.ledga.app.ui.components.v2.TopBarIconButton
+import com.ledga.app.ui.components.v2.TransactionRowV2
+import com.ledga.app.ui.theme.LedgaAccent
+import com.ledga.app.ui.theme.LedgaAccentDeep
+import com.ledga.app.ui.theme.LedgaAccentSoft
+import com.ledga.app.ui.theme.LedgaInflow
+import com.ledga.app.ui.theme.LedgaInk
+import com.ledga.app.ui.theme.LedgaText
+import com.ledga.app.ui.theme.Radius
+import com.ledga.app.ui.theme.Space
 import com.ledga.app.util.CurrencyFormatter
 
 @Composable
 fun HomeScreen(
-    viewModel: HomeViewModel = hiltViewModel()
+    viewModel: HomeViewModel = hiltViewModel(),
+    onNavigateToActivity: () -> Unit = {},
+    onNavigateToInsights: () -> Unit = {},
+    onNavigateToYou: () -> Unit = {},
+    onManageAccounts: () -> Unit = {},
+    onOpenUpdate: () -> Unit = {},
 ) {
     val state by viewModel.uiState.collectAsState()
+    var switcherOpen by remember { mutableStateOf(false) }
 
-    LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        // Update banner
-        if (state.updateAvailable != null) {
-            item {
-                Spacer(modifier = Modifier.height(12.dp))
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MpesaGreenDark
+    if (switcherOpen) {
+        AccountSwitcherSheet(
+            accounts = state.accounts,
+            selectedAccountId = state.selectedAccountId,
+            onSelectAccount = { viewModel.selectAccount(it) },
+            onDismiss = { switcherOpen = false },
+            onManage = onManageAccounts,
+        )
+    }
+
+    val activeAccount = state.accounts.firstOrNull { it.id == state.selectedAccountId }
+    val accountLabel = activeAccount?.displayName
+        ?: if (state.accounts.size > 1) "Combined" else state.accounts.firstOrNull()?.displayName
+    val accountColor = activeAccount?.colorHex?.let(::parseColor) ?: LedgaAccent
+    val accountInitials = accountLabel?.split(" ")
+        ?.mapNotNull { it.firstOrNull()?.toString() }
+        ?.joinToString("")
+        ?.take(2)
+        ?.uppercase()
+        ?: "ME"
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        // ---- Top bar: account chip + greeting + actions ----
+        LedgaTopBar(
+            leading = {
+                if (state.accounts.size > 1) {
+                    AccountChip(
+                        initials = accountInitials,
+                        label = accountLabel ?: "Combined",
+                        accentColor = accountColor,
+                        onClick = { switcherOpen = true },
                     )
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                } else {
+                    Avatar(initials = accountInitials, color = accountColor)
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(0.dp),
+                        modifier = Modifier.padding(start = 4.dp),
                     ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "Update Available",
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = androidx.compose.ui.graphics.Color.White
+                        Text(
+                            text = state.greeting.takeIf { it.isNotBlank() } ?: "Hi",
+                            style = LedgaText.BodyM,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Text(
+                            text = accountLabel ?: "Your tracker",
+                            style = LedgaText.TitleS,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                    }
+                }
+            },
+            trailing = {
+                Row(horizontalArrangement = Arrangement.spacedBy(Space.s3)) {
+                    TopBarIconButton(
+                        icon = Icons.Filled.Notifications,
+                        contentDescription = "Notifications",
+                        onClick = {},
+                    )
+                    TopBarIconButton(
+                        icon = Icons.Filled.Settings,
+                        contentDescription = "Settings",
+                        onClick = onNavigateToYou,
+                    )
+                }
+            },
+        )
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = Space.Screen)
+                .padding(bottom = 120.dp),
+            verticalArrangement = Arrangement.spacedBy(Space.Section),
+        ) {
+            // ---- Update banner (conditional) ----
+            state.updateAvailable?.let { release ->
+                UpdateBanner(
+                    versionLabel = release.tag_name,
+                    prefetched = state.updatePrefetched,
+                    onSeeWhatsNew = onOpenUpdate,
+                    onUpdate = onOpenUpdate,
+                )
+            }
+
+            // ---- HERO: spent this month ----
+            BentoCard(onClick = onNavigateToActivity) {
+                Text(
+                    text = "SPENT THIS MONTH",
+                    style = LedgaText.Overline,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Text(
+                    text = CurrencyFormatter.formatKsh(state.totalSpending),
+                    style = LedgaText.DisplayL,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Text(
+                    text = state.monthLabel +
+                            if (state.totalFees > 0) "  ·  ${CurrencyFormatter.formatKsh(state.totalFees)} in fees" else "",
+                    style = LedgaText.BodyM,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
+            // ---- 2-up: Balance · Top category ----
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(Space.s4),
+            ) {
+                StatCard(
+                    overline = "Balance",
+                    value = state.balance?.let { CurrencyFormatter.formatKshCompact(it) } ?: "—",
+                    caption = "from last tx",
+                    modifier = Modifier.weight(1f),
+                )
+                val top = state.categoryBreakdown.firstOrNull()
+                if (top != null) {
+                    StatCard(
+                        overline = "Top category",
+                        value = CurrencyFormatter.formatKshCompact(top.amount),
+                        caption = top.name,
+                        modifier = Modifier.weight(1f),
+                    )
+                } else {
+                    StatCard(
+                        overline = "Top category",
+                        value = "—",
+                        caption = "no spending yet",
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+            }
+
+            // ---- Donut breakdown ----
+            if (state.donutSegments.isNotEmpty()) {
+                BentoCard(title = "Where it went", onClick = onNavigateToActivity) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(Space.s5),
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(vertical = Space.s3),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            DonutChart(
+                                segments = state.donutSegments,
+                                totalAmount = state.totalSpending,
+                                modifier = Modifier.fillMaxWidth(),
                             )
-                            Text(
-                                text = "Version ${state.updateAvailable!!.tag_name}",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.8f)
-                            )
+                        }
+                        Column(
+                            modifier = Modifier.weight(1f),
+                            verticalArrangement = Arrangement.spacedBy(Space.s3),
+                        ) {
+                            state.categoryBreakdown.take(5).forEach { item ->
+                                LegendRow(name = item.name, color = parseColor(item.color))
+                            }
                         }
                     }
                 }
             }
-        }
 
-        // Greeting
-        item {
-            if (state.updateAvailable == null) {
-                Spacer(modifier = Modifier.height(12.dp))
-            }
-            Text(
-                text = state.greeting,
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold
-            )
-        }
-
-        // Balance card — prominent
-        item {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MpesaGreen
-                )
-            ) {
-                Column(
-                    modifier = Modifier.padding(20.dp)
+            // ---- Insights teaser ----
+            val topInsight = state.topInsight
+            if (topInsight != null) {
+                BentoCard(
+                    overline = topInsight.typeLabel,
+                    title = topInsight.headline,
+                    icon = Icons.Filled.AutoAwesome,
+                    iconTint = LedgaAccentDeep,
+                    tonal = true,
+                    tonalColor = LedgaAccentSoft,
+                    onClick = onNavigateToInsights,
                 ) {
-                    Text(
-                        text = "M-PESA Balance",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.8f)
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = state.balance?.let { CurrencyFormatter.formatKsh(it) } ?: "—",
-                        style = MaterialTheme.typography.headlineLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = androidx.compose.ui.graphics.Color.White
-                    )
-                    Text(
-                        text = "from last transaction",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.6f)
-                    )
-                }
-            }
-        }
-
-        // Spending + Fees row
-        item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Card(
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant
-                    )
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
+                    if (!topInsight.body.isNullOrBlank()) {
                         Text(
-                            text = "Spent",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            text = CurrencyFormatter.formatKshCompact(state.totalSpending),
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                        Text(
-                            text = state.monthLabel,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            text = topInsight.body,
+                            style = LedgaText.BodyM,
+                            color = LedgaInk,
                         )
                     }
                 }
-                Card(
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant
-                    )
+            } else {
+                BentoCard(
+                    overline = "Insights",
+                    title = "All quiet — nothing unusual",
+                    icon = Icons.Filled.AutoAwesome,
+                    iconTint = LedgaAccentDeep,
+                    tonal = true,
+                    tonalColor = LedgaAccentSoft,
+                    onClick = onNavigateToInsights,
                 ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(
-                            text = "Fees Paid",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            text = CurrencyFormatter.formatKsh(state.totalFees),
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                        Text(
-                            text = "this period",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+                    Text(
+                        text = "Ledga watches your activity daily and surfaces anything " +
+                                "worth attention. Tap to see how it works.",
+                        style = LedgaText.BodyM,
+                        color = LedgaInk,
+                    )
                 }
             }
-        }
 
-        // Period selector
-        item {
-            PeriodSelector(
-                selected = state.selectedPeriod,
-                onSelect = { viewModel.selectPeriod(it) }
-            )
-        }
-
-        // Donut chart
-        if (state.donutSegments.isNotEmpty()) {
-            item {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant
-                    )
-                ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        DonutChart(
-                            segments = state.donutSegments,
-                            totalAmount = state.totalSpending,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
-                }
-            }
-        }
-
-        // Category breakdown — "You spent X on Y"
-        if (state.categoryBreakdown.isNotEmpty()) {
-            item {
-                Text(
-                    text = "Where your money went",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
-
-            items(state.categoryBreakdown) { item ->
+            // ---- Recent activity ----
+            Column(verticalArrangement = Arrangement.spacedBy(Space.s4)) {
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-                        .padding(12.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    val color = parseColor(item.color)
-                    Box(
-                        modifier = Modifier
-                            .size(36.dp)
-                            .background(color.copy(alpha = 0.15f), RoundedCornerShape(10.dp)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = categoryIcon(item.icon),
-                            contentDescription = item.name,
-                            modifier = Modifier.size(20.dp),
-                            tint = color
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = item.name,
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
                     Text(
-                        text = CurrencyFormatter.formatKsh(item.amount),
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.SemiBold
+                        text = "Recent activity",
+                        style = LedgaText.TitleM,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Text(
+                        text = "See all",
+                        style = LedgaText.BodyM,
+                        color = LedgaAccentDeep,
+                        modifier = Modifier.clickable { onNavigateToActivity() },
                     )
                 }
+
+                if (state.recentTransactions.isEmpty()) {
+                    BentoCard {
+                        Text(
+                            text = "No transactions yet. M-Pesa SMS will land here automatically.",
+                            style = LedgaText.BodyM,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                } else {
+                    BentoCard(
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
+                    ) {
+                        state.recentTransactions.take(5).forEachIndexed { index, twc ->
+                            TransactionRowV2(
+                                recipient = twc.transaction.recipientName
+                                    ?: twc.transaction.type.name.replace("_", " "),
+                                amount = twc.transaction.amount,
+                                isInflow = twc.transaction.direction.name == "INFLOW",
+                                category = twc.category?.name,
+                                color = twc.category?.color?.let(::parseColor) ?: Color.Gray,
+                                icon = twc.category?.icon ?: "category",
+                                balance = twc.transaction.balance,
+                            )
+                            if (index < state.recentTransactions.lastIndex.coerceAtMost(4)) {
+                                androidx.compose.material3.HorizontalDivider(
+                                    color = MaterialTheme.colorScheme.outline,
+                                    modifier = Modifier.padding(horizontal = Space.Card),
+                                )
+                            }
+                        }
+                    }
+                }
             }
-        }
 
-        // Recent transactions
-        item {
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = "Recent Transactions",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold
-            )
+            Box(modifier = Modifier.padding(bottom = Space.s7))
         }
+    }
+}
 
-        if (state.recentTransactions.isEmpty()) {
-            item {
+@Composable
+private fun LegendRow(name: String, color: Color) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Box(
+            modifier = Modifier
+                .size(8.dp)
+                .clip(RoundedCornerShape(2.dp))
+                .background(color),
+        )
+        Text(
+            text = name,
+            style = LedgaText.BodyM,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+    }
+}
+
+@Composable
+private fun UpdateBanner(
+    versionLabel: String,
+    prefetched: Boolean,
+    onSeeWhatsNew: () -> Unit,
+    onUpdate: () -> Unit,
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(Radius.Card)),
+        shape = RoundedCornerShape(Radius.Card),
+        color = LedgaAccentSoft,
+        border = androidx.compose.foundation.BorderStroke(1.dp, LedgaAccent),
+    ) {
+        Column(
+            modifier = Modifier.padding(Space.Card),
+            verticalArrangement = Arrangement.spacedBy(Space.s4),
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Filled.AutoAwesome,
+                    contentDescription = null,
+                    tint = LedgaAccentDeep,
+                    modifier = Modifier.size(20.dp),
+                )
+                val title = if (prefetched) "  Ledga $versionLabel is ready to install"
+                else "  Ledga $versionLabel is available"
                 Text(
-                    text = "No transactions yet. Your M-Pesa transactions will appear here.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(vertical = 24.dp)
+                    text = title,
+                    style = LedgaText.TitleS,
+                    color = LedgaInk,
                 )
             }
-        } else {
-            items(
-                items = state.recentTransactions,
-                key = { it.transaction.id }
-            ) { twc ->
-                TransactionCard(
-                    transaction = twc.transaction,
-                    category = twc.category
+            Row(horizontalArrangement = Arrangement.spacedBy(Space.s4)) {
+                Text(
+                    text = "See what's new",
+                    style = LedgaText.BodyM,
+                    color = LedgaAccentDeep,
+                    modifier = Modifier.clickable { onSeeWhatsNew() },
+                )
+                Text(
+                    text = if (prefetched) "Install →" else "Update →",
+                    style = LedgaText.BodyM,
+                    color = LedgaAccentDeep,
+                    modifier = Modifier.clickable { onUpdate() },
                 )
             }
         }
-
-        item { Spacer(modifier = Modifier.height(16.dp)) }
     }
 }

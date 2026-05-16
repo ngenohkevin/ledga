@@ -6,9 +6,13 @@ import androidx.room.RoomDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.ledga.app.data.db.AppDatabase
 import com.ledga.app.data.db.DefaultData
+import com.ledga.app.data.db.Migrations
 import com.ledga.app.data.db.dao.BudgetDao
 import com.ledga.app.data.db.dao.CategoryDao
 import com.ledga.app.data.db.dao.CategoryRuleDao
+import com.ledga.app.data.db.dao.GoalDao
+import com.ledga.app.data.db.dao.InsightDao
+import com.ledga.app.data.db.dao.MpesaAccountDao
 import com.ledga.app.data.db.dao.TransactionDao
 import dagger.Module
 import dagger.Provides
@@ -32,6 +36,7 @@ object DatabaseModule {
             AppDatabase::class.java,
             "ledga.db"
         )
+            .addMigrations(Migrations.MIGRATION_1_2, Migrations.MIGRATION_2_3)
             .addCallback(object : RoomDatabase.Callback() {
                 override fun onCreate(db: SupportSQLiteDatabase) {
                     super.onCreate(db)
@@ -58,4 +63,13 @@ object DatabaseModule {
 
     @Provides
     fun provideBudgetDao(db: AppDatabase): BudgetDao = db.budgetDao()
+
+    @Provides
+    fun provideMpesaAccountDao(db: AppDatabase): MpesaAccountDao = db.mpesaAccountDao()
+
+    @Provides
+    fun provideGoalDao(db: AppDatabase): GoalDao = db.goalDao()
+
+    @Provides
+    fun provideInsightDao(db: AppDatabase): InsightDao = db.insightDao()
 }

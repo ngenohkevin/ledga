@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.doublePreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.ledga.app.ui.theme.ThemeMode
 import kotlinx.coroutines.flow.Flow
@@ -27,6 +28,12 @@ class SettingsRepository @Inject constructor(
         private val BUDGET_ALERTS = booleanPreferencesKey("budget_alerts")
         private val LARGE_TXN_ALERT = booleanPreferencesKey("large_txn_alert")
         private val LARGE_TXN_THRESHOLD = doublePreferencesKey("large_txn_threshold")
+        // Multi-SIM: which account the user is viewing. Special value -1 = "Combined".
+        private val SELECTED_ACCOUNT_ID = longPreferencesKey("selected_account_id")
+        private const val COMBINED_ACCOUNT = -1L
+        // Self-update: which version the user "Remind me later"'d. Banner stays hidden
+        // until a newer version is available.
+        private val DISMISSED_UPDATE_VERSION = stringPreferencesKey("dismissed_update_version")
     }
 
     fun getThemeMode(): Flow<ThemeMode> = dataStore.data.map { prefs ->
@@ -83,6 +90,33 @@ class SettingsRepository @Inject constructor(
 
     suspend fun setFontScale(scale: FontScale) {
         dataStore.edit { it[FONT_SCALE] = scale.name }
+    }
+
+    // --- Selected M-Pesa account ---
+
+    /**
+     * The currently selected account id. `null` means "Combined" view (all
+     * accounts merged). Default is null — first-time users see everything
+     * until they actively pick a line.
+     */
+    fun getSelectedAccountId(): Flow<Long?> = dataStore.data.map { prefs ->
+        prefs[SELECTED_ACCOUNT_ID]?.takeUnless { it == COMBINED_ACCOUNT }
+    }
+
+    suspend fun setSelectedAccountId(id: Long?) {
+        dataStore.edit { prefs ->
+            prefs[SELECTED_ACCOUNT_ID] = id ?: COMBINED_ACCOUNT
+        }
+    }
+
+    // --- Self-update: snoozed version ---
+
+    fun getDismissedUpdateVersion(): Flow<String?> = dataStore.data.map { prefs ->
+        prefs[DISMISSED_UPDATE_VERSION]
+    }
+
+    suspend fun dismissUpdateVersion(version: String) {
+        dataStore.edit { it[DISMISSED_UPDATE_VERSION] = version }
     }
 }
 
