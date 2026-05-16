@@ -4,94 +4,86 @@ import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.googlefonts.Font
-import androidx.compose.ui.text.googlefonts.GoogleFont
 import androidx.compose.ui.unit.sp
-import com.ledga.app.R
 
 // =====================================================================
 // Ledga v2 type scale — LEDGA_REDESIGN.md §1.4
-// Font: Inter (via Google Fonts). Numbers should use tnum where shown.
+//
+// We use [FontFamily.SansSerif] (the platform's sans-serif font — Roboto
+// on AOSP, Samsung One UI Sans on Galaxy, etc.) deliberately over
+// FontFamily.Default. Default inherits the user's system font preference,
+// which on some devices (Samsung One UI) is a handwritten / script style
+// that breaks our type rhythm.
+//
+// A future patch can switch back to Inter via downloadable fonts or a
+// bundled TTF; for now reliability > Inter-pixel-fidelity.
 // =====================================================================
 
-private val GoogleFontsProvider = GoogleFont.Provider(
-    providerAuthority = "com.google.android.gms.fonts",
-    providerPackage = "com.google.android.gms",
-    certificates = R.array.com_google_android_gms_fonts_certs,
-)
-
-private val InterFont = GoogleFont("Inter")
-
-private val Inter = FontFamily(
-    Font(googleFont = InterFont, fontProvider = GoogleFontsProvider, weight = FontWeight.Normal),
-    Font(googleFont = InterFont, fontProvider = GoogleFontsProvider, weight = FontWeight.Medium),
-    Font(googleFont = InterFont, fontProvider = GoogleFontsProvider, weight = FontWeight.SemiBold),
-    Font(googleFont = InterFont, fontProvider = GoogleFontsProvider, weight = FontWeight.Bold),
-)
+private val LedgaFont = FontFamily.SansSerif
 
 object LedgaText {
     val DisplayXL = TextStyle(
-        fontFamily = Inter,
+        fontFamily = LedgaFont,
         fontSize = 56.sp,
         fontWeight = FontWeight.Bold,
         lineHeight = 58.8.sp,
         letterSpacing = (-1.5).sp,
     )
     val DisplayL = TextStyle(
-        fontFamily = Inter,
+        fontFamily = LedgaFont,
         fontSize = 44.sp,
         fontWeight = FontWeight.Bold,
         lineHeight = 46.2.sp,
         letterSpacing = (-1).sp,
     )
     val DisplayM = TextStyle(
-        fontFamily = Inter,
+        fontFamily = LedgaFont,
         fontSize = 32.sp,
         fontWeight = FontWeight.Bold,
         lineHeight = 35.2.sp,
         letterSpacing = (-0.5).sp,
     )
     val TitleL = TextStyle(
-        fontFamily = Inter,
+        fontFamily = LedgaFont,
         fontSize = 24.sp,
         fontWeight = FontWeight.Bold,
         lineHeight = 28.8.sp,
         letterSpacing = (-0.2).sp,
     )
     val TitleM = TextStyle(
-        fontFamily = Inter,
+        fontFamily = LedgaFont,
         fontSize = 20.sp,
         fontWeight = FontWeight.SemiBold,
         lineHeight = 25.sp,
         letterSpacing = (-0.1).sp,
     )
     val TitleS = TextStyle(
-        fontFamily = Inter,
+        fontFamily = LedgaFont,
         fontSize = 17.sp,
         fontWeight = FontWeight.SemiBold,
         lineHeight = 22.1.sp,
     )
     val BodyL = TextStyle(
-        fontFamily = Inter,
+        fontFamily = LedgaFont,
         fontSize = 16.sp,
         fontWeight = FontWeight.Medium,
         lineHeight = 22.4.sp,
     )
     val BodyM = TextStyle(
-        fontFamily = Inter,
+        fontFamily = LedgaFont,
         fontSize = 14.sp,
         fontWeight = FontWeight.Medium,
         lineHeight = 19.6.sp,
     )
     val Caption = TextStyle(
-        fontFamily = Inter,
+        fontFamily = LedgaFont,
         fontSize = 12.sp,
         fontWeight = FontWeight.Medium,
         lineHeight = 15.6.sp,
         letterSpacing = 0.1.sp,
     )
     val Overline = TextStyle(
-        fontFamily = Inter,
+        fontFamily = LedgaFont,
         fontSize = 11.sp,
         fontWeight = FontWeight.SemiBold,
         lineHeight = 14.3.sp,

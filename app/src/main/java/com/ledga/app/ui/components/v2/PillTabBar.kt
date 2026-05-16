@@ -9,10 +9,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -59,7 +62,9 @@ fun PillTabBar(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .padding(PaddingValues(start = 21.dp, end = 21.dp, top = 12.dp, bottom = 21.dp)),
+            // Sit above the navigation bar / gesture pill, never under it.
+            .windowInsetsPadding(WindowInsets.navigationBars)
+            .padding(PaddingValues(start = 21.dp, end = 21.dp, top = 12.dp, bottom = 12.dp)),
     ) {
         Surface(
             modifier = Modifier
