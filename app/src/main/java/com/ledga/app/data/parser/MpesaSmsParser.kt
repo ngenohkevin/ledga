@@ -43,8 +43,13 @@ object MpesaSmsParser {
     private val TRANSACTION_CODE_REGEX = Regex("""^([A-Z0-9]{10})\s""")
     // Date: handles both 2-digit and 4-digit year
     private val DATE_REGEX = Regex("""on\s+(\d{1,2}/\d{1,2}/\d{2,4}\s+at\s+\d{1,2}:\d{2}\s+[AP]M)""", RegexOption.IGNORE_CASE)
-    // Balance: multiple formats
-    private val BALANCE_REGEX = Regex("""(?:M-PESA balance is|account balance is|M-PESA balance is|MPESA balance is)\s*Ksh\s?([\d,]+\.\d{2})""", RegexOption.IGNORE_CASE)
+    // Balance: multiple formats — note "Ksh" is optional. Fuliza auto-pay SMS
+    // reads "Your M-PESA balance is 8581.08" with no Ksh prefix on some
+    // ROMs / carrier formats, and we still need to capture it.
+    private val BALANCE_REGEX = Regex(
+        """(?:M-PESA balance is|MPESA balance is|account balance is)\s*(?:Ksh)?\s?([\d,]+\.\d{2})""",
+        RegexOption.IGNORE_CASE,
+    )
     private val COST_REGEX = Regex("""Transaction cost,?\s*Ksh\s?([\d,]+\.\d{2})""", RegexOption.IGNORE_CASE)
     private val FULIZA_AMOUNT_REGEX = Regex("""Fuliza M-PESA amount is Ksh\s?([\d,]+\.\d{2})""", RegexOption.IGNORE_CASE)
     private val FULIZA_OUTSTANDING_REGEX = Regex("""(?:Fuliza M-PESA outstanding amount is|Total Fuliza M-PESA outstanding amount is)\s*Ksh\s?([\d,]+\.\d{2})""", RegexOption.IGNORE_CASE)
@@ -398,9 +403,16 @@ object MpesaSmsParser {
     // "Ksh X from your M-PESA has been used to fully/partially pay your outstanding Fuliza"
     // Fuliza is M-Pesa's overdraft loan; when fresh money lands, the wallet
     // auto-deducts to repay it.
+    //
+    // Note: the SMS exposes the *available* Fuliza limit (e.g. how much you
+    // can still borrow), NOT the remaining outstanding. For a full clear the
+    // outstanding is unambiguously 0. For a partial clear we don't know the
+    // user's maximum Fuliza limit from this SMS alone, so we leave it null —
+    // FulizaRule will then defer to the previous outstanding-bearing
+    // transaction instead of misreporting the available-limit value as
+    // "you owe X".
     private fun parseFulizaAutoPay(sms: String, code: String, balance: Double, timestamp: Long): ParsedTransaction {
         val amount = extractFirstAmount(sms) ?: 0.0
-        val fulizaLimit = FULIZA_LIMIT_REGEX.find(sms)?.groupValues?.get(1)?.let { parseAmount(it) }
         val isFullPay = sms.contains("fully pay", ignoreCase = true)
 
         return ParsedTransaction(
@@ -410,7 +422,8 @@ object MpesaSmsParser {
                             else "Fuliza overdraft (auto-partial)",
             recipientPhone = null, accountNumber = null, destinationCountry = null,
             balance = balance, direction = TransactionDirection.OUTFLOW,
-            fulizaAmount = null, fulizaOutstanding = fulizaLimit,
+            fulizaAmount = null,
+            fulizaOutstanding = if (isFullPay) 0.0 else null,
             reversedTransactionCode = null, timestamp = timestamp, rawSms = sms
         )
     }

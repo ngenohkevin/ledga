@@ -109,6 +109,16 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
+    private val _reparseAllResult = MutableStateFlow<ReparseResult?>(null)
+    val reparseAllResult: StateFlow<ReparseResult?> = _reparseAllResult
+
+    /** Re-runs MpesaSmsParser over every stored row to pick up parser fixes. */
+    fun reparseAll() {
+        viewModelScope.launch {
+            _reparseAllResult.value = transactionRepository.reparseAllTransactions()
+        }
+    }
+
     private val _exportResult = MutableStateFlow<ExportResult?>(null)
     val exportResult: StateFlow<ExportResult?> = _exportResult
 
