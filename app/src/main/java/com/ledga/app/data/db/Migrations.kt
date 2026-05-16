@@ -78,17 +78,68 @@ object Migrations {
                         "ON `goal_contributions` (`transactionId`)"
             )
 
-            // ---- transactions.accountId + note ----
-            // SQLite ALTER TABLE … ADD COLUMN can't carry a FOREIGN KEY clause —
-            // Room re-asserts the FK constraint via its own validation, but the
-            // raw column add is enough here. The index makes account-scoped
-            // queries cheap (we'll add a lot of them in Phase E).
-            db.execSQL("ALTER TABLE `transactions` ADD COLUMN `accountId` INTEGER")
-            db.execSQL("ALTER TABLE `transactions` ADD COLUMN `note` TEXT")
+            // ---- transactions: add accountId (FK → mpesa_accounts) + note ----
+            // SQLite cannot add a FOREIGN KEY via ALTER TABLE — the constraint
+            // can only be declared at CREATE TABLE time. So we recreate the
+            // table: build the new shape, copy rows, drop the old, rename.
+            // Room runs this migration inside its own transaction, which defers
+            // FK enforcement until commit, so the swap is safe.
+            // Defensive: if a previous failed run left a half-built table, drop it.
+            db.execSQL("DROP TABLE IF EXISTS `transactions_new`")
             db.execSQL(
-                "CREATE INDEX IF NOT EXISTS `index_transactions_accountId` " +
-                        "ON `transactions` (`accountId`)"
+                """
+                CREATE TABLE `transactions_new` (
+                    `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                    `transactionCode` TEXT NOT NULL,
+                    `type` TEXT NOT NULL,
+                    `amount` REAL NOT NULL,
+                    `transactionCost` REAL NOT NULL,
+                    `recipientName` TEXT,
+                    `recipientPhone` TEXT,
+                    `accountNumber` TEXT,
+                    `destinationCountry` TEXT,
+                    `balance` REAL NOT NULL,
+                    `direction` TEXT NOT NULL,
+                    `categoryId` INTEGER,
+                    `fulizaAmount` REAL,
+                    `fulizaOutstanding` REAL,
+                    `reversedTransactionCode` TEXT,
+                    `rawSms` TEXT NOT NULL,
+                    `timestamp` INTEGER NOT NULL,
+                    `createdAt` INTEGER NOT NULL,
+                    `accountId` INTEGER,
+                    `note` TEXT,
+                    FOREIGN KEY (`categoryId`) REFERENCES `categories`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL,
+                    FOREIGN KEY (`accountId`) REFERENCES `mpesa_accounts`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL
+                )
+                """.trimIndent()
             )
+            db.execSQL(
+                """
+                INSERT INTO `transactions_new` (
+                    `id`, `transactionCode`, `type`, `amount`, `transactionCost`,
+                    `recipientName`, `recipientPhone`, `accountNumber`, `destinationCountry`,
+                    `balance`, `direction`, `categoryId`, `fulizaAmount`, `fulizaOutstanding`,
+                    `reversedTransactionCode`, `rawSms`, `timestamp`, `createdAt`,
+                    `accountId`, `note`
+                )
+                SELECT
+                    `id`, `transactionCode`, `type`, `amount`, `transactionCost`,
+                    `recipientName`, `recipientPhone`, `accountNumber`, `destinationCountry`,
+                    `balance`, `direction`, `categoryId`, `fulizaAmount`, `fulizaOutstanding`,
+                    `reversedTransactionCode`, `rawSms`, `timestamp`, `createdAt`,
+                    NULL, NULL
+                FROM `transactions`
+                """.trimIndent()
+            )
+            db.execSQL("DROP TABLE `transactions`")
+            db.execSQL("ALTER TABLE `transactions_new` RENAME TO `transactions`")
+            // Indices live with the table — recreate every one the entity declares.
+            db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_transactions_transactionCode` ON `transactions` (`transactionCode`)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_transactions_categoryId` ON `transactions` (`categoryId`)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_transactions_accountId` ON `transactions` (`accountId`)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_transactions_timestamp` ON `transactions` (`timestamp`)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_transactions_type` ON `transactions` (`type`)")
         }
     }
 

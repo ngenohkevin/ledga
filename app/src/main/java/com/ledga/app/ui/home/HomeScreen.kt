@@ -43,6 +43,7 @@ import com.ledga.app.ui.components.v2.LedgaTopBar
 import com.ledga.app.ui.components.v2.StatCard
 import com.ledga.app.ui.components.v2.TopBarIconButton
 import com.ledga.app.ui.components.v2.TransactionRowV2
+import com.ledga.app.ui.components.v2.onTonal
 import com.ledga.app.ui.theme.LedgaAccent
 import com.ledga.app.ui.theme.LedgaAccentDeep
 import com.ledga.app.ui.theme.LedgaAccentSoft
@@ -232,22 +233,26 @@ fun HomeScreen(
             }
 
             // ---- Insights teaser ----
+            // Use the theme-adaptive accent-container so the card stays
+            // readable in both light + dark.
+            val insightBg = MaterialTheme.colorScheme.primaryContainer
+            val insightInk = onTonal(insightBg)
             val topInsight = state.topInsight
             if (topInsight != null) {
                 BentoCard(
                     overline = topInsight.typeLabel,
                     title = topInsight.headline,
                     icon = Icons.Filled.AutoAwesome,
-                    iconTint = LedgaAccentDeep,
+                    iconTint = MaterialTheme.colorScheme.onPrimaryContainer,
                     tonal = true,
-                    tonalColor = LedgaAccentSoft,
+                    tonalColor = insightBg,
                     onClick = onNavigateToInsights,
                 ) {
                     if (!topInsight.body.isNullOrBlank()) {
                         Text(
                             text = topInsight.body,
                             style = LedgaText.BodyM,
-                            color = LedgaInk,
+                            color = insightInk,
                         )
                     }
                 }
@@ -256,16 +261,16 @@ fun HomeScreen(
                     overline = "Insights",
                     title = "All quiet — nothing unusual",
                     icon = Icons.Filled.AutoAwesome,
-                    iconTint = LedgaAccentDeep,
+                    iconTint = MaterialTheme.colorScheme.onPrimaryContainer,
                     tonal = true,
-                    tonalColor = LedgaAccentSoft,
+                    tonalColor = insightBg,
                     onClick = onNavigateToInsights,
                 ) {
                     Text(
                         text = "Ledga watches your activity daily and surfaces anything " +
                                 "worth attention. Tap to see how it works.",
                         style = LedgaText.BodyM,
-                        color = LedgaInk,
+                        color = insightInk,
                     )
                 }
             }
