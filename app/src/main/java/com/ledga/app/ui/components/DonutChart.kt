@@ -5,7 +5,9 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -41,9 +43,18 @@ fun DonutChart(
 
     val total = segments.sumOf { it.value.toDouble() }.toFloat()
 
-    Box(modifier = modifier, contentAlignment = Alignment.Center) {
-        Canvas(modifier = Modifier.size(180.dp)) {
-            val strokeWidth = 32.dp.toPx()
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            // Force square so the donut stays circular even when the parent
+            // is narrower than the historical 180dp fixed size (e.g. inside
+            // a 50/50 Row in Home's "Where it went" card).
+            .aspectRatio(1f),
+        contentAlignment = Alignment.Center,
+    ) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            // Stroke scales with the box so the ring looks right at any size.
+            val strokeWidth = (size.minDimension * 0.18f).coerceAtMost(32.dp.toPx())
             val radius = (size.minDimension - strokeWidth) / 2
             var startAngle = -90f
 
