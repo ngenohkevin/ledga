@@ -9,6 +9,7 @@ import com.ledga.app.data.repository.ExportResult
 import com.ledga.app.data.repository.FontScale
 import com.ledga.app.data.repository.ImportFromFileResult
 import com.ledga.app.data.repository.ImportResult
+import com.ledga.app.data.repository.InsightsRepository
 import com.ledga.app.data.repository.ReparseResult
 import com.ledga.app.data.repository.SettingsRepository
 import com.ledga.app.data.repository.SmsImporter
@@ -31,7 +32,8 @@ class SettingsViewModel @Inject constructor(
     private val transactionRepository: TransactionRepository,
     private val smsImporter: SmsImporter,
     private val exportImportRepository: ExportImportRepository,
-    private val backupRepository: BackupRepository
+    private val backupRepository: BackupRepository,
+    private val insightsRepository: InsightsRepository,
 ) : ViewModel() {
 
     val themeMode: StateFlow<ThemeMode> = settingsRepository.getThemeMode()
@@ -123,6 +125,11 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 _reparseAllResult.value = transactionRepository.reparseAllTransactions()
+                // Refresh insights immediately so the Home teaser + Insights
+                // screen reflect the corrected data. Stateful insights (like
+                // Fuliza outstanding) get auto-dismissed by the engine when
+                // their condition is no longer true.
+                insightsRepository.generateAll()
             } finally {
                 _reparseAllRunning.value = false
             }
