@@ -51,7 +51,7 @@ data class HomeUiState(
     val donutSegments: List<DonutSegment> = emptyList(),
     val categoryBreakdown: List<CategoryBreakdownItem> = emptyList(),
     val recentTransactions: List<TransactionWithCategory> = emptyList(),
-    val selectedPeriod: Period = Period.THIS_MONTH,
+    val selectedPeriod: Period = Period.TODAY,
     val monthLabel: String = "",
     val updateAvailable: GitHubRelease? = null,
     /** True when the background worker has already downloaded the APK. */
@@ -99,7 +99,7 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    private val _selectedPeriod = MutableStateFlow(Period.THIS_MONTH)
+    private val _selectedPeriod = MutableStateFlow(Period.TODAY)
 
     private val timeRange = _selectedPeriod.flatMapLatest { period ->
         val now = System.currentTimeMillis()

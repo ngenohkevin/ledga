@@ -76,6 +76,7 @@ fun YouScreen(
     val importStatus by viewModel.importStatus.collectAsState()
     val reparseResult by viewModel.reparseResult.collectAsState()
     val reparseAllResult by viewModel.reparseAllResult.collectAsState()
+    val reparseAllRunning by viewModel.reparseAllRunning.collectAsState()
     val exportResult by viewModel.exportResult.collectAsState()
     val fileImportResult by viewModel.fileImportResult.collectAsState()
     val backupStatus by viewModel.backupStatus.collectAsState()
@@ -216,11 +217,35 @@ fun YouScreen(
                     }
                     TextButtonRow("View unparsed messages", onNavigateToUnparsed)
                 }
-                TextButtonRow("Re-parse ALL transactions") {
-                    viewModel.reparseAll()
+                if (reparseAllRunning) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        androidx.compose.material3.CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            strokeWidth = 2.dp,
+                            color = LedgaAccent,
+                        )
+                        Text(
+                            text = "Re-parsing all transactions…",
+                            style = LedgaText.BodyL,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                    }
+                } else {
+                    TextButtonRow("Re-parse ALL transactions") {
+                        viewModel.reparseAll()
+                    }
                 }
                 reparseAllResult?.let {
-                    StatusLine("Re-parsed ${it.fixed} of ${it.total} (${it.stillUnknown} skipped)")
+                    StatusLine(
+                        if (it.total == 0) "No transactions yet — try Import SMS history first."
+                        else "Re-parsed ${it.fixed} of ${it.total} (${it.stillUnknown} skipped)"
+                    )
                 }
             }
 
