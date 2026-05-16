@@ -112,10 +112,20 @@ class SettingsViewModel @Inject constructor(
     private val _reparseAllResult = MutableStateFlow<ReparseResult?>(null)
     val reparseAllResult: StateFlow<ReparseResult?> = _reparseAllResult
 
+    private val _reparseAllRunning = MutableStateFlow(false)
+    val reparseAllRunning: StateFlow<Boolean> = _reparseAllRunning
+
     /** Re-runs MpesaSmsParser over every stored row to pick up parser fixes. */
     fun reparseAll() {
+        if (_reparseAllRunning.value) return
+        _reparseAllRunning.value = true
+        _reparseAllResult.value = null
         viewModelScope.launch {
-            _reparseAllResult.value = transactionRepository.reparseAllTransactions()
+            try {
+                _reparseAllResult.value = transactionRepository.reparseAllTransactions()
+            } finally {
+                _reparseAllRunning.value = false
+            }
         }
     }
 
