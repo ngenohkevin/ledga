@@ -75,6 +75,7 @@ fun YouScreen(
     val unparsedCount by viewModel.unparsedCount.collectAsState()
     val importStatus by viewModel.importStatus.collectAsState()
     val reparseResult by viewModel.reparseResult.collectAsState()
+    val reparseAllResult by viewModel.reparseAllResult.collectAsState()
     val exportResult by viewModel.exportResult.collectAsState()
     val fileImportResult by viewModel.fileImportResult.collectAsState()
     val backupStatus by viewModel.backupStatus.collectAsState()
@@ -214,6 +215,12 @@ fun YouScreen(
                         )
                     }
                     TextButtonRow("View unparsed messages", onNavigateToUnparsed)
+                }
+                TextButtonRow("Re-parse ALL transactions") {
+                    viewModel.reparseAll()
+                }
+                reparseAllResult?.let {
+                    StatusLine("Re-parsed ${it.fixed} of ${it.total} (${it.stillUnknown} skipped)")
                 }
             }
 

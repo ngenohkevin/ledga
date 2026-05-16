@@ -109,6 +109,45 @@ class TransactionRepository @Inject constructor(
     suspend fun bulkAttributeByCodes(accountId: Long, codes: List<String>): Int =
         if (codes.isEmpty()) 0 else transactionDao.updateAccountForCodes(accountId, codes)
 
+    /**
+     * Re-runs [MpesaSmsParser] over every stored transaction's rawSms and
+     * updates parser-derived fields in place. User-managed fields
+     * (categoryId, accountId, note, id, createdAt) are preserved. Use when a
+     * parser fix has landed and you want existing rows to inherit it without
+     * a destructive clear-and-reimport.
+     */
+    suspend fun reparseAllTransactions(): ReparseResult {
+        val all = transactionDao.getAllSync()
+        var fixed = 0
+        var stillUnknown = 0
+        for (entity in all) {
+            val result = com.ledga.app.data.parser.MpesaSmsParser.parse(entity.rawSms, entity.timestamp)
+            if (result !is com.ledga.app.data.parser.ParseResult.Success) {
+                stillUnknown++
+                continue
+            }
+            val p = result.transaction
+            val updated = entity.copy(
+                type = p.type,
+                amount = p.amount,
+                transactionCost = p.transactionCost,
+                recipientName = p.recipientName,
+                recipientPhone = p.recipientPhone,
+                accountNumber = p.accountNumber,
+                destinationCountry = p.destinationCountry,
+                balance = p.balance,
+                direction = p.direction,
+                fulizaAmount = p.fulizaAmount,
+                fulizaOutstanding = p.fulizaOutstanding,
+                reversedTransactionCode = p.reversedTransactionCode,
+                // Deliberately keep id, categoryId, accountId, note, createdAt.
+            )
+            transactionDao.update(updated)
+            fixed++
+        }
+        return ReparseResult(total = all.size, fixed = fixed, stillUnknown = stillUnknown)
+    }
+
     suspend fun reparseUnknownTransactions(): ReparseResult {
         val unknowns = transactionDao.getUnparsedSync()
         var fixed = 0
