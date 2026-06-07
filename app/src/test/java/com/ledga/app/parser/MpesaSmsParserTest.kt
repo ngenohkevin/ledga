@@ -293,6 +293,40 @@ class MpesaSmsParserTest {
         assertEquals(TransactionDirection.OUTFLOW, t.direction)
     }
 
+    // --- Fuliza limit + interest capture ---
+
+    @Test
+    fun `fuliza limit captured from auto-pay full`() {
+        val sms = "QX00000009  Confirmed. Ksh 1111.11 from your M-PESA has been used to fully pay your outstanding Fuliza M-PESA. Available Fuliza M-PESA limit is Ksh 11000.00. Your M-PESA balance is 1111.11."
+        val t = assertSuccess(sms).transaction
+        assertEquals(11000.0, t.fulizaLimit!!, 0.01)
+    }
+
+    @Test
+    fun `fuliza limit captured from auto-pay partial`() {
+        val sms = "QX00000007  Confirmed. Ksh 200.00 from your M-PESA has been used to partially pay your outstanding Fuliza M-PESA. Your available Fuliza M-PESA limit is Ksh 1111.11. M-PESA balance is Ksh0.00."
+        val t = assertSuccess(sms).transaction
+        assertEquals(8018.37, t.fulizaLimit!!, 0.01)
+    }
+
+    @Test
+    fun `fuliza borrow captures interest as cost`() {
+        val sms = "QX00000005 Confirmed. Fuliza M-PESA amount is Ksh 1111.00. Interest charged Ksh 10.73. Total Fuliza M-PESA outstanding amount is Ksh 1111.11 due on 21/08/25. To check daily charges, Dial *334#OK Select Fuliza M-PESA."
+        val t = assertSuccess(sms).transaction
+        assertEquals(TransactionType.FULIZA, t.type)
+        assertEquals(1073.0, t.amount, 0.01)
+        assertEquals(10.73, t.transactionCost, 0.01)
+        assertEquals(1699.70, t.fulizaOutstanding!!, 0.01)
+    }
+
+    @Test
+    fun `fuliza sender id is accepted`() {
+        assertTrue(MpesaSmsParser.isMpesaMessage("FULIZA"))
+        assertTrue(MpesaSmsParser.isMpesaMessage("MPESA"))
+        assertTrue(MpesaSmsParser.isMpesaMessage("mpesa"))
+        assertTrue(!MpesaSmsParser.isMpesaMessage("BANKSMS"))
+    }
+
     // --- Fuliza Reversal ---
 
     @Test

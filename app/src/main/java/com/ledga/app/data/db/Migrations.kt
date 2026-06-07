@@ -15,6 +15,9 @@ import androidx.sqlite.db.SupportSQLiteDatabase
  *       accountId (FK → mpesa_accounts.id) and note columns.
  *   3 - Add insights table (Phase C — rule-engine derived suggestions,
  *       with natural-key dedup + dismiss/snooze state).
+ *   4 - categories gains isTransfer (own-account transfer categories,
+ *       excluded from spending) + seed the "My Accounts" category;
+ *       transactions gains fulizaLimit (available Fuliza limit from SMS).
  */
 object Migrations {
 
@@ -178,6 +181,26 @@ object Migrations {
             db.execSQL(
                 "CREATE INDEX IF NOT EXISTS `index_insights_snoozedUntil` " +
                         "ON `insights` (`snoozedUntil`)"
+            )
+        }
+    }
+
+    val MIGRATION_3_4 = object : Migration(3, 4) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            // Both changes are additive — no table rebuild, no FK risk.
+            db.execSQL(
+                "ALTER TABLE `categories` ADD COLUMN `isTransfer` INTEGER NOT NULL DEFAULT 0"
+            )
+            db.execSQL(
+                "ALTER TABLE `transactions` ADD COLUMN `fulizaLimit` REAL"
+            )
+            // Seed the transfer category for existing installs. New installs
+            // get it from DefaultData via the onCreate callback.
+            db.execSQL(
+                """
+                INSERT OR IGNORE INTO `categories` (`id`, `name`, `icon`, `color`, `isDefault`, `isTransfer`)
+                VALUES (14, 'My Accounts', 'swap_horiz', '#78909C', 1, 1)
+                """.trimIndent()
             )
         }
     }

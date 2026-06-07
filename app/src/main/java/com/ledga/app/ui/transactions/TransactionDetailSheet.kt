@@ -17,6 +17,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -48,6 +49,8 @@ fun TransactionDetailSheet(
     manualGoals: List<Goal> = emptyList(),
     goalIdsForTransaction: List<Long> = emptyList(),
     onToggleGoal: ((goalId: Long, currentlyIn: Boolean) -> Unit)? = null,
+    isOwnAccount: Boolean = false,
+    onToggleOwnAccount: (() -> Unit)? = null,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val isInflow = transaction.direction == TransactionDirection.INFLOW
@@ -167,6 +170,40 @@ fun TransactionDetailSheet(
                             onClick = { onToggleGoal(goal.id, isIn) },
                         )
                     }
+                }
+            }
+
+            // ---- Own-account (transfer) toggle ----
+            // Only meaningful for outflows with a recipient: marking a bank,
+            // card, or savings paybill as "mine" reclassifies every matching
+            // transaction as a transfer and drops it from spending.
+            if (onToggleOwnAccount != null &&
+                transaction.recipientName != null &&
+                transaction.direction == TransactionDirection.OUTFLOW
+            ) {
+                Spacer(modifier = Modifier.height(16.dp))
+                HorizontalDivider()
+                Spacer(modifier = Modifier.height(12.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "My own account",
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Text(
+                            text = "Transfers to this recipient don't count as spending",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Switch(
+                        checked = isOwnAccount,
+                        onCheckedChange = { onToggleOwnAccount() },
+                    )
                 }
             }
 

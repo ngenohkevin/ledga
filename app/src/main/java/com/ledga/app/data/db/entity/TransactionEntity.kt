@@ -48,6 +48,8 @@ data class TransactionEntity(
     val categoryId: Long?,
     val fulizaAmount: Double?,
     val fulizaOutstanding: Double?,
+    /** "Available Fuliza M-PESA limit is Ksh X" — how much can still be borrowed. */
+    val fulizaLimit: Double? = null,
     val reversedTransactionCode: String?,
     val rawSms: String,
     val timestamp: Long,

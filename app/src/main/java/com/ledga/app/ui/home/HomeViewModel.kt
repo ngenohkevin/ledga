@@ -59,6 +59,10 @@ data class HomeUiState(
     val topInsight: Insight? = null,
     val accounts: List<MpesaAccount> = emptyList(),
     val selectedAccountId: Long? = null,
+    /** Latest known Fuliza outstanding (owed) — null when never seen in SMS. */
+    val fulizaOutstanding: Double? = null,
+    /** Latest known available Fuliza limit (borrowable) — null when never seen. */
+    val fulizaAvailable: Double? = null,
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -166,6 +170,10 @@ class HomeViewModel @Inject constructor(
         state.copy(accounts = accounts)
     }.combine(settingsRepository.getSelectedAccountId()) { state, accountId ->
         state.copy(selectedAccountId = accountId)
+    }.combine(transactionRepository.getLatestFulizaOutstanding()) { state, tx ->
+        state.copy(fulizaOutstanding = tx?.fulizaOutstanding)
+    }.combine(transactionRepository.getLatestFulizaLimit()) { state, tx ->
+        state.copy(fulizaAvailable = tx?.fulizaLimit)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), HomeUiState())
 
     fun selectPeriod(period: Period) {

@@ -21,4 +21,18 @@ interface CategoryRuleDao {
 
     @Query("SELECT * FROM category_rules")
     suspend fun getAllRulesSync(): List<CategoryRule>
+
+    @Query("""
+        DELETE FROM category_rules
+        WHERE categoryId = :categoryId AND matchValue = :matchValue COLLATE NOCASE
+    """)
+    suspend fun deleteByCategoryAndValue(categoryId: Long, matchValue: String)
+
+    /** Recipient fragments the user marked as their own accounts. */
+    @Query("""
+        SELECT cr.matchValue FROM category_rules cr
+        JOIN categories c ON c.id = cr.categoryId
+        WHERE c.isTransfer = 1 AND cr.matchType = 'RECIPIENT_NAME'
+    """)
+    fun getOwnAccountFragments(): Flow<List<String>>
 }

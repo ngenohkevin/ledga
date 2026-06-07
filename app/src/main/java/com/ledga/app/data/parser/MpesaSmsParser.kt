@@ -27,7 +27,9 @@ data class ParsedTransaction(
     val fulizaOutstanding: Double?,
     val reversedTransactionCode: String?,
     val timestamp: Long,
-    val rawSms: String
+    val rawSms: String,
+    /** "Available Fuliza M-PESA limit is Ksh X" — set post-hoc in [MpesaSmsParser.parse]. */
+    val fulizaLimit: Double? = null
 )
 
 sealed interface ParseResult {
@@ -54,9 +56,15 @@ object MpesaSmsParser {
     private val FULIZA_AMOUNT_REGEX = Regex("""Fuliza M-PESA amount is Ksh\s?([\d,]+\.\d{2})""", RegexOption.IGNORE_CASE)
     private val FULIZA_OUTSTANDING_REGEX = Regex("""(?:Fuliza M-PESA outstanding amount is|Total Fuliza M-PESA outstanding amount is)\s*Ksh\s?([\d,]+\.\d{2})""", RegexOption.IGNORE_CASE)
     private val FULIZA_LIMIT_REGEX = Regex("""(?:Available |available )Fuliza M-PESA limit is Ksh\s?([\d,]+\.\d{2})""", RegexOption.IGNORE_CASE)
+    // "Interest charged Ksh 10.73" — the 1% Fuliza access fee on borrows.
+    private val FULIZA_INTEREST_REGEX = Regex("""Interest charged,?\s*Ksh\s?([\d,]+\.\d{2})""", RegexOption.IGNORE_CASE)
 
     fun isMpesaMessage(sender: String): Boolean {
-        return sender.equals("MPESA", ignoreCase = true)
+        // Fuliza borrow confirmations can arrive from a dedicated "FULIZA"
+        // sender id rather than "MPESA" — without it, borrows go untracked
+        // while their repayments (sent from MPESA) are captured.
+        val s = sender.trim()
+        return s.equals("MPESA", ignoreCase = true) || s.equals("FULIZA", ignoreCase = true)
     }
 
     fun parse(smsBody: String, smsTimestamp: Long = System.currentTimeMillis()): ParseResult {
@@ -114,7 +122,13 @@ object MpesaSmsParser {
                 isSendMoney(sms) -> parseSendMoney(sms, code, balance, cost, timestamp)
                 else -> parseUnknown(sms, code, balance, cost, timestamp)
             }
-            ParseResult.Success(transaction)
+            // The available Fuliza limit can ride along on any SMS type
+            // (auto-pay, borrow, even regular payments) — attach it post-hoc
+            // so every parser benefits without threading it through each one.
+            val fulizaLimit = FULIZA_LIMIT_REGEX.find(sms)?.groupValues?.get(1)?.let { parseAmount(it) }
+            ParseResult.Success(
+                if (fulizaLimit != null) transaction.copy(fulizaLimit = fulizaLimit) else transaction
+            )
         } catch (e: Exception) {
             ParseResult.Failure(smsBody, "Parse error: ${e.message}")
         }
@@ -385,6 +399,9 @@ object MpesaSmsParser {
         val amount = extractFirstAmount(sms) ?: 0.0
         val fulizaAmt = FULIZA_AMOUNT_REGEX.find(sms)?.groupValues?.get(1)?.let { parseAmount(it) }
         val fulizaOut = FULIZA_OUTSTANDING_REGEX.find(sms)?.groupValues?.get(1)?.let { parseAmount(it) }
+        // The access fee ("Interest charged") is a real cost — fold it into
+        // transactionCost so the fees figures stop understating Fuliza.
+        val interest = FULIZA_INTEREST_REGEX.find(sms)?.groupValues?.get(1)?.let { parseAmount(it) } ?: 0.0
 
         val sendToRegex = Regex("""sent to\s+(.+?)\s+(\d{10,})\s+on""", RegexOption.IGNORE_CASE)
         val match = sendToRegex.find(sms)
@@ -392,7 +409,7 @@ object MpesaSmsParser {
         return ParsedTransaction(
             transactionCode = code, type = TransactionType.FULIZA,
             amount = fulizaAmt ?: amount,
-            transactionCost = cost, recipientName = match?.groupValues?.get(1)?.trim(),
+            transactionCost = cost + interest, recipientName = match?.groupValues?.get(1)?.trim(),
             recipientPhone = match?.groupValues?.get(2), accountNumber = null,
             destinationCountry = null, balance = balance, direction = TransactionDirection.OUTFLOW,
             fulizaAmount = fulizaAmt, fulizaOutstanding = fulizaOut,
