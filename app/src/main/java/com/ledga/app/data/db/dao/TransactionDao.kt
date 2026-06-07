@@ -26,6 +26,14 @@ data class TopMerchant(
     val transactionCount: Int
 )
 
+data class MonthlySpending(
+    /** Calendar month key in the device timezone, e.g. "2026-06". */
+    val monthKey: String,
+    val totalAmount: Double,
+    val totalFees: Double,
+    val transactionCount: Int
+)
+
 /**
  * Every account-aware query takes a nullable `accountId` — null means
  * "Combined view" (all accounts). The repository wires this from the
@@ -102,12 +110,26 @@ interface TransactionDao {
     """)
     fun getLatestTransactionWithBalance(accountId: Long? = null): Flow<TransactionEntity?>
 
+    /*
+     * Spending queries share three exclusions beyond direction = OUTFLOW:
+     *  - reversed originals (the money came back)
+     *  - Fuliza repayments/auto-pay (the Fuliza-backed purchase was already
+     *    counted when it happened — counting the repayment doubles it)
+     *  - M-Shwari / KCB M-Pesa deposits (own money moving to savings; goals
+     *    track these as contributions, not spending)
+     */
+
     @Query("""
         SELECT categoryId, SUM(amount) as totalAmount
         FROM transactions
         WHERE direction = 'OUTFLOW'
           AND timestamp BETWEEN :startTime AND :endTime
           AND (:accountId IS NULL OR accountId = :accountId)
+          AND type NOT IN ('FULIZA_REPAYMENT', 'FULIZA_AUTO_PAY', 'MSHWARI', 'KCB_MPESA')
+          AND transactionCode NOT IN (
+              SELECT reversedTransactionCode FROM transactions
+              WHERE reversedTransactionCode IS NOT NULL
+          )
         GROUP BY categoryId
     """)
     fun getSpendingByCategory(startTime: Long, endTime: Long, accountId: Long? = null): Flow<List<CategorySpending>>
@@ -117,6 +139,11 @@ interface TransactionDao {
         WHERE direction = 'OUTFLOW'
           AND timestamp BETWEEN :startTime AND :endTime
           AND (:accountId IS NULL OR accountId = :accountId)
+          AND type NOT IN ('FULIZA_REPAYMENT', 'FULIZA_AUTO_PAY', 'MSHWARI', 'KCB_MPESA')
+          AND transactionCode NOT IN (
+              SELECT reversedTransactionCode FROM transactions
+              WHERE reversedTransactionCode IS NOT NULL
+          )
     """)
     fun getTotalSpending(startTime: Long, endTime: Long, accountId: Long? = null): Flow<Double>
 
@@ -158,6 +185,11 @@ interface TransactionDao {
         WHERE direction = 'OUTFLOW'
           AND timestamp BETWEEN :startTime AND :endTime
           AND (:accountId IS NULL OR accountId = :accountId)
+          AND type NOT IN ('FULIZA_REPAYMENT', 'FULIZA_AUTO_PAY', 'MSHWARI', 'KCB_MPESA')
+          AND transactionCode NOT IN (
+              SELECT reversedTransactionCode FROM transactions
+              WHERE reversedTransactionCode IS NOT NULL
+          )
         GROUP BY dayTimestamp
         ORDER BY dayTimestamp ASC
     """)
@@ -169,6 +201,11 @@ interface TransactionDao {
         WHERE direction = 'OUTFLOW' AND recipientName IS NOT NULL
             AND timestamp BETWEEN :startTime AND :endTime
             AND (:accountId IS NULL OR accountId = :accountId)
+            AND type NOT IN ('FULIZA_REPAYMENT', 'FULIZA_AUTO_PAY', 'MSHWARI', 'KCB_MPESA')
+            AND transactionCode NOT IN (
+                SELECT reversedTransactionCode FROM transactions
+                WHERE reversedTransactionCode IS NOT NULL
+            )
         GROUP BY recipientName
         ORDER BY totalAmount DESC
         LIMIT :limit
@@ -177,6 +214,30 @@ interface TransactionDao {
 
     @Query("SELECT COUNT(*) FROM transactions WHERE type = 'UNKNOWN'")
     fun getUnparsedCount(): Flow<Int>
+
+    /**
+     * Calendar-month spending totals (device timezone), newest first.
+     * Same exclusions as [getTotalSpending]: outflows only, reversed
+     * originals removed. Fees ride along since inflow rows carry zero cost.
+     */
+    @Query("""
+        SELECT strftime('%Y-%m', timestamp / 1000, 'unixepoch', 'localtime') as monthKey,
+               SUM(amount) as totalAmount,
+               SUM(transactionCost) as totalFees,
+               COUNT(*) as transactionCount
+        FROM transactions
+        WHERE direction = 'OUTFLOW'
+          AND (:accountId IS NULL OR accountId = :accountId)
+          AND type NOT IN ('FULIZA_REPAYMENT', 'FULIZA_AUTO_PAY', 'MSHWARI', 'KCB_MPESA')
+          AND transactionCode NOT IN (
+              SELECT reversedTransactionCode FROM transactions
+              WHERE reversedTransactionCode IS NOT NULL
+          )
+        GROUP BY monthKey
+        ORDER BY monthKey DESC
+        LIMIT :limit
+    """)
+    fun getMonthlySpending(accountId: Long? = null, limit: Int = 12): Flow<List<MonthlySpending>>
 
     // ---- Goal progress helpers (Phase D) ----
     // These are account-agnostic by design: a goal spans every line.

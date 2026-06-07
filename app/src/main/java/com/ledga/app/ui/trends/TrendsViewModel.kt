@@ -15,7 +15,10 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
+import java.time.YearMonth
+import java.time.format.DateTimeFormatter
 import java.util.Calendar
+import java.util.Locale
 import javax.inject.Inject
 
 enum class TrendsPeriod(val label: String, val days: Int) {
@@ -31,13 +34,29 @@ data class TrendsUiState(
     val totalSpending: Double = 0.0,
     val totalFees: Double = 0.0,
     val topMerchants: List<TopMerchant> = emptyList(),
-    val categorySpending: List<CategorySpendingWithName> = emptyList()
+    val categorySpending: List<CategorySpendingWithName> = emptyList(),
+    /** Calendar-month totals, newest first. Independent of the rolling period chips. */
+    val monthlySpending: List<MonthlyBreakdownItem> = emptyList()
 )
 
 data class CategorySpendingWithName(
     val name: String,
     val color: String,
     val totalAmount: Double
+)
+
+data class MonthlyBreakdownItem(
+    /** e.g. "2026-06" */
+    val monthKey: String,
+    /** e.g. "Jun 2026" */
+    val label: String,
+    val totalAmount: Double,
+    val totalFees: Double,
+    val transactionCount: Int,
+    /** % change vs previous month, null when there is no comparable previous month. */
+    val deltaPct: Double?,
+    /** True for the current (incomplete) calendar month. */
+    val inProgress: Boolean
 )
 
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
@@ -89,7 +108,40 @@ class TrendsViewModel @Inject constructor(
         }
     ) { state, categorySpending ->
         state.copy(categorySpending = categorySpending)
+    }.combine(
+        transactionRepository.getMonthlySpending(limit = 12)
+    ) { state, monthly ->
+        state.copy(monthlySpending = buildMonthlyBreakdown(monthly))
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), TrendsUiState())
+
+    /** DAO emits newest-first; walk oldest-first to attach deltas, then restore order. */
+    private fun buildMonthlyBreakdown(
+        monthly: List<com.ledga.app.data.db.dao.MonthlySpending>
+    ): List<MonthlyBreakdownItem> {
+        val currentKey = YearMonth.now().format(MONTH_KEY_FORMAT)
+        val chronological = monthly.asReversed()
+        return chronological.mapIndexed { index, m ->
+            val prev = chronological.getOrNull(index - 1)
+            MonthlyBreakdownItem(
+                monthKey = m.monthKey,
+                label = runCatching {
+                    YearMonth.parse(m.monthKey).format(MONTH_LABEL_FORMAT)
+                }.getOrDefault(m.monthKey),
+                totalAmount = m.totalAmount,
+                totalFees = m.totalFees,
+                transactionCount = m.transactionCount,
+                deltaPct = prev?.takeIf { it.totalAmount > 0 }?.let {
+                    (m.totalAmount - it.totalAmount) / it.totalAmount * 100
+                },
+                inProgress = m.monthKey == currentKey,
+            )
+        }.asReversed()
+    }
+
+    private companion object {
+        val MONTH_KEY_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM")
+        val MONTH_LABEL_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("MMM yyyy", Locale.ENGLISH)
+    }
 
     fun selectPeriod(period: TrendsPeriod) {
         _selectedPeriod.value = period

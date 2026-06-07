@@ -317,6 +317,25 @@ class MpesaSmsParserTest {
         assertEquals("RJ12345678", t.reversedTransactionCode)
         assertEquals(2000.0, t.balance, 0.01)
         assertEquals(TransactionDirection.INFLOW, t.direction)
+        // No "is credited" amount in this format — must stay 0.0, never the balance.
+        assertEquals(0.0, t.amount, 0.01)
+    }
+
+    @Test
+    fun `parse reversal with credited amount`() {
+        val sms = "RK31B7X4ZQ Confirmed. Transaction RJ12345678 has been reversed on 21/3/26 at 3:00 PM and Ksh750.00 is credited to your M-PESA account. New M-PESA account balance is Ksh2,750.00."
+        val t = assertSuccess(sms).transaction
+        assertEquals(TransactionType.REVERSAL, t.type)
+        assertEquals("RJ12345678", t.reversedTransactionCode)
+        assertEquals(750.0, t.amount, 0.01)
+        assertEquals(TransactionDirection.INFLOW, t.direction)
+    }
+
+    @Test
+    fun `reversal alt captures credited amount`() {
+        val sms = "SH37SPJZKZ confirmed. Reversal of transaction SH38SP5YUQ has been successfully reversed  on 3/8/24  at 2:30 PM and Ksh200.00 is credited to your M-PESA account. New M-PESA account balance is Ksh1,770.00."
+        val t = assertSuccess(sms).transaction
+        assertEquals(200.0, t.amount, 0.01)
     }
 
     // --- M-Shwari ---

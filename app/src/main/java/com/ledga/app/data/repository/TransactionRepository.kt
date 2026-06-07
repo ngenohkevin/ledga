@@ -3,6 +3,7 @@ package com.ledga.app.data.repository
 import com.ledga.app.data.db.dao.CategoryRuleDao
 import com.ledga.app.data.db.dao.CategorySpending
 import com.ledga.app.data.db.dao.DailySpending
+import com.ledga.app.data.db.dao.MonthlySpending
 import com.ledga.app.data.db.dao.TopMerchant
 import com.ledga.app.data.db.dao.TransactionDao
 import com.ledga.app.data.db.entity.MatchType
@@ -82,6 +83,9 @@ class TransactionRepository @Inject constructor(
 
     fun getDailySpending(startTime: Long, endTime: Long): Flow<List<DailySpending>> =
         selectedAccount.flatMapLatest { transactionDao.getDailySpending(startTime, endTime, it) }
+
+    fun getMonthlySpending(limit: Int = 12): Flow<List<MonthlySpending>> =
+        selectedAccount.flatMapLatest { transactionDao.getMonthlySpending(it, limit) }
 
     fun getTopMerchants(startTime: Long, endTime: Long, limit: Int = 5): Flow<List<TopMerchant>> =
         selectedAccount.flatMapLatest { transactionDao.getTopMerchants(startTime, endTime, it, limit) }

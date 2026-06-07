@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -14,6 +15,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LocalAtm
@@ -37,9 +39,13 @@ import com.ledga.app.ui.components.v2.HeatmapCalendar
 import com.ledga.app.ui.components.v2.LedgaChip
 import com.ledga.app.ui.components.v2.StatCard
 import com.ledga.app.ui.theme.LedgaAccentDeep
+import com.ledga.app.ui.theme.LedgaDanger
+import com.ledga.app.ui.theme.LedgaInflow
 import com.ledga.app.ui.theme.LedgaText
 import com.ledga.app.ui.theme.Space
 import com.ledga.app.util.CurrencyFormatter
+import kotlin.math.abs
+import kotlin.math.roundToInt
 import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
 import com.patrykandpatrick.vico.compose.cartesian.axis.rememberBottom
 import com.patrykandpatrick.vico.compose.cartesian.axis.rememberStart
@@ -110,6 +116,37 @@ fun TrendsScreen(
                     TrendsPeriod.YEAR -> 24
                 },
             )
+        }
+
+        // ---- Month by month ----
+        if (state.monthlySpending.isNotEmpty()) {
+            BentoCard(
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
+            ) {
+                Text(
+                    text = "Month by month".uppercase(),
+                    style = LedgaText.Overline,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = Space.Card, vertical = 14.dp),
+                )
+                HorizontalDivider(
+                    color = MaterialTheme.colorScheme.outline,
+                    modifier = Modifier.padding(horizontal = Space.Card),
+                )
+                val maxMonth = state.monthlySpending.maxOf { it.totalAmount }
+                state.monthlySpending.forEachIndexed { index, month ->
+                    MonthRow(
+                        month = month,
+                        barFraction = if (maxMonth > 0) (month.totalAmount / maxMonth).toFloat() else 0f,
+                    )
+                    if (index < state.monthlySpending.lastIndex) {
+                        HorizontalDivider(
+                            color = MaterialTheme.colorScheme.outline,
+                            modifier = Modifier.padding(horizontal = Space.Card),
+                        )
+                    }
+                }
+            }
         }
 
         // ---- Top merchants ----
@@ -195,6 +232,63 @@ fun TrendsScreen(
                 },
                 style = LedgaText.BodyM,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun MonthRow(month: MonthlyBreakdownItem, barFraction: Float) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = Space.Card, vertical = 14.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = if (month.inProgress) "${month.label} · so far" else month.label,
+                    style = LedgaText.BodyL,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Text(
+                    text = "${month.transactionCount} ${if (month.transactionCount == 1) "transaction" else "transactions"}" +
+                            if (month.totalFees > 0) " · ${CurrencyFormatter.formatKshCompact(month.totalFees)} fees" else "",
+                    style = LedgaText.Caption,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Column(horizontalAlignment = Alignment.End) {
+                Text(
+                    text = CurrencyFormatter.formatKshCompact(month.totalAmount),
+                    style = LedgaText.TitleS,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                month.deltaPct?.let { delta ->
+                    val rising = delta > 0
+                    Text(
+                        text = "${if (rising) "↑" else "↓"} ${abs(delta).roundToInt()}%",
+                        style = LedgaText.Caption,
+                        // Spending up is bad, down is good.
+                        color = if (rising) LedgaDanger else LedgaInflow,
+                    )
+                }
+            }
+        }
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 10.dp)
+                .height(6.dp)
+                .clip(RoundedCornerShape(3.dp))
+                .background(MaterialTheme.colorScheme.outline),
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(barFraction.coerceIn(0f, 1f))
+                    .fillMaxHeight()
+                    .clip(RoundedCornerShape(3.dp))
+                    .background(MaterialTheme.colorScheme.primary),
             )
         }
     }

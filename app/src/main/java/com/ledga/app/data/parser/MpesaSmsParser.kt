@@ -455,8 +455,14 @@ object MpesaSmsParser {
     private fun parseReversal(sms: String, code: String, balance: Double, timestamp: Long): ParsedTransaction {
         val reversedCodeRegex = Regex("""Transaction\s+([A-Z0-9]{10})\s+has been reversed""")
         val match = reversedCodeRegex.find(sms)
+        // Credited amount, when present ("...and Ksh500.00 is credited to your
+        // M-PESA account"). Deliberately NOT extractFirstAmount — in the short
+        // format the only Ksh figure is the balance, which must not be
+        // recorded as the reversal amount.
+        val creditedRegex = Regex("""Ksh\s?([\d,]+\.\d{2})\s+is credited""", RegexOption.IGNORE_CASE)
+        val credited = creditedRegex.find(sms)?.groupValues?.get(1)?.let { parseAmount(it) } ?: 0.0
         return ParsedTransaction(
-            transactionCode = code, type = TransactionType.REVERSAL, amount = 0.0,
+            transactionCode = code, type = TransactionType.REVERSAL, amount = credited,
             transactionCost = 0.0, recipientName = null, recipientPhone = null,
             accountNumber = null, destinationCountry = null, balance = balance,
             direction = TransactionDirection.INFLOW, fulizaAmount = null, fulizaOutstanding = null,
