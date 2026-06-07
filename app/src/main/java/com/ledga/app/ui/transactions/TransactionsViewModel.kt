@@ -35,8 +35,15 @@ data class TransactionsUiState(
     val manualGoals: List<Goal> = emptyList(),
     /** Goal IDs the currently-selected transaction is already manually attributed to. */
     val selectedTxGoalIds: List<Long> = emptyList(),
+    /** Recipient fragments marked as the user's own accounts (transfers). */
+    val ownAccountFragments: List<String> = emptyList(),
     val selectedTransaction: TransactionWithCategory? = null
-)
+) {
+    fun isOwnAccount(recipientName: String?): Boolean {
+        val name = recipientName ?: return false
+        return ownAccountFragments.any { name.contains(it, ignoreCase = true) }
+    }
+}
 
 @OptIn(FlowPreview::class, kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 @HiltViewModel
@@ -92,8 +99,12 @@ class TransactionsViewModel @Inject constructor(
             accountsRepository.observeAll(),
             goalsRepository.observeManualGoals(),
             selectedTxGoalIds,
-        ) { sel, accts, manualGoals, txGoals ->
-            GoalsBundle(selected = sel, accounts = accts, manualGoals = manualGoals, txGoals = txGoals)
+            transactionRepository.getOwnAccountFragments(),
+        ) { sel, accts, manualGoals, txGoals, ownFragments ->
+            GoalsBundle(
+                selected = sel, accounts = accts, manualGoals = manualGoals,
+                txGoals = txGoals, ownFragments = ownFragments,
+            )
         },
     ) { txns, query, filter, categories, bundle ->
         val grouped = txns.groupBy { twc ->
@@ -107,6 +118,7 @@ class TransactionsViewModel @Inject constructor(
             accounts = bundle.accounts,
             manualGoals = bundle.manualGoals,
             selectedTxGoalIds = bundle.txGoals,
+            ownAccountFragments = bundle.ownFragments,
             selectedTransaction = bundle.selected
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), TransactionsUiState())
@@ -116,6 +128,7 @@ class TransactionsViewModel @Inject constructor(
         val accounts: List<MpesaAccount>,
         val manualGoals: List<Goal>,
         val txGoals: List<Long>,
+        val ownFragments: List<String>,
     )
 
     fun setSearchQuery(query: String) {
@@ -153,6 +166,14 @@ class TransactionsViewModel @Inject constructor(
         viewModelScope.launch {
             if (currentlyIn) goalsRepository.removeManualContribution(goalId, transactionId)
             else goalsRepository.addManualContribution(goalId, transactionId)
+        }
+    }
+
+    /** Mark/unmark the selected transaction's recipient as the user's own account. */
+    fun toggleOwnAccount(recipientName: String, currentlyMarked: Boolean) {
+        viewModelScope.launch {
+            if (currentlyMarked) transactionRepository.unmarkRecipientAsOwnAccount(recipientName)
+            else transactionRepository.markRecipientAsOwnAccount(recipientName)
         }
     }
 }

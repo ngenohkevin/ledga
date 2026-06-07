@@ -69,6 +69,15 @@ fun TransactionsScreen(
                     currentlyIn = currentlyIn,
                 )
             },
+            isOwnAccount = state.isOwnAccount(state.selectedTransaction!!.transaction.recipientName),
+            onToggleOwnAccount = state.selectedTransaction!!.transaction.recipientName?.let { name ->
+                {
+                    viewModel.toggleOwnAccount(
+                        recipientName = name,
+                        currentlyMarked = state.isOwnAccount(name),
+                    )
+                }
+            },
         )
     }
 

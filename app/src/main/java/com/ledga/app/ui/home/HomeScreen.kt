@@ -6,8 +6,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -49,6 +51,7 @@ import com.ledga.app.ui.components.v2.onTonal
 import com.ledga.app.ui.theme.LedgaAccent
 import com.ledga.app.ui.theme.LedgaAccentDeep
 import com.ledga.app.ui.theme.LedgaAccentSoft
+import com.ledga.app.ui.theme.LedgaDanger
 import com.ledga.app.ui.theme.LedgaInflow
 import com.ledga.app.ui.theme.LedgaInk
 import com.ledga.app.ui.theme.LedgaText
@@ -219,6 +222,14 @@ fun HomeScreen(
                         modifier = Modifier.weight(1f),
                     )
                 }
+            }
+
+            // ---- Fuliza status (only when the SMS history has ever carried it) ----
+            if (state.fulizaOutstanding != null || state.fulizaAvailable != null) {
+                FulizaStatusCard(
+                    outstanding = state.fulizaOutstanding,
+                    available = state.fulizaAvailable,
+                )
             }
 
             // ---- Donut breakdown ----
@@ -421,6 +432,62 @@ private fun UpdateBanner(
                     style = LedgaText.BodyM,
                     color = LedgaAccentDeep,
                     modifier = Modifier.clickable { onUpdate() },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun FulizaStatusCard(outstanding: Double?, available: Double?) {
+    BentoCard(title = "Fuliza") {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(Space.s5),
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "OUTSTANDING",
+                    style = LedgaText.Overline,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Text(
+                    text = outstanding?.let { CurrencyFormatter.formatKshCompact(it) } ?: "—",
+                    style = LedgaText.TitleM,
+                    color = if ((outstanding ?: 0.0) > 0) LedgaDanger
+                    else MaterialTheme.colorScheme.onSurface,
+                )
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "AVAILABLE TO BORROW",
+                    style = LedgaText.Overline,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Text(
+                    text = available?.let { CurrencyFormatter.formatKshCompact(it) } ?: "—",
+                    style = LedgaText.TitleM,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+            }
+        }
+        // Usage bar — how deep into the limit the overdraft currently is.
+        if (outstanding != null && available != null && outstanding + available > 0) {
+            val usedFraction = (outstanding / (outstanding + available)).toFloat()
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = Space.s4)
+                    .height(6.dp)
+                    .clip(RoundedCornerShape(3.dp))
+                    .background(MaterialTheme.colorScheme.outline),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(usedFraction.coerceIn(0f, 1f))
+                        .fillMaxHeight()
+                        .clip(RoundedCornerShape(3.dp))
+                        .background(if (usedFraction > 0.5f) LedgaDanger else LedgaAccent),
                 )
             }
         }

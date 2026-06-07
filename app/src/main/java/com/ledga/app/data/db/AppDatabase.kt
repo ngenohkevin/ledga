@@ -30,7 +30,7 @@ import com.ledga.app.data.db.entity.TransactionEntity
         GoalContribution::class,
         Insight::class,
     ],
-    version = 3,
+    version = 4,
     exportSchema = true
 )
 @TypeConverters(Converters::class)

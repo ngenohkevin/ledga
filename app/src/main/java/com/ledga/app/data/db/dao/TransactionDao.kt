@@ -126,6 +126,9 @@ interface TransactionDao {
           AND timestamp BETWEEN :startTime AND :endTime
           AND (:accountId IS NULL OR accountId = :accountId)
           AND type NOT IN ('FULIZA_REPAYMENT', 'FULIZA_AUTO_PAY', 'MSHWARI', 'KCB_MPESA')
+          AND (categoryId IS NULL OR categoryId NOT IN (
+              SELECT id FROM categories WHERE isTransfer = 1
+          ))
           AND transactionCode NOT IN (
               SELECT reversedTransactionCode FROM transactions
               WHERE reversedTransactionCode IS NOT NULL
@@ -140,6 +143,9 @@ interface TransactionDao {
           AND timestamp BETWEEN :startTime AND :endTime
           AND (:accountId IS NULL OR accountId = :accountId)
           AND type NOT IN ('FULIZA_REPAYMENT', 'FULIZA_AUTO_PAY', 'MSHWARI', 'KCB_MPESA')
+          AND (categoryId IS NULL OR categoryId NOT IN (
+              SELECT id FROM categories WHERE isTransfer = 1
+          ))
           AND transactionCode NOT IN (
               SELECT reversedTransactionCode FROM transactions
               WHERE reversedTransactionCode IS NOT NULL
@@ -186,6 +192,9 @@ interface TransactionDao {
           AND timestamp BETWEEN :startTime AND :endTime
           AND (:accountId IS NULL OR accountId = :accountId)
           AND type NOT IN ('FULIZA_REPAYMENT', 'FULIZA_AUTO_PAY', 'MSHWARI', 'KCB_MPESA')
+          AND (categoryId IS NULL OR categoryId NOT IN (
+              SELECT id FROM categories WHERE isTransfer = 1
+          ))
           AND transactionCode NOT IN (
               SELECT reversedTransactionCode FROM transactions
               WHERE reversedTransactionCode IS NOT NULL
@@ -202,6 +211,9 @@ interface TransactionDao {
             AND timestamp BETWEEN :startTime AND :endTime
             AND (:accountId IS NULL OR accountId = :accountId)
             AND type NOT IN ('FULIZA_REPAYMENT', 'FULIZA_AUTO_PAY', 'MSHWARI', 'KCB_MPESA')
+            AND (categoryId IS NULL OR categoryId NOT IN (
+                SELECT id FROM categories WHERE isTransfer = 1
+            ))
             AND transactionCode NOT IN (
                 SELECT reversedTransactionCode FROM transactions
                 WHERE reversedTransactionCode IS NOT NULL
@@ -229,6 +241,9 @@ interface TransactionDao {
         WHERE direction = 'OUTFLOW'
           AND (:accountId IS NULL OR accountId = :accountId)
           AND type NOT IN ('FULIZA_REPAYMENT', 'FULIZA_AUTO_PAY', 'MSHWARI', 'KCB_MPESA')
+          AND (categoryId IS NULL OR categoryId NOT IN (
+              SELECT id FROM categories WHERE isTransfer = 1
+          ))
           AND transactionCode NOT IN (
               SELECT reversedTransactionCode FROM transactions
               WHERE reversedTransactionCode IS NOT NULL
@@ -297,4 +312,34 @@ interface TransactionDao {
 
     @Query("DELETE FROM transactions WHERE id = :id")
     suspend fun deleteById(id: Long)
+
+    // ---- Fuliza status (latest known values from SMS) ----
+
+    @Query("""
+        SELECT * FROM transactions
+        WHERE fulizaLimit IS NOT NULL
+        ORDER BY timestamp DESC LIMIT 1
+    """)
+    fun getLatestFulizaLimit(): Flow<TransactionEntity?>
+
+    @Query("""
+        SELECT * FROM transactions
+        WHERE fulizaOutstanding IS NOT NULL
+        ORDER BY timestamp DESC LIMIT 1
+    """)
+    fun getLatestFulizaOutstanding(): Flow<TransactionEntity?>
+
+    // ---- Own-account (transfer) recipient marking ----
+
+    @Query("""
+        UPDATE transactions SET categoryId = :categoryId
+        WHERE recipientName LIKE '%' || :fragment || '%' COLLATE NOCASE
+    """)
+    suspend fun updateCategoryForRecipientFragment(fragment: String, categoryId: Long?): Int
+
+    @Query("""
+        SELECT * FROM transactions
+        WHERE recipientName LIKE '%' || :fragment || '%' COLLATE NOCASE
+    """)
+    suspend fun getByRecipientFragmentSync(fragment: String): List<TransactionEntity>
 }

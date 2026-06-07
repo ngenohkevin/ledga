@@ -38,6 +38,7 @@ data class ExportTransaction(
     val categoryId: Long?,
     val fulizaAmount: Double?,
     val fulizaOutstanding: Double?,
+    val fulizaLimit: Double? = null,
     val reversedTransactionCode: String?,
     val rawSms: String,
     val timestamp: Long
@@ -129,6 +130,7 @@ class ExportImportRepository @Inject constructor(
         destinationCountry = destinationCountry, balance = balance,
         direction = direction.name, categoryId = categoryId,
         fulizaAmount = fulizaAmount, fulizaOutstanding = fulizaOutstanding,
+        fulizaLimit = fulizaLimit,
         reversedTransactionCode = reversedTransactionCode, rawSms = rawSms,
         timestamp = timestamp
     )
@@ -142,7 +144,8 @@ class ExportImportRepository @Inject constructor(
         balance = balance,
         direction = try { TransactionDirection.valueOf(direction) } catch (e: Exception) { TransactionDirection.OUTFLOW },
         categoryId = categoryId, fulizaAmount = fulizaAmount,
-        fulizaOutstanding = fulizaOutstanding, reversedTransactionCode = reversedTransactionCode,
+        fulizaOutstanding = fulizaOutstanding, fulizaLimit = fulizaLimit,
+        reversedTransactionCode = reversedTransactionCode,
         rawSms = rawSms, timestamp = timestamp
     )
 

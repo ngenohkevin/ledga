@@ -122,8 +122,9 @@ class HistoricalBackfillRepository @Inject constructor(
         val cursor: Cursor? = contentResolver.query(
             uri,
             projection,
-            "address = ?",
-            arrayOf("MPESA"),
+            // FULIZA: borrow confirmations can arrive from a dedicated sender id.
+            "address IN (?, ?)",
+            arrayOf("MPESA", "FULIZA"),
             "date DESC",
         )
         cursor?.use { c ->

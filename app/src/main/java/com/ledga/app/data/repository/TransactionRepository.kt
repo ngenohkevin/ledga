@@ -1,11 +1,13 @@
 package com.ledga.app.data.repository
 
+import com.ledga.app.data.db.dao.CategoryDao
 import com.ledga.app.data.db.dao.CategoryRuleDao
 import com.ledga.app.data.db.dao.CategorySpending
 import com.ledga.app.data.db.dao.DailySpending
 import com.ledga.app.data.db.dao.MonthlySpending
 import com.ledga.app.data.db.dao.TopMerchant
 import com.ledga.app.data.db.dao.TransactionDao
+import com.ledga.app.data.db.entity.CategoryRule
 import com.ledga.app.data.db.entity.MatchType
 import com.ledga.app.data.db.entity.TransactionEntity
 import com.ledga.app.data.db.entity.TransactionWithCategory
@@ -22,6 +24,7 @@ import javax.inject.Singleton
 class TransactionRepository @Inject constructor(
     private val transactionDao: TransactionDao,
     private val categoryRuleDao: CategoryRuleDao,
+    private val categoryDao: CategoryDao,
     private val settingsRepository: SettingsRepository,
 ) {
     /**
@@ -46,6 +49,7 @@ class TransactionRepository @Inject constructor(
             categoryId = categoryId,
             fulizaAmount = parsed.fulizaAmount,
             fulizaOutstanding = parsed.fulizaOutstanding,
+            fulizaLimit = parsed.fulizaLimit,
             reversedTransactionCode = parsed.reversedTransactionCode,
             rawSms = parsed.rawSms,
             timestamp = parsed.timestamp,
@@ -143,6 +147,7 @@ class TransactionRepository @Inject constructor(
                 direction = p.direction,
                 fulizaAmount = p.fulizaAmount,
                 fulizaOutstanding = p.fulizaOutstanding,
+                fulizaLimit = p.fulizaLimit,
                 reversedTransactionCode = p.reversedTransactionCode,
                 // Deliberately keep id, categoryId, accountId, note, createdAt.
             )
@@ -183,9 +188,77 @@ class TransactionRepository @Inject constructor(
         return ReparseResult(total = unknowns.size, fixed = fixed, stillUnknown = stillUnknown)
     }
 
-    private suspend fun autoCategorize(parsed: ParsedTransaction): Long? {
+    // ---- Own-account (transfer) recipients ----
+
+    /** Latest known available Fuliza limit / outstanding, from any SMS that carried them. */
+    fun getLatestFulizaLimit(): Flow<TransactionEntity?> = transactionDao.getLatestFulizaLimit()
+    fun getLatestFulizaOutstanding(): Flow<TransactionEntity?> = transactionDao.getLatestFulizaOutstanding()
+
+    /** Recipient fragments the user marked as their own accounts. */
+    fun getOwnAccountFragments(): Flow<List<String>> = categoryRuleDao.getOwnAccountFragments()
+
+    /**
+     * Mark a recipient as the user's own account: create a recipient rule
+     * pointing at the transfer category and retroactively move every
+     * matching transaction into it — excluding them from spending.
+     *
+     * The stored fragment strips a trailing "for account …" so rows that
+     * embed per-transfer account numbers in the name still match
+     * (e.g. "CREDIT BANK LTD INVESTMENTS 1 for account 07…").
+     */
+    suspend fun markRecipientAsOwnAccount(recipientName: String): Int {
+        val transferCategory = categoryDao.getTransferCategory() ?: return 0
+        val fragment = deriveRecipientFragment(recipientName)
+        if (fragment.isBlank()) return 0
+        categoryRuleDao.insertAll(
+            listOf(
+                CategoryRule(
+                    categoryId = transferCategory.id,
+                    matchType = MatchType.RECIPIENT_NAME,
+                    matchValue = fragment,
+                )
+            )
+        )
+        return transactionDao.updateCategoryForRecipientFragment(fragment, transferCategory.id)
+    }
+
+    /** Undo [markRecipientAsOwnAccount]: drop the rule, re-categorize matches. */
+    suspend fun unmarkRecipientAsOwnAccount(recipientName: String) {
+        val transferCategory = categoryDao.getTransferCategory() ?: return
+        val fragment = deriveRecipientFragment(recipientName)
+        categoryRuleDao.deleteByCategoryAndValue(transferCategory.id, fragment)
+        // Re-run auto-categorization for the affected rows so they fall back
+        // to their type default or another matching rule.
+        transactionDao.getByRecipientFragmentSync(fragment).forEach { entity ->
+            if (entity.categoryId == transferCategory.id) {
+                val categoryId = autoCategorize(entity.type, entity.recipientName, entity.accountNumber)
+                transactionDao.updateCategory(entity.id, categoryId)
+            }
+        }
+    }
+
+    companion object {
+        /**
+         * The match fragment for an own-account rule. Strips the
+         * "for account …" tail some bank-transfer SMS embed in the name.
+         */
+        fun deriveRecipientFragment(recipientName: String): String =
+            recipientName
+                .split(Regex("""\s+for account\s+""", RegexOption.IGNORE_CASE))
+                .first()
+                .trim()
+    }
+
+    private suspend fun autoCategorize(parsed: ParsedTransaction): Long? =
+        autoCategorize(parsed.type, parsed.recipientName, parsed.accountNumber)
+
+    private suspend fun autoCategorize(
+        type: TransactionType,
+        recipientName: String?,
+        accountNumber: String?,
+    ): Long? {
         // 1. Type-based defaults
-        val typeDefault = when (parsed.type) {
+        val typeDefault = when (type) {
             TransactionType.AIRTIME_SELF, TransactionType.AIRTIME_OTHER -> 4L // Airtime & Data
             TransactionType.SEND -> 6L // Send Money
             TransactionType.RECEIVED -> 7L // Received
@@ -200,9 +273,9 @@ class TransactionRepository @Inject constructor(
         }
 
         // 2. Rule-based matching (overrides type default for BUY_GOODS, PAY_BILL, SEND)
-        if (parsed.recipientName != null) {
+        if (recipientName != null) {
             val rules = categoryRuleDao.getAllRulesSync()
-            val nameUpper = parsed.recipientName.uppercase()
+            val nameUpper = recipientName.uppercase()
 
             // Check recipient name rules
             for (rule in rules) {
@@ -214,10 +287,10 @@ class TransactionRepository @Inject constructor(
             }
 
             // Check paybill rules
-            if (parsed.accountNumber != null) {
+            if (accountNumber != null) {
                 for (rule in rules) {
                     if (rule.matchType == MatchType.PAYBILL &&
-                        parsed.accountNumber == rule.matchValue
+                        accountNumber == rule.matchValue
                     ) {
                         return rule.categoryId
                     }

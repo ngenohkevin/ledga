@@ -20,6 +20,7 @@ object DefaultData {
         Category(id = 11, name = "International", icon = "public", color = "#3F51B5"),
         Category(id = 12, name = "Savings & Loans", icon = "account_balance", color = "#009688"),
         Category(id = 13, name = "Other", icon = "category", color = "#9E9E9E"),
+        Category(id = 14, name = "My Accounts", icon = "swap_horiz", color = "#78909C", isTransfer = true),
     )
 
     val DEFAULT_RULES = listOf(

@@ -49,8 +49,9 @@ class SmsImporter @Inject constructor(
         val cursor = contentResolver.query(
             uri,
             arrayOf("body", "date", "address"),
-            "address = ?",
-            arrayOf("MPESA"),
+            // FULIZA: borrow confirmations can arrive from a dedicated sender id.
+            "address IN (?, ?)",
+            arrayOf("MPESA", "FULIZA"),
             "date DESC"
         )
 
