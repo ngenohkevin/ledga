@@ -102,10 +102,18 @@ interface TransactionDao {
     """)
     fun getLatestTransaction(accountId: Long? = null): Flow<TransactionEntity?>
 
+    /**
+     * Latest wallet balance for the Balance card. A genuine Ksh0.00 (you spent
+     * down to nothing / are running on Fuliza) is a REAL balance and must show.
+     * We only skip rows whose balance is a parser-default 0 — Fuliza
+     * repayment/reversal/companion and unparsed SMS carry no balance of their
+     * own — so a stale positive balance never masks a true zero.
+     */
     @Query("""
         SELECT * FROM transactions
-        WHERE balance > 0
-          AND (:accountId IS NULL OR accountId = :accountId)
+        WHERE (:accountId IS NULL OR accountId = :accountId)
+          AND NOT (balance = 0 AND type IN
+              ('FULIZA_REPAYMENT','FULIZA_REVERSAL','REVERSAL','FULIZA','UNKNOWN'))
         ORDER BY timestamp DESC LIMIT 1
     """)
     fun getLatestTransactionWithBalance(accountId: Long? = null): Flow<TransactionEntity?>
