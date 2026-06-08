@@ -55,7 +55,70 @@ class TransactionRepository @Inject constructor(
             timestamp = parsed.timestamp,
             accountId = accountId,
         )
-        return transactionDao.insert(entity)
+
+        // M-PESA now splits a Fuliza-funded transaction into TWO SMS that
+        // share one transaction code: the payment ("…sent to X…") and a
+        // Fuliza companion ("…Total Fuliza M-PESA outstanding amount is…").
+        // The unique index on transactionCode would otherwise drop the
+        // second one — silently losing the outstanding/limit. Merge instead.
+        val existing = transactionDao.getTransactionByCode(parsed.transactionCode)
+        if (existing == null) {
+            return transactionDao.insert(entity)
+        }
+        // Same code already stored. Return existing.id when we actually merged
+        // new Fuliza data (so callers count it), -1 for a genuine duplicate.
+        return if (mergeFulizaCompanion(existing, entity)) existing.id else -1L
+    }
+
+    /**
+     * Reconcile two same-code SMS (payment + Fuliza companion) into one row.
+     * The "companion" is a FULIZA-typed SMS with no recipient that carries
+     * the outstanding/limit; the "payment" is the real spend with a recipient.
+     * Works regardless of which arrived first. Returns true if a merge was
+     * performed (new Fuliza data folded in), false for a genuine duplicate.
+     */
+    private suspend fun mergeFulizaCompanion(existing: TransactionEntity, incoming: TransactionEntity): Boolean {
+        fun isCompanion(t: TransactionEntity) =
+            t.type == TransactionType.FULIZA && t.recipientName == null &&
+                (t.fulizaOutstanding != null || t.fulizaAmount != null)
+
+        val incomingIsCompanion = isCompanion(incoming)
+        val existingIsCompanion = isCompanion(existing)
+
+        return when {
+            // Companion arrived after the payment: enrich the payment row.
+            incomingIsCompanion && !existingIsCompanion -> {
+                // Nothing new to add if the payment already carries this.
+                if (existing.fulizaOutstanding != null && existing.fulizaLimit != null) return false
+                transactionDao.update(
+                    existing.copy(
+                        fulizaAmount = incoming.fulizaAmount ?: existing.fulizaAmount,
+                        fulizaOutstanding = incoming.fulizaOutstanding ?: existing.fulizaOutstanding,
+                        fulizaLimit = incoming.fulizaLimit ?: existing.fulizaLimit,
+                    )
+                )
+                true
+            }
+            // Payment arrived after a companion: adopt the payment identity,
+            // keep the companion's Fuliza facts + any user-set fields.
+            !incomingIsCompanion && existingIsCompanion -> {
+                transactionDao.update(
+                    incoming.copy(
+                        id = existing.id,
+                        createdAt = existing.createdAt,
+                        categoryId = existing.categoryId ?: incoming.categoryId,
+                        accountId = existing.accountId ?: incoming.accountId,
+                        note = existing.note,
+                        fulizaAmount = existing.fulizaAmount ?: incoming.fulizaAmount,
+                        fulizaOutstanding = existing.fulizaOutstanding ?: incoming.fulizaOutstanding,
+                        fulizaLimit = existing.fulizaLimit ?: incoming.fulizaLimit,
+                    )
+                )
+                true
+            }
+            // Otherwise a genuine duplicate — leave the stored row untouched.
+            else -> false
+        }
     }
 
     fun getRecentTransactions(limit: Int = 10): Flow<List<TransactionWithCategory>> =
@@ -145,9 +208,12 @@ class TransactionRepository @Inject constructor(
                 destinationCountry = p.destinationCountry,
                 balance = p.balance,
                 direction = p.direction,
-                fulizaAmount = p.fulizaAmount,
-                fulizaOutstanding = p.fulizaOutstanding,
-                fulizaLimit = p.fulizaLimit,
+                // Preserve Fuliza facts merged in from a same-code companion
+                // SMS — the payment's own rawSms doesn't contain them, so a
+                // naive reparse would wipe the outstanding/limit back to null.
+                fulizaAmount = p.fulizaAmount ?: entity.fulizaAmount,
+                fulizaOutstanding = p.fulizaOutstanding ?: entity.fulizaOutstanding,
+                fulizaLimit = p.fulizaLimit ?: entity.fulizaLimit,
                 reversedTransactionCode = p.reversedTransactionCode,
                 // Deliberately keep id, categoryId, accountId, note, createdAt.
             )

@@ -320,6 +320,30 @@ class MpesaSmsParserTest {
     }
 
     @Test
+    fun `split fuliza companion parses outstanding and access fee`() {
+        // M-PESA's post-2026-06 format: a standalone companion SMS sharing the
+        // payment's code, carrying the outstanding + access fee.
+        val sms = "UF7IE77R23 Confirmed. Fuliza M-PESA amount is Ksh 30.00. Access Fee charged Ksh 0.30. Total Fuliza M-PESA outstanding amount is Ksh3249.74 due on 07/07/26. To check daily charges, Dial *334#OK Select Query Charges"
+        val t = assertSuccess(sms).transaction
+        assertEquals(TransactionType.FULIZA, t.type)
+        assertEquals(30.0, t.amount, 0.01)
+        assertEquals(0.30, t.transactionCost, 0.01)
+        assertEquals(3249.74, t.fulizaOutstanding!!, 0.01)
+        // No recipient in the companion — this is what marks it as a companion
+        // (vs the payment SMS) for the merge step.
+        assertEquals(null, t.recipientName)
+    }
+
+    @Test
+    fun `clean payment SMS carries no fuliza fields`() {
+        val sms = "UF7IE77R23 Confirmed. Ksh30.00 sent to Kaps Parking  Rupa Mall for account 120850178 on 7/6/26 at 8:59 PM New M-PESA balance is Ksh0.00. Transaction cost, Ksh0.00.Amount you can transact within the day is 488,636.33."
+        val t = assertSuccess(sms).transaction
+        assertEquals(30.0, t.amount, 0.01)
+        assertEquals(null, t.fulizaOutstanding)
+        assertEquals(TransactionDirection.OUTFLOW, t.direction)
+    }
+
+    @Test
     fun `fuliza sender id is accepted`() {
         assertTrue(MpesaSmsParser.isMpesaMessage("FULIZA"))
         assertTrue(MpesaSmsParser.isMpesaMessage("MPESA"))

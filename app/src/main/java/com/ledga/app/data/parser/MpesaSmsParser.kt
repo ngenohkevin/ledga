@@ -56,8 +56,9 @@ object MpesaSmsParser {
     private val FULIZA_AMOUNT_REGEX = Regex("""Fuliza M-PESA amount is Ksh\s?([\d,]+\.\d{2})""", RegexOption.IGNORE_CASE)
     private val FULIZA_OUTSTANDING_REGEX = Regex("""(?:Fuliza M-PESA outstanding amount is|Total Fuliza M-PESA outstanding amount is)\s*Ksh\s?([\d,]+\.\d{2})""", RegexOption.IGNORE_CASE)
     private val FULIZA_LIMIT_REGEX = Regex("""(?:Available |available )Fuliza M-PESA limit is Ksh\s?([\d,]+\.\d{2})""", RegexOption.IGNORE_CASE)
-    // "Interest charged Ksh 10.73" — the 1% Fuliza access fee on borrows.
-    private val FULIZA_INTEREST_REGEX = Regex("""Interest charged,?\s*Ksh\s?([\d,]+\.\d{2})""", RegexOption.IGNORE_CASE)
+    // The 1% Fuliza access fee on borrows. M-PESA phrases it either
+    // "Interest charged Ksh 10.73" or "Access Fee charged Ksh 0.30".
+    private val FULIZA_INTEREST_REGEX = Regex("""(?:Interest charged|Access Fee charged),?\s*(?:of\s*)?Ksh\s?([\d,]+\.\d{2})""", RegexOption.IGNORE_CASE)
 
     fun isMpesaMessage(sender: String): Boolean {
         // Fuliza borrow confirmations can arrive from a dedicated "FULIZA"

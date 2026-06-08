@@ -74,6 +74,8 @@ fun YouScreen(
     val largeTxnAlert by viewModel.largeTxnAlertEnabled.collectAsState()
     val unparsedCount by viewModel.unparsedCount.collectAsState()
     val importStatus by viewModel.importStatus.collectAsState()
+    val importRunning by viewModel.importRunning.collectAsState()
+    val importProgress by viewModel.importProgress.collectAsState()
     val reparseResult by viewModel.reparseResult.collectAsState()
     val reparseAllResult by viewModel.reparseAllResult.collectAsState()
     val reparseAllRunning by viewModel.reparseAllRunning.collectAsState()
@@ -190,7 +192,31 @@ fun YouScreen(
 
             // ---- Data ----
             BentoCard(title = "Data", icon = Icons.Filled.Storage) {
-                TextButtonRow("Import SMS history") { viewModel.importSmsHistory() }
+                if (importRunning) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        androidx.compose.material3.CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            strokeWidth = 2.dp,
+                            color = LedgaAccent,
+                        )
+                        val p = importProgress
+                        Text(
+                            text = if (p != null && p.second > 0)
+                                "Importing… ${p.first} of ${p.second}"
+                            else "Importing SMS history…",
+                            style = LedgaText.BodyL,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                    }
+                } else {
+                    TextButtonRow("Import SMS history") { viewModel.importSmsHistory() }
+                }
                 importStatus?.let {
                     StatusLine("Imported ${it.imported} of ${it.total} messages")
                 }
