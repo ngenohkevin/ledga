@@ -14,11 +14,15 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -30,6 +34,7 @@ import com.ledga.app.ui.components.v2.BentoCard
 import com.ledga.app.ui.components.v2.LedgaChip
 import com.ledga.app.ui.components.v2.LedgaSearchField
 import com.ledga.app.ui.components.v2.TransactionRowV2
+import com.ledga.app.ui.theme.LedgaAccent
 import com.ledga.app.ui.theme.LedgaInflow
 import com.ledga.app.ui.theme.LedgaText
 import com.ledga.app.ui.theme.Space
@@ -103,6 +108,16 @@ fun TransactionsScreen(
                     onClick = { viewModel.setFilter(filter) },
                 )
             }
+        }
+
+        // When the Large tab is active, a slider sets the "large" threshold —
+        // drag right for only the biggest transactions, left to include smaller.
+        if (state.activeFilter == TransactionsViewModel.LARGE_FILTER) {
+            val threshold by viewModel.largeThreshold.collectAsState()
+            LargeThresholdSlider(
+                threshold = threshold,
+                onThresholdChange = { viewModel.setLargeThreshold(it) },
+            )
         }
 
         Spacer(modifier = Modifier.height(Space.s5))
@@ -207,6 +222,45 @@ private fun DayGroupCard(
                 )
             }
         }
+    }
+}
+
+/**
+ * Slider that picks the "large" threshold (Ksh 1K–100K, in 1K steps). Drags
+ * update the label live; the list re-filters once on release to avoid a DB
+ * query on every tick. Resets to the stored value if it changes elsewhere.
+ */
+@Composable
+private fun LargeThresholdSlider(
+    threshold: Double,
+    onThresholdChange: (Double) -> Unit,
+) {
+    var sliderValue by remember(threshold) { mutableStateOf(threshold.toFloat()) }
+    Column(modifier = Modifier.padding(top = Space.s4)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = "Transactions of at least",
+                style = LedgaText.Caption,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.weight(1f),
+            )
+            Text(
+                text = CurrencyFormatter.formatKshCompact(sliderValue.toDouble()),
+                style = LedgaText.TitleS,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+        }
+        Slider(
+            value = sliderValue,
+            onValueChange = { sliderValue = it },
+            onValueChangeFinished = { onThresholdChange(sliderValue.toDouble()) },
+            valueRange = 1_000f..100_000f,
+            steps = 98, // 1K increments across 1K–100K
+            colors = SliderDefaults.colors(
+                thumbColor = LedgaAccent,
+                activeTrackColor = LedgaAccent,
+            ),
+        )
     }
 }
 

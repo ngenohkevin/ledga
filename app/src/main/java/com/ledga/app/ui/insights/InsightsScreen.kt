@@ -205,7 +205,9 @@ private fun EmptyState() {
             text = "Ledga checks your activity every day and surfaces anything " +
                     "worth your attention here. Quiet means things look healthy.",
             style = LedgaText.BodyM,
-            color = MaterialTheme.colorScheme.onSurface,
+            // Fixed light-green tonal card — derive ink from it, not the theme
+            // surface (onSurface is near-white in dark mode → invisible here).
+            color = onTonal(LedgaAccentSoft),
         )
     }
 }

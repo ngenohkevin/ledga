@@ -10,6 +10,7 @@ import com.ledga.app.data.parser.TransactionType
 import com.ledga.app.data.repository.AccountsRepository
 import com.ledga.app.data.repository.CategoryRepository
 import com.ledga.app.data.repository.GoalsRepository
+import com.ledga.app.data.repository.SettingsRepository
 import com.ledga.app.data.repository.TransactionRepository
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
@@ -52,12 +53,16 @@ class TransactionsViewModel @Inject constructor(
     private val categoryRepository: CategoryRepository,
     private val accountsRepository: AccountsRepository,
     private val goalsRepository: GoalsRepository,
+    private val settingsRepository: SettingsRepository,
 ) : ViewModel() {
 
     private val _searchQuery = MutableStateFlow("")
     private val _activeFilter = MutableStateFlow("All")
 
     companion object {
+        /** Amount-based filter (not a transaction type) — handled specially. */
+        const val LARGE_FILTER = "Large"
+
         val FILTERS = mapOf(
             "All" to emptyList<TransactionType>(),
             "Sent" to listOf(TransactionType.SEND, TransactionType.MPESA_GLOBAL),
@@ -65,20 +70,27 @@ class TransactionsViewModel @Inject constructor(
             "Bills" to listOf(TransactionType.PAY_BILL),
             "Goods" to listOf(TransactionType.BUY_GOODS),
             "Withdraw" to listOf(TransactionType.WITHDRAW_AGENT, TransactionType.WITHDRAW_ATM),
+            // Amount threshold, not a type — resolved against the user's
+            // large-transaction setting (default Ksh5,000, configurable).
+            LARGE_FILTER to emptyList(),
         )
     }
 
     private val transactions = combine(
         _searchQuery.debounce(300),
-        _activeFilter
-    ) { query, filter ->
-        Pair(query, filter)
-    }.flatMapLatest { (query, filter) ->
-        val types = FILTERS[filter] ?: emptyList()
+        _activeFilter,
+        settingsRepository.getLargeTransactionThreshold(),
+    ) { query, filter, threshold ->
+        Triple(query, filter, threshold)
+    }.flatMapLatest { (query, filter, threshold) ->
         when {
             query.isNotBlank() -> transactionRepository.searchTransactions(query)
-            types.isNotEmpty() -> transactionRepository.getTransactionsByType(types)
-            else -> transactionRepository.getRecentTransactions(200)
+            filter == LARGE_FILTER -> transactionRepository.getLargeTransactions(threshold)
+            else -> {
+                val types = FILTERS[filter] ?: emptyList()
+                if (types.isNotEmpty()) transactionRepository.getTransactionsByType(types)
+                else transactionRepository.getRecentTransactions(200)
+            }
         }
     }
 
@@ -131,12 +143,20 @@ class TransactionsViewModel @Inject constructor(
         val ownFragments: List<String>,
     )
 
+    /** Current "large" threshold (shared with the large-transaction alert). */
+    val largeThreshold: StateFlow<Double> = settingsRepository.getLargeTransactionThreshold()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 5000.0)
+
     fun setSearchQuery(query: String) {
         _searchQuery.value = query
     }
 
     fun setFilter(filter: String) {
         _activeFilter.value = filter
+    }
+
+    fun setLargeThreshold(amount: Double) {
+        viewModelScope.launch { settingsRepository.setLargeTransactionThreshold(amount) }
     }
 
     fun selectTransaction(twc: TransactionWithCategory) {
