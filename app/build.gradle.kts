@@ -27,8 +27,8 @@ android {
         applicationId = "com.ledga.app"
         minSdk = 26
         targetSdk = 34
-        versionCode = 11
-        versionName = "1.4.1"
+        versionCode = 12
+        versionName = "1.4.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

@@ -63,6 +63,8 @@ data class HomeUiState(
     val fulizaOutstanding: Double? = null,
     /** Latest known available Fuliza limit (borrowable) — null when never seen. */
     val fulizaAvailable: Double? = null,
+    /** Timestamp of the SMS the outstanding figure came from — drives the "as of" caption. */
+    val fulizaOutstandingAt: Long? = null,
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -171,7 +173,10 @@ class HomeViewModel @Inject constructor(
     }.combine(settingsRepository.getSelectedAccountId()) { state, accountId ->
         state.copy(selectedAccountId = accountId)
     }.combine(transactionRepository.getLatestFulizaOutstanding()) { state, tx ->
-        state.copy(fulizaOutstanding = tx?.fulizaOutstanding)
+        state.copy(
+            fulizaOutstanding = tx?.fulizaOutstanding,
+            fulizaOutstandingAt = tx?.timestamp,
+        )
     }.combine(transactionRepository.getLatestFulizaLimit()) { state, tx ->
         state.copy(fulizaAvailable = tx?.fulizaLimit)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), HomeUiState())
