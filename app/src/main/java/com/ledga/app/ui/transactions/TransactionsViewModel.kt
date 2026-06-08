@@ -65,14 +65,15 @@ class TransactionsViewModel @Inject constructor(
 
         val FILTERS = mapOf(
             "All" to emptyList<TransactionType>(),
+            // Amount threshold, not a type — resolved against the user's
+            // large-transaction setting (default Ksh5,000). Kept near the front
+            // so it's visible without scrolling the chip row.
+            LARGE_FILTER to emptyList(),
             "Sent" to listOf(TransactionType.SEND, TransactionType.MPESA_GLOBAL),
             "Received" to listOf(TransactionType.RECEIVED),
             "Bills" to listOf(TransactionType.PAY_BILL),
             "Goods" to listOf(TransactionType.BUY_GOODS),
             "Withdraw" to listOf(TransactionType.WITHDRAW_AGENT, TransactionType.WITHDRAW_ATM),
-            // Amount threshold, not a type — resolved against the user's
-            // large-transaction setting (default Ksh5,000, configurable).
-            LARGE_FILTER to emptyList(),
         )
     }
 
