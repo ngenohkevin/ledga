@@ -40,6 +40,7 @@ import com.ledga.app.data.repository.DownloadState
 import com.ledga.app.ui.components.v2.BackLeading
 import com.ledga.app.ui.components.v2.BentoCard
 import com.ledga.app.ui.components.v2.LedgaTopBar
+import com.ledga.app.ui.components.v2.onTonal
 import com.ledga.app.ui.theme.LedgaAccent
 import com.ledga.app.ui.theme.LedgaAccentDeep
 import com.ledga.app.ui.theme.LedgaAccentSoft
@@ -133,7 +134,7 @@ private fun UpToDateCard(onCheckAgain: () -> Unit) {
         Text(
             text = "Nothing newer on GitHub Releases right now.",
             style = LedgaText.BodyM,
-            color = MaterialTheme.colorScheme.onSurface,
+            color = onTonal(LedgaAccentSoft),
         )
         TextButton(onClick = onCheckAgain) {
             Text("Check again", color = LedgaAccentDeep)
@@ -177,7 +178,7 @@ private fun ReleaseCard(
         Text(
             text = "Currently running v${BuildConfig.VERSION_NAME}  ·  Update is $sizeMb",
             style = LedgaText.BodyM,
-            color = MaterialTheme.colorScheme.onSurface,
+            color = onTonal(LedgaAccentSoft),
         )
     }
 

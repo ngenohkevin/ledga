@@ -35,6 +35,7 @@ import com.ledga.app.ui.components.parseColor
 import com.ledga.app.ui.components.v2.BackLeading
 import com.ledga.app.ui.components.v2.BentoCard
 import com.ledga.app.ui.components.v2.LedgaTopBar
+import com.ledga.app.ui.components.v2.onTonal
 import com.ledga.app.ui.components.v2.ProgressRing
 import com.ledga.app.ui.components.v2.TopBarIconButton
 import com.ledga.app.ui.theme.LedgaAccent
@@ -115,7 +116,7 @@ private fun EmptyState() {
             text = "Pick what you're saving toward and how you'll contribute. " +
                     "Ledga keeps the progress moving on its own — no manual entry.",
             style = LedgaText.BodyM,
-            color = MaterialTheme.colorScheme.onSurface,
+            color = onTonal(LedgaAccentSoft),
         )
     }
 }

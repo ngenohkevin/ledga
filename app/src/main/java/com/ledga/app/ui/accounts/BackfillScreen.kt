@@ -40,6 +40,7 @@ import com.ledga.app.ui.components.parseColor
 import com.ledga.app.ui.components.v2.Avatar
 import com.ledga.app.ui.components.v2.BackLeading
 import com.ledga.app.ui.components.v2.BentoCard
+import com.ledga.app.ui.components.v2.onTonal
 import com.ledga.app.ui.components.v2.LedgaChip
 import com.ledga.app.ui.components.v2.LedgaTopBar
 import com.ledga.app.ui.theme.LedgaAccent
@@ -287,7 +288,7 @@ fun BackfillScreen(
                             "Account row at the bottom that lets you reassign one row " +
                             "at a time. Useful for stragglers.",
                     style = LedgaText.BodyM,
-                    color = MaterialTheme.colorScheme.onSurface,
+                    color = onTonal(LedgaAccentSoft),
                 )
             }
 
