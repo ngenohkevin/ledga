@@ -23,10 +23,11 @@ import androidx.compose.foundation.clickable
 import com.ledga.app.ui.components.v2.LedgaTopBar
 import com.ledga.app.ui.theme.LedgaText
 import com.ledga.app.ui.theme.Space
+import com.ledga.app.ui.people.PeopleScreen
 import com.ledga.app.ui.transactions.TransactionsScreen
 import com.ledga.app.ui.trends.TrendsScreen
 
-private enum class Segment { Transactions, Trends }
+private enum class Segment { Transactions, People, Trends }
 
 /**
  * Activity tab — pairs the Transactions list and Trends analytics behind
@@ -51,6 +52,7 @@ fun ActivityScreen() {
 
         when (segment) {
             Segment.Transactions -> TransactionsScreen()
+            Segment.People -> PeopleScreen()
             Segment.Trends -> TrendsScreen()
         }
     }

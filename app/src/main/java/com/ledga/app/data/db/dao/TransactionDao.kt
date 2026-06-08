@@ -189,6 +189,45 @@ interface TransactionDao {
     @Query("SELECT * FROM transactions WHERE transactionCode = :code LIMIT 1")
     suspend fun getTransactionByCode(code: String): TransactionEntity?
 
+    /**
+     * People you've transacted with, aggregated by name: total + count.
+     * [types] selects the direction — SEND/MPESA_GLOBAL for "sent to",
+     * RECEIVED for "received from". Filtered by a name fragment and a minimum
+     * total. Powers the People view.
+     */
+    @Query("""
+        SELECT recipientName as recipientName, SUM(amount) as totalAmount, COUNT(*) as transactionCount
+        FROM transactions
+        WHERE type IN (:types)
+          AND recipientName IS NOT NULL AND recipientName != ''
+          AND recipientName LIKE '%' || :query || '%' COLLATE NOCASE
+          AND (:accountId IS NULL OR accountId = :accountId)
+        GROUP BY recipientName
+        HAVING SUM(amount) >= :minTotal
+        ORDER BY totalAmount DESC
+    """)
+    fun getPeopleByTypes(
+        types: List<TransactionType>,
+        query: String,
+        minTotal: Double,
+        accountId: Long? = null,
+    ): Flow<List<TopMerchant>>
+
+    /** A single person's transactions of the given types, newest first. */
+    @Transaction
+    @Query("""
+        SELECT * FROM transactions
+        WHERE type IN (:types)
+          AND recipientName = :name
+          AND (:accountId IS NULL OR accountId = :accountId)
+        ORDER BY timestamp DESC
+    """)
+    fun getTransactionsForRecipient(
+        name: String,
+        types: List<TransactionType>,
+        accountId: Long? = null,
+    ): Flow<List<TransactionWithCategory>>
+
     /** Transactions at or above [threshold] — powers the "Large" filter. */
     @Transaction
     @Query("""

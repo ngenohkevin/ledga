@@ -151,6 +151,12 @@ class TransactionRepository @Inject constructor(
     fun getLargeTransactions(threshold: Double): Flow<List<TransactionWithCategory>> =
         selectedAccount.flatMapLatest { transactionDao.getLargeTransactions(threshold, it) }
 
+    fun getPeopleByTypes(types: List<TransactionType>, query: String, minTotal: Double): Flow<List<TopMerchant>> =
+        selectedAccount.flatMapLatest { transactionDao.getPeopleByTypes(types, query, minTotal, it) }
+
+    fun getTransactionsForRecipient(name: String, types: List<TransactionType>): Flow<List<TransactionWithCategory>> =
+        selectedAccount.flatMapLatest { transactionDao.getTransactionsForRecipient(name, types, it) }
+
     fun getDailySpending(startTime: Long, endTime: Long): Flow<List<DailySpending>> =
         selectedAccount.flatMapLatest { transactionDao.getDailySpending(startTime, endTime, it) }
 
