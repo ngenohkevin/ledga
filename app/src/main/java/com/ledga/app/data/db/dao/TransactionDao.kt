@@ -189,12 +189,30 @@ interface TransactionDao {
     @Query("SELECT * FROM transactions WHERE transactionCode = :code LIMIT 1")
     suspend fun getTransactionByCode(code: String): TransactionEntity?
 
+    /** Transactions at or above [threshold] — powers the "Large" filter. */
+    @Transaction
+    @Query("""
+        SELECT * FROM transactions
+        WHERE amount >= :threshold
+          AND (:accountId IS NULL OR accountId = :accountId)
+        ORDER BY timestamp DESC
+    """)
+    fun getLargeTransactions(threshold: Double, accountId: Long? = null): Flow<List<TransactionWithCategory>>
+
     @Transaction
     @Query("SELECT * FROM transactions WHERE type = 'UNKNOWN' ORDER BY timestamp DESC")
     fun getUnparsedTransactions(): Flow<List<TransactionWithCategory>>
 
+    /*
+     * dayTimestamp is the epoch-ms of LOCAL midnight for each transaction's
+     * day, so it matches the device-local day keys the heatmap builds with
+     * Calendar. A naive (timestamp/86400000)*86400000 buckets by UTC midnight,
+     * which is offset from local midnight (e.g. +3h in EAT) — the heatmap keys
+     * then never match and every cell reads zero.
+     */
     @Query("""
-        SELECT (timestamp / 86400000) * 86400000 as dayTimestamp, SUM(amount) as totalAmount
+        SELECT CAST(strftime('%s', timestamp / 1000, 'unixepoch', 'localtime', 'start of day', 'utc') AS INTEGER) * 1000 as dayTimestamp,
+               SUM(amount) as totalAmount
         FROM transactions
         WHERE direction = 'OUTFLOW'
           AND timestamp BETWEEN :startTime AND :endTime
