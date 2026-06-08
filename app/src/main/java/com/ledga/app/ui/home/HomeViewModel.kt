@@ -61,8 +61,10 @@ data class HomeUiState(
     val selectedAccountId: Long? = null,
     /** Latest known Fuliza outstanding (owed) — null when never seen in SMS. */
     val fulizaOutstanding: Double? = null,
-    /** Latest known available Fuliza limit (borrowable) — null when never seen. */
+    /** Headroom still borrowable now = ceiling − current outstanding. */
     val fulizaAvailable: Double? = null,
+    /** Total Fuliza ceiling (limit), independent of what's currently drawn. */
+    val fulizaCeiling: Double? = null,
     /** Timestamp of the SMS the outstanding figure came from — drives the "as of" caption. */
     val fulizaOutstandingAt: Long? = null,
 )
@@ -178,7 +180,14 @@ class HomeViewModel @Inject constructor(
             fulizaOutstandingAt = tx?.timestamp,
         )
     }.combine(transactionRepository.getLatestFulizaLimit()) { state, tx ->
-        state.copy(fulizaAvailable = tx?.fulizaLimit)
+        // M-PESA's "Available Fuliza limit" is the headroom remaining AT THAT
+        // SMS (ceiling − outstanding then). So ceiling = that reading + the
+        // outstanding it was reported alongside (0 after a full clear). The
+        // amount borrowable NOW = ceiling − current outstanding.
+        val ceiling = tx?.let { (it.fulizaLimit ?: 0.0) + (it.fulizaOutstanding ?: 0.0) }
+        val outstanding = state.fulizaOutstanding ?: 0.0
+        val available = ceiling?.let { (it - outstanding).coerceAtLeast(0.0) }
+        state.copy(fulizaAvailable = available, fulizaCeiling = ceiling)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), HomeUiState())
 
     fun selectPeriod(period: Period) {

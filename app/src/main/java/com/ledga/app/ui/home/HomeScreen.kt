@@ -230,6 +230,7 @@ fun HomeScreen(
                 FulizaStatusCard(
                     outstanding = state.fulizaOutstanding,
                     available = state.fulizaAvailable,
+                    ceiling = state.fulizaCeiling,
                     asOf = state.fulizaOutstandingAt,
                 )
             }
@@ -441,7 +442,7 @@ private fun UpdateBanner(
 }
 
 @Composable
-private fun FulizaStatusCard(outstanding: Double?, available: Double?, asOf: Long?) {
+private fun FulizaStatusCard(outstanding: Double?, available: Double?, ceiling: Double?, asOf: Long?) {
     BentoCard(title = "Fuliza") {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -478,11 +479,19 @@ private fun FulizaStatusCard(outstanding: Double?, available: Double?, asOf: Lon
                     style = LedgaText.TitleM,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
+                ceiling?.let {
+                    Text(
+                        text = "of ${CurrencyFormatter.formatKshCompact(it)} limit",
+                        style = LedgaText.Caption,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
         }
         // Usage bar — how deep into the limit the overdraft currently is.
-        if (outstanding != null && available != null && outstanding + available > 0) {
-            val usedFraction = (outstanding / (outstanding + available)).toFloat()
+        val barCeiling = ceiling ?: outstanding?.let { o -> available?.let { o + it } }
+        if (outstanding != null && barCeiling != null && barCeiling > 0) {
+            val usedFraction = (outstanding / barCeiling).toFloat()
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
