@@ -63,6 +63,13 @@ class SettingsViewModel @Inject constructor(
     private val _importStatus = MutableStateFlow<ImportResult?>(null)
     val importStatus: StateFlow<ImportResult?> = _importStatus
 
+    private val _importRunning = MutableStateFlow(false)
+    val importRunning: StateFlow<Boolean> = _importRunning
+
+    /** (scanned, total) while an import is in progress; null otherwise. */
+    private val _importProgress = MutableStateFlow<Pair<Int, Int>?>(null)
+    val importProgress: StateFlow<Pair<Int, Int>?> = _importProgress
+
     fun setThemeMode(mode: ThemeMode) {
         viewModelScope.launch {
             settingsRepository.setThemeMode(mode)
@@ -96,9 +103,20 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun importSmsHistory() {
+        if (_importRunning.value) return
+        _importRunning.value = true
+        _importStatus.value = null
+        _importProgress.value = 0 to 0
         viewModelScope.launch {
-            val result = smsImporter.importHistory()
-            _importStatus.value = result
+            try {
+                val result = smsImporter.importHistory { scanned, total ->
+                    _importProgress.value = scanned to total
+                }
+                _importStatus.value = result
+            } finally {
+                _importRunning.value = false
+                _importProgress.value = null
+            }
         }
     }
 
