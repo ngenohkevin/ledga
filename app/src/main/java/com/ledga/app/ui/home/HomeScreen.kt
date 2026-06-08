@@ -58,6 +58,7 @@ import com.ledga.app.ui.theme.LedgaText
 import com.ledga.app.ui.theme.Radius
 import com.ledga.app.ui.theme.Space
 import com.ledga.app.util.CurrencyFormatter
+import com.ledga.app.util.DateUtils
 
 @Composable
 fun HomeScreen(
@@ -229,6 +230,7 @@ fun HomeScreen(
                 FulizaStatusCard(
                     outstanding = state.fulizaOutstanding,
                     available = state.fulizaAvailable,
+                    asOf = state.fulizaOutstandingAt,
                 )
             }
 
@@ -439,7 +441,7 @@ private fun UpdateBanner(
 }
 
 @Composable
-private fun FulizaStatusCard(outstanding: Double?, available: Double?) {
+private fun FulizaStatusCard(outstanding: Double?, available: Double?, asOf: Long?) {
     BentoCard(title = "Fuliza") {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -457,6 +459,13 @@ private fun FulizaStatusCard(outstanding: Double?, available: Double?) {
                     color = if ((outstanding ?: 0.0) > 0) LedgaDanger
                     else MaterialTheme.colorScheme.onSurface,
                 )
+                asOf?.let {
+                    Text(
+                        text = "as of ${DateUtils.formatRelativeDate(it).lowercase()}",
+                        style = LedgaText.Caption,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
             Column(modifier = Modifier.weight(1f)) {
                 Text(
@@ -490,6 +499,20 @@ private fun FulizaStatusCard(outstanding: Double?, available: Double?) {
                         .background(if (usedFraction > 0.5f) LedgaDanger else LedgaAccent),
                 )
             }
+        }
+        // If the latest Fuliza SMS we have is more than a day old, the figure
+        // may be behind reality (Safaricom now sends Fuliza from a separate
+        // sender; older messages need a one-time re-import to be read in).
+        val stale = asOf != null &&
+            System.currentTimeMillis() - asOf > java.util.concurrent.TimeUnit.DAYS.toMillis(1)
+        if (stale) {
+            Text(
+                text = "No recent Fuliza SMS read. Run “Import SMS history” in You → Data " +
+                        "to pull in newer Fuliza messages.",
+                style = LedgaText.Caption,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = Space.s3),
+            )
         }
     }
 }
