@@ -38,6 +38,8 @@ import com.ledga.app.data.db.entity.InsightSeverity
 import com.ledga.app.data.db.entity.InsightType
 import com.ledga.app.ui.components.v2.BentoCard
 import com.ledga.app.ui.components.v2.LedgaTopBar
+import com.ledga.app.ui.components.v2.onTonal
+import com.ledga.app.ui.components.v2.onTonalMuted
 import com.ledga.app.ui.theme.LedgaAccent
 import com.ledga.app.ui.theme.LedgaAccentDeep
 import com.ledga.app.ui.theme.LedgaAccentSoft
@@ -108,6 +110,12 @@ private fun InsightCard(
     onCta: () -> Unit,
 ) {
     val tone = toneFor(insight.severity)
+    // Tonal cards have a FIXED light background in both light and dark themes,
+    // so their text must contrast with that background — not with the theme's
+    // surface (whose onSurface is near-white in dark mode → invisible here).
+    // INFO cards are non-tonal (adaptive surface), so they use theme colors.
+    val inkColor = if (tone.tonal) onTonal(tone.background) else MaterialTheme.colorScheme.onSurface
+    val mutedColor = if (tone.tonal) onTonalMuted(tone.background) else MaterialTheme.colorScheme.onSurfaceVariant
     BentoCard(
         tonal = tone.tonal,
         tonalColor = tone.background,
@@ -131,13 +139,13 @@ private fun InsightCard(
         Text(
             text = insight.headline,
             style = LedgaText.TitleS,
-            color = MaterialTheme.colorScheme.onSurface,
+            color = inkColor,
         )
         if (!insight.body.isNullOrBlank()) {
             Text(
                 text = insight.body,
                 style = LedgaText.BodyM,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = mutedColor,
             )
         }
         Row(
@@ -164,19 +172,19 @@ private fun InsightCard(
                 androidx.compose.material3.Icon(
                     imageVector = Icons.Filled.Replay,
                     contentDescription = "Snooze",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    tint = mutedColor,
                     modifier = Modifier.size(14.dp),
                 )
                 Text(
                     text = "Snooze 30d",
                     style = LedgaText.Caption,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = mutedColor,
                 )
             }
             Text(
                 text = "Got it",
                 style = LedgaText.BodyM,
-                color = MaterialTheme.colorScheme.onSurface,
+                color = inkColor,
                 modifier = Modifier.clickable { onDismiss() },
             )
         }
