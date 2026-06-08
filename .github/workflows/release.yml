@@ -24,6 +24,20 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      # services.gradle.org intermittently returns 504s / times out while the
+      # wrapper fetches the distribution. Retry just the download (./gradlew
+      # --version does nothing else) with backoff so a flaky CDN doesn't fail
+      # the release. Once fetched it's cached for the real build step.
+      - name: Warm Gradle wrapper (tolerate flaky CDN)
+        run: |
+          for i in 1 2 3 4 5; do
+            ./gradlew --version && exit 0
+            echo "Gradle download attempt $i failed; retrying in $((i*20))s..."
+            sleep $((i*20))
+          done
+          echo "Gradle distribution still unreachable after retries." >&2
+          exit 1
+
       - name: Decode keystore
         run: |
           mkdir -p keystore
@@ -63,6 +77,16 @@ jobs:
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
+
+      - name: Warm Gradle wrapper (tolerate flaky CDN)
+        run: |
+          for i in 1 2 3 4 5; do
+            ./gradlew --version && exit 0
+            echo "Gradle download attempt $i failed; retrying in $((i*20))s..."
+            sleep $((i*20))
+          done
+          echo "Gradle distribution still unreachable after retries." >&2
+          exit 1
 
       - name: Run tests
         run: ./gradlew testDebugUnitTest
