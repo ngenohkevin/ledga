@@ -66,7 +66,10 @@ fun OnboardingScreen(
                     onRequestPermission = {
                         val permissions = mutableListOf(
                             Manifest.permission.RECEIVE_SMS,
-                            Manifest.permission.READ_SMS
+                            Manifest.permission.READ_SMS,
+                            // Lets Ledga name detected SIMs ("Safaricom") and
+                            // keep accounts linked when a SIM changes slots.
+                            Manifest.permission.READ_PHONE_STATE
                         )
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                             permissions.add(Manifest.permission.POST_NOTIFICATIONS)

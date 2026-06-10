@@ -46,7 +46,10 @@ class SmsReceiver : BroadcastReceiver() {
                 // same SMS — keep the first valid one we see per sender.
                 val partsBySender = messages.groupBy { it.displayOriginatingAddress }
 
-                val subscriptionId = subscriptionIdFromIntent(intent)
+                // Some OEMs ship the broadcast without the subscription extra;
+                // resolveSubscriptionId falls back to the sole active SIM.
+                val subscriptionId =
+                    accountsRepository.resolveSubscriptionId(subscriptionIdFromIntent(intent))
 
                 for ((sender, parts) in partsBySender) {
                     if (!MpesaSmsParser.isMpesaMessage(sender ?: "")) continue

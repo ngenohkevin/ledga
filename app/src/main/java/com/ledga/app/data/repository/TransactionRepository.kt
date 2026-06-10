@@ -265,9 +265,34 @@ class TransactionRepository @Inject constructor(
 
     // ---- Own-account (transfer) recipients ----
 
-    /** Latest known available Fuliza limit / outstanding, from any SMS that carried them. */
-    fun getLatestFulizaLimit(): Flow<TransactionEntity?> = transactionDao.getLatestFulizaLimit()
-    fun getLatestFulizaOutstanding(): Flow<TransactionEntity?> = transactionDao.getLatestFulizaOutstanding()
+    /**
+     * Latest known Fuliza limit / outstanding for the SELECTED line. Fuliza
+     * is per-SIM, so these follow the account switcher like every other
+     * screen-facing query.
+     */
+    fun getLatestFulizaLimit(): Flow<TransactionEntity?> =
+        selectedAccount.flatMapLatest { transactionDao.getLatestFulizaLimit(it) }
+
+    fun getLatestFulizaOutstanding(): Flow<TransactionEntity?> =
+        selectedAccount.flatMapLatest { transactionDao.getLatestFulizaOutstanding(it) }
+
+    /** Explicit-account variants — used to build the per-line sums on the Combined view. */
+    fun getLatestFulizaLimitFor(accountId: Long?): Flow<TransactionEntity?> =
+        transactionDao.getLatestFulizaLimit(accountId)
+
+    fun getLatestFulizaOutstandingFor(accountId: Long?): Flow<TransactionEntity?> =
+        transactionDao.getLatestFulizaOutstanding(accountId)
+
+    /** Sum of every line's latest balance — the Combined view's headline figure. */
+    fun getCombinedLatestBalance(): Flow<Double?> = transactionDao.getCombinedLatestBalance()
+
+    /**
+     * Account-agnostic window for the insights engine. The engine runs from
+     * a background worker; its output must not depend on which line the user
+     * happened to have selected when the worker fired.
+     */
+    fun getTransactionsAllAccounts(startTime: Long, endTime: Long): Flow<List<TransactionWithCategory>> =
+        transactionDao.getTransactions(startTime, endTime, null)
 
     /** Recipient fragments the user marked as their own accounts. */
     fun getOwnAccountFragments(): Flow<List<String>> = categoryRuleDao.getOwnAccountFragments()
