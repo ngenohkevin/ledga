@@ -427,6 +427,40 @@ class MpesaSmsParserTest {
         assertEquals(TransactionDirection.OUTFLOW, t.direction)
     }
 
+    @Test
+    fun `real kcb withdrawal — wallet balance wins over KCB account balance, direction is INFLOW`() {
+        // Real template: the KCB pocket balance comes FIRST, wallet second.
+        // Regression: parser stored 0.17 as the wallet balance and OUTFLOW
+        // as the direction (the SMS says "from YOUR KCB", not "from KCB").
+        val sms = "UF3IE6OMZP Confirmed. You have transfered Ksh15,000.00 from your KCB M-PESA account " +
+            "on 3/6/26 at 4:27 PM. KCB M-PESA Account balance is Ksh0.17. New M-PESA balance is Ksh15,000.00."
+        val t = assertSuccess(sms).transaction
+        assertEquals(TransactionType.KCB_MPESA, t.type)
+        assertEquals(15000.0, t.amount, 0.01)
+        assertEquals(15000.0, t.balance, 0.01)
+        assertEquals(TransactionDirection.INFLOW, t.direction)
+    }
+
+    @Test
+    fun `real kcb deposit — wallet balance first, savings balance ignored`() {
+        val sms = "UF1AB2CD34 Confirmed. Ksh5,000.00 transfered to KCB M-PESA account on 1/6/26 at 9:00 AM. " +
+            "New M-PESA balance is Ksh3,782.39, new KCB M-PESA Saving account balance is Ksh5,000.17."
+        val t = assertSuccess(sms).transaction
+        assertEquals(TransactionType.KCB_MPESA, t.type)
+        assertEquals(5000.0, t.amount, 0.01)
+        assertEquals(3782.39, t.balance, 0.01)
+        assertEquals(TransactionDirection.OUTFLOW, t.direction)
+    }
+
+    @Test
+    fun `mshwari withdrawal with possessive phrasing is INFLOW`() {
+        val sms = "RK31B7X4ZQ Confirmed. Ksh1,000.00 transferred from your M-Shwari account on 21/3/26 at 5:00 PM. " +
+            "M-Shwari account balance is Ksh200.00. New M-PESA balance is Ksh1,500.00."
+        val t = assertSuccess(sms).transaction
+        assertEquals(TransactionDirection.INFLOW, t.direction)
+        assertEquals(1500.0, t.balance, 0.01)
+    }
+
     // --- Edge cases ---
 
     @Test

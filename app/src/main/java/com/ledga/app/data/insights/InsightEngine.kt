@@ -30,8 +30,11 @@ class InsightEngine @Inject constructor(
 
     suspend fun run(now: Long = System.currentTimeMillis()): Int {
         val ninetyDaysAgo = now - 90L * DAY_MS
+        // Deliberately unfiltered by account: the worker runs in the
+        // background, and insights must be deterministic — not a function of
+        // whichever SIM the user had selected when the worker fired.
         val txns = transactionRepository
-            .getTransactions(ninetyDaysAgo, now)
+            .getTransactionsAllAccounts(ninetyDaysAgo, now)
             .first()
             .map { it.transaction }
             .sortedByDescending { it.timestamp }

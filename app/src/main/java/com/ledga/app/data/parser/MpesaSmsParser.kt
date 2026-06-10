@@ -48,6 +48,16 @@ object MpesaSmsParser {
     // Balance: multiple formats — note "Ksh" is optional. Fuliza auto-pay SMS
     // reads "Your M-PESA balance is 8581.08" with no Ksh prefix on some
     // ROMs / carrier formats, and we still need to capture it.
+    //
+    // Savings SMS carry TWO balances ("KCB M-PESA Account balance is Ksh0.17.
+    // New M-PESA balance is Ksh15,000.00.") and the wallet one isn't always
+    // first — so we try the wallet-specific pattern before the generic one.
+    // "M-PESA balance is" can't accidentally match the savings figure: those
+    // read "…M-PESA Account/Saving account balance is", with words between.
+    private val WALLET_BALANCE_REGEX = Regex(
+        """(?:M-PESA balance is|MPESA balance is)\s*(?:Ksh)?\s?([\d,]+\.\d{2})""",
+        RegexOption.IGNORE_CASE,
+    )
     private val BALANCE_REGEX = Regex(
         """(?:M-PESA balance is|MPESA balance is|account balance is)\s*(?:Ksh)?\s?([\d,]+\.\d{2})""",
         RegexOption.IGNORE_CASE,
@@ -504,7 +514,9 @@ object MpesaSmsParser {
 
     private fun parseMshwari(sms: String, code: String, balance: Double, cost: Double, timestamp: Long): ParsedTransaction {
         val amount = extractFirstAmount(sms) ?: 0.0
-        val isInflow = sms.contains("from M-Shwari", ignoreCase = true)
+        // "transferred from M-Shwari" / "from your M-Shwari account" — money
+        // coming back INTO the wallet.
+        val isInflow = sms.contains(Regex("""from (?:your )?M-Shwari""", RegexOption.IGNORE_CASE))
         return ParsedTransaction(
             transactionCode = code, type = TransactionType.MSHWARI, amount = amount,
             transactionCost = cost, recipientName = "M-Shwari", recipientPhone = null,
@@ -517,7 +529,10 @@ object MpesaSmsParser {
 
     private fun parseKcbMpesa(sms: String, code: String, balance: Double, cost: Double, timestamp: Long): ParsedTransaction {
         val amount = extractFirstAmount(sms) ?: 0.0
-        val isInflow = sms.contains("from KCB", ignoreCase = true)
+        // The withdrawal SMS reads "transfered Ksh… from YOUR KCB M-PESA
+        // account" — a bare "from KCB" check misses it, flagging the money
+        // you pulled back into the wallet as an outflow.
+        val isInflow = sms.contains(Regex("""from (?:your )?KCB""", RegexOption.IGNORE_CASE))
         return ParsedTransaction(
             transactionCode = code, type = TransactionType.KCB_MPESA, amount = amount,
             transactionCost = cost, recipientName = "KCB M-Pesa", recipientPhone = null,
@@ -550,6 +565,7 @@ object MpesaSmsParser {
     }
 
     private fun extractBalance(sms: String): Double? {
+        WALLET_BALANCE_REGEX.find(sms)?.groupValues?.get(1)?.let { return parseAmount(it) }
         return BALANCE_REGEX.find(sms)?.groupValues?.get(1)?.let { parseAmount(it) }
     }
 

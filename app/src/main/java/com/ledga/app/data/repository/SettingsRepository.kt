@@ -34,6 +34,15 @@ class SettingsRepository @Inject constructor(
         // Self-update: which version the user "Remind me later"'d. Banner stays hidden
         // until a newer version is available.
         private val DISMISSED_UPDATE_VERSION = stringPreferencesKey("dismissed_update_version")
+        // One-time silent SIM-attribution backfill for installs that imported
+        // history before the importer recorded sub_id (pre-v1.5).
+        private val SIM_BACKFILL_DONE = booleanPreferencesKey("sim_backfill_done")
+        // Bump CURRENT_PARSER_FIXUP whenever a parser fix should be applied
+        // retroactively to stored rows; rows are re-parsed from rawSms once.
+        private val PARSER_FIXUP_VERSION = intPreferencesKey("parser_fixup_version")
+        // Newest SMS-inbox `date` already imported. The startup catch-up sync
+        // only scans rows after this. 0 = no import has run yet.
+        private val SMS_SYNC_WATERMARK = longPreferencesKey("sms_sync_watermark")
     }
 
     fun getThemeMode(): Flow<ThemeMode> = dataStore.data.map { prefs ->
@@ -108,6 +117,24 @@ class SettingsRepository @Inject constructor(
             prefs[SELECTED_ACCOUNT_ID] = id ?: COMBINED_ACCOUNT
         }
     }
+
+    // --- One-time SIM-attribution backfill ---
+
+    fun isSimBackfillDone(): Flow<Boolean> = dataStore.data.map { it[SIM_BACKFILL_DONE] ?: false }
+    suspend fun setSimBackfillDone() { dataStore.edit { it[SIM_BACKFILL_DONE] = true } }
+
+    // --- SMS catch-up sync watermark ---
+
+    fun getSmsSyncWatermark(): Flow<Long> = dataStore.data.map { it[SMS_SYNC_WATERMARK] ?: 0L }
+    suspend fun setSmsSyncWatermark(value: Long) { dataStore.edit { it[SMS_SYNC_WATERMARK] = value } }
+
+    // --- Retroactive parser fixups ---
+
+    /** v1: KCB/M-Shwari wallet-balance + direction fix (June 2026). */
+    val currentParserFixup = 1
+
+    fun getParserFixupVersion(): Flow<Int> = dataStore.data.map { it[PARSER_FIXUP_VERSION] ?: 0 }
+    suspend fun setParserFixupVersion(version: Int) { dataStore.edit { it[PARSER_FIXUP_VERSION] = version } }
 
     // --- Self-update: snoozed version ---
 

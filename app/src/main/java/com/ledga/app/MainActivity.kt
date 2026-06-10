@@ -1,5 +1,8 @@
 package com.ledga.app
 
+import android.Manifest
+import android.content.Context
+import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -21,8 +24,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.core.content.ContextCompat
+import com.ledga.app.data.repository.AccountsRepository
 import com.ledga.app.data.repository.FontScale
+import com.ledga.app.data.repository.HistoricalBackfillRepository
 import com.ledga.app.data.repository.SettingsRepository
+import com.ledga.app.data.repository.SmsImporter
+import com.ledga.app.data.repository.TransactionRepository
 import com.ledga.app.ui.navigation.AppNavigation
 import com.ledga.app.ui.navigation.HomeRoute
 import com.ledga.app.ui.navigation.LedgaBottomNavBar
@@ -31,14 +39,23 @@ import com.ledga.app.ui.theme.LedgaTheme
 import com.ledga.app.ui.theme.ThemeMode
 import dagger.hilt.android.AndroidEntryPoint
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class MainViewModel @Inject constructor(
-    settingsRepository: SettingsRepository
+    settingsRepository: SettingsRepository,
+    accountsRepository: AccountsRepository,
+    backfillRepository: HistoricalBackfillRepository,
+    transactionRepository: TransactionRepository,
+    smsImporter: SmsImporter,
+    @ApplicationContext context: Context,
 ) : ViewModel() {
 
     val themeMode: StateFlow<ThemeMode> = settingsRepository.getThemeMode()
@@ -49,6 +66,45 @@ class MainViewModel @Inject constructor(
 
     val fontScale: StateFlow<FontScale> = settingsRepository.getFontScale()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), FontScale.SYSTEM)
+
+    init {
+        viewModelScope.launch(Dispatchers.IO) {
+            // Keep account↔SIM links fresh: slot moves and eSIM re-provisions
+            // change the subscription id, and phone numbers become readable
+            // once READ_PHONE_STATE is granted.
+            runCatching { accountsRepository.syncActiveSubscriptions() }
+
+            // One-time silent attribution of history imported before the
+            // importer recorded each SMS's SIM. Only touches rows that are
+            // still unassigned, so user attributions always survive.
+            val hasReadSms = ContextCompat.checkSelfPermission(
+                context, Manifest.permission.READ_SMS
+            ) == PackageManager.PERMISSION_GRANTED
+            val onboarded = settingsRepository.hasCompletedOnboarding().first()
+
+            // Catch-up sync: pick up any M-Pesa SMS the receiver missed
+            // (battery killers, force-stop) since the last run. Incremental
+            // and duplicate-safe, so it runs on every start.
+            if (hasReadSms && onboarded) {
+                runCatching { smsImporter.catchUp() }
+            }
+
+            if (hasReadSms && onboarded && !settingsRepository.isSimBackfillDone().first()) {
+                runCatching { backfillRepository.runAutoBackfill(onlyUnassigned = true) }
+                    .onSuccess { settingsRepository.setSimBackfillDone() }
+            }
+
+            // Retroactive parser fixups: when a parser bug fix lands (e.g. KCB
+            // withdrawals storing the savings-pocket balance as the wallet
+            // balance), stored rows are re-derived from their rawSms once.
+            // User-set fields (category, account, note) are preserved.
+            val fixup = settingsRepository.currentParserFixup
+            if (onboarded && settingsRepository.getParserFixupVersion().first() < fixup) {
+                runCatching { transactionRepository.reparseAllTransactions() }
+                    .onSuccess { settingsRepository.setParserFixupVersion(fixup) }
+            }
+        }
+    }
 }
 
 @AndroidEntryPoint

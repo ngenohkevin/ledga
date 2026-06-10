@@ -25,6 +25,7 @@ import com.ledga.app.worker.UpdateChecker
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -32,6 +33,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -109,6 +111,81 @@ class HomeViewModel @Inject constructor(
 
     private val _selectedPeriod = MutableStateFlow(Period.TODAY)
 
+    /** Latest Fuliza figures for one line, plus the cross-line merge result. */
+    private data class FulizaFacts(
+        val outstanding: Double? = null,
+        val outstandingAt: Long? = null,
+        val ceiling: Double? = null,
+        val available: Double? = null,
+    )
+
+    private val accountContext = combine(
+        settingsRepository.getSelectedAccountId(),
+        accountsRepository.observeAll(),
+    ) { selected, accounts -> selected to accounts }
+
+    /**
+     * Balance for the Home card. Each SIM's wallet is independent, so the
+     * Combined view must show the SUM of every line's latest balance — the
+     * balance on the most recent SMS alone is just one line's wallet and
+     * understates a dual-SIM user's real position.
+     */
+    private val balanceFlow: Flow<Double?> = accountContext.flatMapLatest { (selected, accounts) ->
+        if (selected == null && accounts.size > 1) {
+            combine(
+                transactionRepository.getCombinedLatestBalance(),
+                transactionRepository.getLatestTransactionWithBalance(),
+            ) { combined, latest ->
+                // While history is still unattributed the per-line sum is
+                // NULL — fall back to the single-figure behavior.
+                combined ?: latest?.balance
+            }
+        } else {
+            transactionRepository.getLatestTransactionWithBalance().map { it?.balance }
+        }
+    }
+
+    /**
+     * Fuliza is per-line. With a line selected, show that line's figures;
+     * on the Combined view with 2+ lines, sum each line's latest facts so
+     * line A's limit never gets crossed with line B's outstanding.
+     */
+    private val fulizaFlow: Flow<FulizaFacts> = accountContext.flatMapLatest { (selected, accounts) ->
+        val lines: List<Long?> = when {
+            selected != null -> listOf(selected)
+            accounts.size > 1 -> accounts.map { it.id }
+            else -> listOf(null) // single/no line: unfiltered covers unattributed rows
+        }
+        val perLine = lines.map { id ->
+            combine(
+                transactionRepository.getLatestFulizaOutstandingFor(id),
+                transactionRepository.getLatestFulizaLimitFor(id),
+            ) { outTx, limTx ->
+                // M-PESA's "Available Fuliza limit" is the headroom remaining
+                // AT THAT SMS (ceiling − outstanding then). So ceiling = that
+                // reading + the outstanding it was reported alongside. The
+                // amount borrowable NOW = ceiling − current outstanding.
+                val outstanding = outTx?.fulizaOutstanding
+                val ceiling = limTx?.let { (it.fulizaLimit ?: 0.0) + (it.fulizaOutstanding ?: 0.0) }
+                val available = ceiling?.let { (it - (outstanding ?: 0.0)).coerceAtLeast(0.0) }
+                FulizaFacts(
+                    outstanding = outstanding,
+                    outstandingAt = outTx?.timestamp,
+                    ceiling = ceiling,
+                    available = available,
+                )
+            }
+        }
+        combine(perLine) { facts ->
+            FulizaFacts(
+                outstanding = facts.mapNotNull { it.outstanding }.takeIf { it.isNotEmpty() }?.sum(),
+                outstandingAt = facts.mapNotNull { it.outstandingAt }.maxOrNull(),
+                ceiling = facts.mapNotNull { it.ceiling }.takeIf { it.isNotEmpty() }?.sum(),
+                available = facts.mapNotNull { it.available }.takeIf { it.isNotEmpty() }?.sum(),
+            )
+        }
+    }
+
     private val timeRange = _selectedPeriod.flatMapLatest { period ->
         val now = System.currentTimeMillis()
         val start = when (period) {
@@ -121,13 +198,13 @@ class HomeViewModel @Inject constructor(
 
     val uiState: StateFlow<HomeUiState> = combine(
         _selectedPeriod,
-        transactionRepository.getLatestTransactionWithBalance(),
+        balanceFlow,
         transactionRepository.getRecentTransactions(10),
         categoryRepository.getAllCategories()
-    ) { period, latestTransaction, recentTransactions, categories ->
+    ) { period, balance, recentTransactions, categories ->
         HomeUiState(
             greeting = DateUtils.greeting(),
-            balance = latestTransaction?.balance,
+            balance = balance,
             recentTransactions = recentTransactions,
             selectedPeriod = period,
             monthLabel = DateUtils.formatMonthYear(System.currentTimeMillis())
@@ -174,20 +251,13 @@ class HomeViewModel @Inject constructor(
         state.copy(accounts = accounts)
     }.combine(settingsRepository.getSelectedAccountId()) { state, accountId ->
         state.copy(selectedAccountId = accountId)
-    }.combine(transactionRepository.getLatestFulizaOutstanding()) { state, tx ->
+    }.combine(fulizaFlow) { state, fuliza ->
         state.copy(
-            fulizaOutstanding = tx?.fulizaOutstanding,
-            fulizaOutstandingAt = tx?.timestamp,
+            fulizaOutstanding = fuliza.outstanding,
+            fulizaOutstandingAt = fuliza.outstandingAt,
+            fulizaAvailable = fuliza.available,
+            fulizaCeiling = fuliza.ceiling,
         )
-    }.combine(transactionRepository.getLatestFulizaLimit()) { state, tx ->
-        // M-PESA's "Available Fuliza limit" is the headroom remaining AT THAT
-        // SMS (ceiling − outstanding then). So ceiling = that reading + the
-        // outstanding it was reported alongside (0 after a full clear). The
-        // amount borrowable NOW = ceiling − current outstanding.
-        val ceiling = tx?.let { (it.fulizaLimit ?: 0.0) + (it.fulizaOutstanding ?: 0.0) }
-        val outstanding = state.fulizaOutstanding ?: 0.0
-        val available = ceiling?.let { (it - outstanding).coerceAtLeast(0.0) }
-        state.copy(fulizaAvailable = available, fulizaCeiling = ceiling)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), HomeUiState())
 
     fun selectPeriod(period: Period) {

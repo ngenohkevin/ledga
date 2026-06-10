@@ -1,8 +1,5 @@
 package com.ledga.app.data.repository
 
-import android.content.ContentResolver
-import android.database.Cursor
-import android.net.Uri
 import android.telephony.SubscriptionManager
 import com.ledga.app.data.db.dao.TransactionDao
 import kotlinx.coroutines.Dispatchers
@@ -39,7 +36,7 @@ data class DateRangeBackfillResult(val updated: Int)
  */
 @Singleton
 class HistoricalBackfillRepository @Inject constructor(
-    private val contentResolver: ContentResolver,
+    private val inbox: MpesaInbox,
     private val transactionDao: TransactionDao,
     private val accountsRepository: AccountsRepository,
 ) {
@@ -47,10 +44,18 @@ class HistoricalBackfillRepository @Inject constructor(
     /** Code regex matches the parser — 10 alphanumeric at the message start. */
     private val codeRegex = Regex("""^([A-Z0-9]{10})\s""")
 
+    /**
+     * @param onlyUnassigned when true, only rows whose accountId is still
+     * NULL are updated — manual per-transaction and date-range attributions
+     * survive. Used by the silent on-upgrade backfill; the user-initiated
+     * button keeps the overwrite-everything behavior (it's their explicit
+     * call to re-derive attribution from the SMS DB).
+     */
     suspend fun runAutoBackfill(
+        onlyUnassigned: Boolean = false,
         onProgress: (scanned: Int, total: Int) -> Unit = { _, _ -> },
     ): BackfillResult = withContext(Dispatchers.IO) {
-        val rows = readMpesaInbox()
+        val rows = inbox.read()
         val total = rows.size
         if (total == 0) return@withContext BackfillResult(0, 0, 0, 0)
 
@@ -79,7 +84,11 @@ class HistoricalBackfillRepository @Inject constructor(
             val account = accountsRepository.getOrCreateForSubscription(subId) ?: continue
             // Update in chunks to avoid SQLite's IN-list limit (~1000 typically).
             codes.chunked(500).forEach { chunk ->
-                taggedTotal += transactionDao.updateAccountForCodes(account.id, chunk)
+                taggedTotal += if (onlyUnassigned) {
+                    transactionDao.updateAccountForCodesIfUnassigned(account.id, chunk)
+                } else {
+                    transactionDao.updateAccountForCodes(account.id, chunk)
+                }
             }
         }
 
@@ -102,59 +111,4 @@ class HistoricalBackfillRepository @Inject constructor(
         )
     }
 
-    /**
-     * Read MPESA SMS rows + their subscription column. The column name varies:
-     * - "sub_id" on AOSP and most OEMs (since ~API 22)
-     * - Some Samsung / Xiaomi builds use "sim_id" or omit it entirely
-     * We probe both and fall back to a cursor without the column.
-     */
-    private fun readMpesaInbox(): List<InboxRow> {
-        val uri = Uri.parse("content://sms/inbox")
-        // Try sub_id first (the AOSP name).
-        readWithColumns(uri, arrayOf("body", "date", "sub_id"))?.let { return it }
-        // Fallback: sim_id (Samsung ROMs).
-        readWithColumns(uri, arrayOf("body", "date", "sim_id"))?.let { return it }
-        // No SIM column — still useful; sub_ids will all come back invalid.
-        return readWithColumns(uri, arrayOf("body", "date")).orEmpty()
-    }
-
-    private fun readWithColumns(uri: Uri, projection: Array<String>): List<InboxRow>? = try {
-        val cursor: Cursor? = contentResolver.query(
-            uri,
-            projection,
-            // FULIZA: borrow confirmations can arrive from a dedicated sender id.
-            "address IN (?, ?)",
-            arrayOf("MPESA", "FULIZA"),
-            "date DESC",
-        )
-        cursor?.use { c ->
-            val bodyIdx = c.getColumnIndex("body")
-            val dateIdx = c.getColumnIndex("date")
-            val subIdx = projection.lastIndex
-                .takeIf { projection.size > 2 }
-                ?.let { c.getColumnIndex(projection[it]) }
-                ?: -1
-            val rows = mutableListOf<InboxRow>()
-            while (c.moveToNext()) {
-                val body = if (bodyIdx >= 0) c.getString(bodyIdx) else continue
-                val date = if (dateIdx >= 0) c.getLong(dateIdx) else 0L
-                val sub = if (subIdx >= 0) c.getInt(subIdx)
-                else SubscriptionManager.INVALID_SUBSCRIPTION_ID
-                rows += InboxRow(body = body, date = date, subscriptionId = sub)
-            }
-            rows
-        }
-    } catch (_: IllegalArgumentException) {
-        // Projection contained an unknown column — try the next fallback.
-        null
-    } catch (_: SecurityException) {
-        // READ_SMS not granted — caller should have checked, but be defensive.
-        null
-    }
-
-    private data class InboxRow(
-        val body: String,
-        val date: Long,
-        val subscriptionId: Int,
-    )
 }

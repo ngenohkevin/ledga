@@ -77,6 +77,16 @@ interface TransactionDao {
     """)
     suspend fun updateAccountForCodes(accountId: Long, codes: List<String>): Int
 
+    /**
+     * Like [updateAccountForCodes] but never touches rows the user (or a
+     * previous backfill) already attributed — safe to run unattended.
+     */
+    @Query("""
+        UPDATE transactions SET accountId = :accountId
+        WHERE transactionCode IN (:codes) AND accountId IS NULL
+    """)
+    suspend fun updateAccountForCodesIfUnassigned(accountId: Long, codes: List<String>): Int
+
     @Transaction
     @Query("""
         SELECT * FROM transactions
@@ -117,6 +127,30 @@ interface TransactionDao {
         ORDER BY timestamp DESC LIMIT 1
     """)
     fun getLatestTransactionWithBalance(accountId: Long? = null): Flow<TransactionEntity?>
+
+    /**
+     * Combined-view balance: each line's wallet is independent, so the
+     * headline figure must be the SUM of every account's latest balance —
+     * NOT the balance on the most recent SMS overall (that's one line only,
+     * which understates a dual-SIM user's real position). Rows still
+     * unattributed to a line are excluded; the balance-validity exclusions
+     * mirror [getLatestTransactionWithBalance]. NULL when no account has a
+     * balance-carrying transaction yet.
+     */
+    @Query("""
+        SELECT SUM(balance) FROM transactions
+        WHERE id IN (
+            SELECT (
+                SELECT t.id FROM transactions t
+                WHERE t.accountId = a.id
+                  AND NOT (t.balance = 0 AND t.type IN
+                      ('FULIZA_REPAYMENT','FULIZA_REVERSAL','REVERSAL','FULIZA','UNKNOWN'))
+                ORDER BY t.timestamp DESC, t.id DESC LIMIT 1
+            )
+            FROM mpesa_accounts a
+        )
+    """)
+    fun getCombinedLatestBalance(): Flow<Double?>
 
     /*
      * Spending queries share three exclusions beyond direction = OUTFLOW:
@@ -379,20 +413,25 @@ interface TransactionDao {
     suspend fun deleteById(id: Long)
 
     // ---- Fuliza status (latest known values from SMS) ----
+    // Fuliza is a per-LINE facility: each SIM has its own limit and
+    // outstanding. These queries take the account filter so dual-SIM users
+    // never see line A's limit mixed with line B's outstanding.
 
     @Query("""
         SELECT * FROM transactions
         WHERE fulizaLimit IS NOT NULL
+          AND (:accountId IS NULL OR accountId = :accountId)
         ORDER BY timestamp DESC LIMIT 1
     """)
-    fun getLatestFulizaLimit(): Flow<TransactionEntity?>
+    fun getLatestFulizaLimit(accountId: Long? = null): Flow<TransactionEntity?>
 
     @Query("""
         SELECT * FROM transactions
         WHERE fulizaOutstanding IS NOT NULL
+          AND (:accountId IS NULL OR accountId = :accountId)
         ORDER BY timestamp DESC LIMIT 1
     """)
-    fun getLatestFulizaOutstanding(): Flow<TransactionEntity?>
+    fun getLatestFulizaOutstanding(accountId: Long? = null): Flow<TransactionEntity?>
 
     // ---- Own-account (transfer) recipient marking ----
 
