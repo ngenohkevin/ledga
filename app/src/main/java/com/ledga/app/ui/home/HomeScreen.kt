@@ -2,6 +2,7 @@ package com.ledga.app.ui.home
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -158,8 +159,13 @@ fun HomeScreen(
             }
 
             // ---- Period selector ----
+            // Horizontally scrollable so every chip stays reachable — four
+            // long-labelled chips overflow a fixed Row on narrow screens / large
+            // font scales, which would clip the last one ("3 Months") off-edge.
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(Space.s3),
             ) {
                 Period.entries.forEach { period ->
