@@ -10,7 +10,8 @@ import androidx.compose.ui.unit.dp
 enum class Period(val label: String) {
     TODAY("Today"),
     THIS_WEEK("This Week"),
-    THIS_MONTH("Month")
+    THIS_MONTH("Month"),
+    LAST_3_MONTHS("3 Months")
 }
 
 @Composable

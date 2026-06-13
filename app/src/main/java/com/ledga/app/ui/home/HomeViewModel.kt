@@ -192,6 +192,7 @@ class HomeViewModel @Inject constructor(
             Period.TODAY -> DateUtils.getStartOfDay(now)
             Period.THIS_WEEK -> DateUtils.getStartOfWeek(now)
             Period.THIS_MONTH -> DateUtils.getStartOfMonth(now)
+            Period.LAST_3_MONTHS -> DateUtils.getStartOf3MonthsAgo(now)
         }
         flowOf(start to now)
     }

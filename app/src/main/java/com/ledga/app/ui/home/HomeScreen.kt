@@ -177,6 +177,7 @@ fun HomeScreen(
                     Period.TODAY -> "SPENT TODAY"
                     Period.THIS_WEEK -> "SPENT THIS WEEK"
                     Period.THIS_MONTH -> "SPENT THIS MONTH"
+                    Period.LAST_3_MONTHS -> "SPENT IN 3 MONTHS"
                 }
                 Text(
                     text = overlineLabel,

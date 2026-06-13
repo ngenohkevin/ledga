@@ -90,6 +90,18 @@ object DateUtils {
         }.timeInMillis
     }
 
+    /** Start of the day three calendar months back — for the "3 Months" period. */
+    fun getStartOf3MonthsAgo(timestamp: Long = System.currentTimeMillis()): Long {
+        return Calendar.getInstance().apply {
+            timeInMillis = timestamp
+            add(Calendar.MONTH, -3)
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }.timeInMillis
+    }
+
     private fun isSameDay(a: Calendar, b: Calendar): Boolean {
         return a.get(Calendar.YEAR) == b.get(Calendar.YEAR) &&
                 a.get(Calendar.DAY_OF_YEAR) == b.get(Calendar.DAY_OF_YEAR)
