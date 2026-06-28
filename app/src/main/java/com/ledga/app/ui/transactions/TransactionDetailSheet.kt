@@ -25,6 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.ledga.app.data.db.entity.CarTag
 import com.ledga.app.data.db.entity.Category
 import com.ledga.app.data.db.entity.Goal
 import com.ledga.app.data.db.entity.MpesaAccount
@@ -51,6 +52,7 @@ fun TransactionDetailSheet(
     onToggleGoal: ((goalId: Long, currentlyIn: Boolean) -> Unit)? = null,
     isOwnAccount: Boolean = false,
     onToggleOwnAccount: (() -> Unit)? = null,
+    onCarTagChange: ((CarTag?) -> Unit)? = null,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val isInflow = transaction.direction == TransactionDirection.INFLOW
@@ -146,6 +148,37 @@ fun TransactionDetailSheet(
                                 style = MaterialTheme.typography.bodySmall
                             )
                         }
+                    }
+                }
+            }
+
+            // ---- Car expense tag (Fuel / Service) ----
+            // A separate dimension from category: tag a fuel or service payment
+            // so it's totalled on the Car expenses screen. Outflows only.
+            if (onCarTagChange != null &&
+                transaction.direction == TransactionDirection.OUTFLOW
+            ) {
+                Spacer(modifier = Modifier.height(16.dp))
+                HorizontalDivider()
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = "Car expense",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    LedgaChip(
+                        label = "None",
+                        selected = transaction.carTag == null,
+                        onClick = { onCarTagChange(null) },
+                    )
+                    CarTag.entries.forEach { tag ->
+                        LedgaChip(
+                            label = tag.label,
+                            selected = transaction.carTag == tag,
+                            onClick = { onCarTagChange(tag) },
+                        )
                     }
                 }
             }

@@ -7,6 +7,7 @@ import com.ledga.app.data.db.dao.DailySpending
 import com.ledga.app.data.db.dao.MonthlySpending
 import com.ledga.app.data.db.dao.TopMerchant
 import com.ledga.app.data.db.dao.TransactionDao
+import com.ledga.app.data.db.entity.CarTag
 import com.ledga.app.data.db.entity.CategoryRule
 import com.ledga.app.data.db.entity.MatchType
 import com.ledga.app.data.db.entity.TransactionEntity
@@ -180,6 +181,24 @@ class TransactionRepository @Inject constructor(
     suspend fun updateAccount(transactionId: Long, accountId: Long?) {
         transactionDao.updateAccount(transactionId, accountId)
     }
+
+    // ---- Car expenses (Fuel / Service) ----
+    // Account-agnostic by design: a car costs the same regardless of which
+    // SIM paid for the fuel or service, so these never apply the account
+    // filter (mirrors the goal helpers above).
+
+    /** Set/clear the Fuel/Service tag on a single transaction. */
+    suspend fun updateCarTag(transactionId: Long, tag: CarTag?) {
+        transactionDao.updateCarTag(transactionId, tag)
+    }
+
+    /** Total spent on [tag] in [startTime]..[endTime] across all lines. */
+    fun getCarSpending(tag: CarTag, startTime: Long, endTime: Long): Flow<Double> =
+        transactionDao.getCarSpending(tag, startTime, endTime, null)
+
+    /** Every transaction tagged [tag], newest first, across all lines. */
+    fun getCarTransactions(tag: CarTag): Flow<List<TransactionWithCategory>> =
+        transactionDao.getCarTransactions(tag, null)
 
     /** Bulk date-range backfill. Returns the number of rows updated. */
     suspend fun bulkAttribute(accountId: Long?, startTime: Long, endTime: Long): Int =

@@ -2,8 +2,9 @@ package com.ledga.app.worker
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
-import android.os.Build
+import android.content.Intent
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 
@@ -50,11 +51,25 @@ object NotificationHelper {
         title: String,
         body: String
     ) {
+        // Tapping opens the app. Without a content intent the tap does nothing
+        // and setAutoCancel never fires, so the notification just sits in the
+        // shade until manually swiped — the "can't mark it read" complaint.
+        val launchIntent = context.packageManager
+            .getLaunchIntentForPackage(context.packageName)
+            ?.apply { flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP }
+        val contentIntent = PendingIntent.getActivity(
+            context,
+            notificationId,
+            launchIntent ?: Intent(),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+        )
+
         val notification = NotificationCompat.Builder(context, channelId)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentTitle(title)
             .setContentText(body)
             .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+            .setContentIntent(contentIntent)
             .setAutoCancel(true)
             .build()
 

@@ -5,6 +5,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
+import com.ledga.app.data.db.entity.CarTag
 import com.ledga.app.data.db.entity.TransactionEntity
 import com.ledga.app.data.db.entity.TransactionWithCategory
 import com.ledga.app.data.parser.TransactionType
@@ -411,6 +412,37 @@ interface TransactionDao {
 
     @Query("DELETE FROM transactions WHERE id = :id")
     suspend fun deleteById(id: Long)
+
+    // ---- Car expenses (Fuel / Service tag) ----
+    // carTag is an orthogonal user tag; these power the Car expenses screen.
+    // Reversed originals are excluded so a refunded fuel payment doesn't count.
+    // The Car screen is account-agnostic (the repo always passes accountId=null,
+    // like the goal helpers) — the :accountId param is kept for symmetry.
+
+    @Query("UPDATE transactions SET carTag = :tag WHERE id = :id")
+    suspend fun updateCarTag(id: Long, tag: CarTag?)
+
+    @Query("""
+        SELECT COALESCE(SUM(amount), 0.0) FROM transactions
+        WHERE carTag = :tag
+          AND direction = 'OUTFLOW'
+          AND timestamp BETWEEN :startTime AND :endTime
+          AND (:accountId IS NULL OR accountId = :accountId)
+          AND transactionCode NOT IN (
+              SELECT reversedTransactionCode FROM transactions
+              WHERE reversedTransactionCode IS NOT NULL
+          )
+    """)
+    fun getCarSpending(tag: CarTag, startTime: Long, endTime: Long, accountId: Long? = null): Flow<Double>
+
+    @Transaction
+    @Query("""
+        SELECT * FROM transactions
+        WHERE carTag = :tag
+          AND (:accountId IS NULL OR accountId = :accountId)
+        ORDER BY timestamp DESC
+    """)
+    fun getCarTransactions(tag: CarTag, accountId: Long? = null): Flow<List<TransactionWithCategory>>
 
     // ---- Fuliza status (latest known values from SMS) ----
     // Fuliza is a per-LINE facility: each SIM has its own limit and

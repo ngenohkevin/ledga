@@ -1,6 +1,7 @@
 package com.ledga.app.data.db
 
 import androidx.room.TypeConverter
+import com.ledga.app.data.db.entity.CarTag
 import com.ledga.app.data.db.entity.InsightSeverity
 import com.ledga.app.data.db.entity.InsightType
 import com.ledga.app.data.db.entity.MatchType
@@ -38,4 +39,11 @@ class Converters {
 
     @TypeConverter
     fun toInsightSeverity(value: String): InsightSeverity = InsightSeverity.valueOf(value)
+
+    // Nullable: a transaction with no car tag stores SQL NULL.
+    @TypeConverter
+    fun fromCarTag(value: CarTag?): String? = value?.name
+
+    @TypeConverter
+    fun toCarTag(value: String?): CarTag? = value?.let { CarTag.valueOf(it) }
 }
