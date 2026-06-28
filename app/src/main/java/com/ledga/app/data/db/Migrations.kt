@@ -18,6 +18,8 @@ import androidx.sqlite.db.SupportSQLiteDatabase
  *   4 - categories gains isTransfer (own-account transfer categories,
  *       excluded from spending) + seed the "My Accounts" category;
  *       transactions gains fulizaLimit (available Fuliza limit from SMS).
+ *   5 - transactions gains carTag (user-applied Fuel/Service car-expense tag,
+ *       stored as TEXT enum name; null = not a car expense).
  */
 object Migrations {
 
@@ -201,6 +203,17 @@ object Migrations {
                 INSERT OR IGNORE INTO `categories` (`id`, `name`, `icon`, `color`, `isDefault`, `isTransfer`)
                 VALUES (14, 'My Accounts', 'swap_horiz', '#78909C', 1, 1)
                 """.trimIndent()
+            )
+        }
+    }
+
+    val MIGRATION_4_5 = object : Migration(4, 5) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            // Additive nullable column — no table rebuild, no FK risk. Stores
+            // the CarTag enum name ("FUEL" / "SERVICE"); NULL for the vast
+            // majority of rows that aren't car expenses.
+            db.execSQL(
+                "ALTER TABLE `transactions` ADD COLUMN `carTag` TEXT"
             )
         }
     }

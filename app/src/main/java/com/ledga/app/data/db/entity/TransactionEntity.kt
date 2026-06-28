@@ -57,4 +57,10 @@ data class TransactionEntity(
     // v2 additions (DB v2)
     val accountId: Long? = null,
     val note: String? = null,
+    /**
+     * Optional car-expense tag (Fuel / Service), set by the user from the
+     * transaction detail sheet. Null = not a car expense. Added DB v5.
+     * Orthogonal to [categoryId] — see [CarTag].
+     */
+    val carTag: CarTag? = null,
 )

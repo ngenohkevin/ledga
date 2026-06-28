@@ -17,6 +17,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Backup
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.CloudUpload
+import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Notifications
@@ -63,6 +64,7 @@ fun YouScreen(
     onNavigateToBudgets: () -> Unit,
     onNavigateToGoals: () -> Unit,
     onNavigateToAccounts: () -> Unit,
+    onNavigateToCar: () -> Unit,
     onNavigateToUpdate: () -> Unit,
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
@@ -142,6 +144,13 @@ fun YouScreen(
                     iconTint = LedgaAccentDeep,
                     label = "Budgets",
                     onClick = onNavigateToBudgets,
+                )
+                CardDivider()
+                NavRow(
+                    icon = Icons.Filled.DirectionsCar,
+                    iconTint = LedgaAccentDeep,
+                    label = "Car expenses",
+                    onClick = onNavigateToCar,
                 )
                 CardDivider()
                 NavRow(

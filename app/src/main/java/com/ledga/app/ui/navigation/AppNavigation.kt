@@ -7,6 +7,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.ledga.app.ui.accounts.AccountsScreen
 import com.ledga.app.ui.accounts.BackfillScreen
+import com.ledga.app.ui.car.CarExpensesScreen
 import com.ledga.app.ui.update.UpdateScreen
 import com.ledga.app.ui.activity.ActivityScreen
 import com.ledga.app.ui.goals.GoalDetailScreen
@@ -61,6 +62,7 @@ fun AppNavigation(
                 onNavigateToBudgets = { navController.navigate(BudgetRoute) },
                 onNavigateToGoals = { navController.navigate(GoalsRoute) },
                 onNavigateToAccounts = { navController.navigate(AccountsRoute) },
+                onNavigateToCar = { navController.navigate(CarExpensesRoute) },
                 onNavigateToUpdate = { navController.navigate(UpdateRoute) },
             )
         }
@@ -89,6 +91,9 @@ fun AppNavigation(
         }
         composable<AccountBackfillRoute> {
             BackfillScreen(onBack = { navController.popBackStack() })
+        }
+        composable<CarExpensesRoute> {
+            CarExpensesScreen(onBack = { navController.popBackStack() })
         }
         composable<UpdateRoute> {
             UpdateScreen(onBack = { navController.popBackStack() })

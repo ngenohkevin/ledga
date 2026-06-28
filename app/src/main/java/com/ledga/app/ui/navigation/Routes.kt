@@ -18,6 +18,7 @@ import kotlinx.serialization.Serializable
 @Serializable object AccountsRoute
 @Serializable object AccountBackfillRoute
 @Serializable object UpdateRoute
+@Serializable object CarExpensesRoute
 
 // ---- Legacy aliases kept until Phase B sweep is complete ----
 // Activity bar replaces these; AppNavigation will route them inside Activity.

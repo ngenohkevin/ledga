@@ -2,6 +2,7 @@ package com.ledga.app.ui.transactions
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ledga.app.data.db.entity.CarTag
 import com.ledga.app.data.db.entity.Category
 import com.ledga.app.data.db.entity.Goal
 import com.ledga.app.data.db.entity.MpesaAccount
@@ -179,6 +180,22 @@ class TransactionsViewModel @Inject constructor(
         viewModelScope.launch {
             transactionRepository.updateAccount(transactionId, accountId)
             _selectedTransaction.value = null
+        }
+    }
+
+    /**
+     * Set/clear the Fuel/Service car tag on the selected transaction. Keeps the
+     * sheet open and reflects the change in the snapshot so the chip highlights
+     * immediately (the selected transaction isn't a live DB flow).
+     */
+    fun changeCarTag(transactionId: Long, tag: CarTag?) {
+        viewModelScope.launch {
+            transactionRepository.updateCarTag(transactionId, tag)
+            _selectedTransaction.value = _selectedTransaction.value?.let { cur ->
+                if (cur.transaction.id == transactionId)
+                    cur.copy(transaction = cur.transaction.copy(carTag = tag))
+                else cur
+            }
         }
     }
 

@@ -83,6 +83,12 @@ fun TransactionsScreen(
                     )
                 }
             },
+            onCarTagChange = { tag ->
+                viewModel.changeCarTag(
+                    state.selectedTransaction!!.transaction.id,
+                    tag,
+                )
+            },
         )
     }
 
