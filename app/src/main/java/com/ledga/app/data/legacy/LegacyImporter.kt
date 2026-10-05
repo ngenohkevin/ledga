@@ -129,7 +129,12 @@ class LegacyImporter(
         return created
     }
 
-    /** v1 rules beyond its defaults become USER rules; TILL has no v2 equivalent (never in SMS) and is skipped. */
+    /**
+     * v1 rules beyond its defaults become USER rules. Skipped: TILL (never in SMS, no v2 equivalent), and rules into
+     * v1 "Bills & Utilities" — R6 at the rule level: v2 has no catch-all Bills category (it maps to Other), and a USER
+     * rule to Other would outrank v2's Electricity/Water/Internet/TV system rules forever; a biller no v2 rule knows
+     * still lands in Other through its kind default.
+     */
     private suspend fun importUserRules(legacyRules: List<LegacyRuleRow>, targets: Targets, now: Instant): Pair<Int, Int> {
         val defaults = LegacyAutoCategorizer.DEFAULT_RULES.map { Triple(it.categoryId, it.matchType, it.matchValue.uppercase()) }.toSet()
         var imported = 0
@@ -142,7 +147,7 @@ class LegacyImporter(
                 else -> null
             }
             val pattern = r.matchValue.trim()
-            if (field == null || pattern.isEmpty()) { skipped++; return@forEach }
+            if (field == null || pattern.isEmpty() || r.categoryId == LegacyAutoCategorizer.BILLS) { skipped++; return@forEach }
             val (categoryKey, own) = targets.resolve(LegacyCategoryMap.map(r.categoryId), r.categoryId)
             db.rulesDao().insert(
                 RuleRow(

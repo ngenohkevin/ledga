@@ -111,6 +111,25 @@ class LegacyImporterTest {
     }
 
     @Test
+    fun `a v1 user rule into Bills yields to v2's Bills rules (R6 for rules)`() = runTest {
+        val water = Sms.paybill("TJK4AB12GF", "SAMPLE CITY WATER AND SEWERAGE", "W77", "1,500.00")
+        SchemaFixture.create(context, "bills.db", 5).use { helper ->
+            LegacyDbWriter(helper.writableDatabase, 5).apply {
+                defaultCategories(); defaultRules()
+                rule(100, 3, "RECIPIENT_NAME", "SAMPLE CITY WATER") // v1 user rule -> Bills & Utilities
+                tx(1, "TJK4AB12GF", "SEND", "OUTFLOW", water, at, 3, recipientName = "SAMPLE CITY WATER AND SEWERAGE", accountNumber = "W77")
+            }
+        }
+        val db = LedgaDatabase.builder(context, "bills.db").build().also { db = it }
+        val report = LegacyImporter(db).run()
+        Deriver(db).rebuildAll()
+        assertEquals(Categories.WATER, db.tx("TJK4AB12GF").categoryKey, "v2's WATER AND SEWERAGE rule, not an imported Other rule")
+        assertTrue(db.rulesDao().all().none { it.origin == RuleOrigin.USER })
+        assertEquals(0, report.userRules)
+        assertEquals(1, report.skippedRules)
+    }
+
+    @Test
     fun `a payment re-ingested after the import merges with its orphan companion`() = runTest {
         val db = migratedV5()
         LegacyImporter(db).run()
