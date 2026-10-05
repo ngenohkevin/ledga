@@ -1,0 +1,689 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 6,
+    "identityHash": "9b3107580b8285045a2154437871cdde",
+    "entities": [
+      {
+        "tableName": "sms",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `sender` TEXT NOT NULL, `body` TEXT NOT NULL, `bodyHash` TEXT NOT NULL, `receivedAt` INTEGER NOT NULL, `subscriptionId` INTEGER, `lineId` INTEGER, `code` TEXT, `source` TEXT NOT NULL, `status` TEXT NOT NULL, `statusReason` TEXT, `parserVersion` INTEGER NOT NULL, FOREIGN KEY(`lineId`) REFERENCES `lines`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sender",
+            "columnName": "sender",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "body",
+            "columnName": "body",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "bodyHash",
+            "columnName": "bodyHash",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "receivedAt",
+            "columnName": "receivedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "subscriptionId",
+            "columnName": "subscriptionId",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "lineId",
+            "columnName": "lineId",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "code",
+            "columnName": "code",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "source",
+            "columnName": "source",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "statusReason",
+            "columnName": "statusReason",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "parserVersion",
+            "columnName": "parserVersion",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_sms_bodyHash",
+            "unique": true,
+            "columnNames": [
+              "bodyHash"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_sms_bodyHash` ON `${TABLE_NAME}` (`bodyHash`)"
+          },
+          {
+            "name": "index_sms_code",
+            "unique": false,
+            "columnNames": [
+              "code"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_sms_code` ON `${TABLE_NAME}` (`code`)"
+          },
+          {
+            "name": "index_sms_lineId",
+            "unique": false,
+            "columnNames": [
+              "lineId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_sms_lineId` ON `${TABLE_NAME}` (`lineId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "lines",
+            "onDelete": "SET NULL",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "lineId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "transactions",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`code` TEXT NOT NULL, `lineId` INTEGER, `occurredAt` INTEGER NOT NULL, `occurredAtApprox` INTEGER NOT NULL, `kind` TEXT NOT NULL, `flow` TEXT NOT NULL, `amountCents` INTEGER NOT NULL, `feeCents` INTEGER NOT NULL, `balanceCents` INTEGER, `counterpartyName` TEXT, `counterpartyPhone` TEXT, `counterpartyAccount` TEXT, `counterpartyKey` TEXT, `destinationCountry` TEXT, `reversesCode` TEXT, `isReversed` INTEGER NOT NULL, `fulizaDrawnCents` INTEGER, `fulizaFeeCents` INTEGER, `fulizaOutstandingCents` INTEGER, `fulizaLimitCents` INTEGER, `fulizaDueDate` TEXT, `categoryKey` TEXT NOT NULL, `note` TEXT, `isHidden` INTEGER NOT NULL, `searchText` TEXT NOT NULL, `smsCount` INTEGER NOT NULL, PRIMARY KEY(`code`))",
+        "fields": [
+          {
+            "fieldPath": "code",
+            "columnName": "code",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lineId",
+            "columnName": "lineId",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "occurredAt",
+            "columnName": "occurredAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "occurredAtApprox",
+            "columnName": "occurredAtApprox",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "kind",
+            "columnName": "kind",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "flow",
+            "columnName": "flow",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "amountCents",
+            "columnName": "amountCents",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "feeCents",
+            "columnName": "feeCents",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "balanceCents",
+            "columnName": "balanceCents",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "counterpartyName",
+            "columnName": "counterpartyName",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "counterpartyPhone",
+            "columnName": "counterpartyPhone",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "counterpartyAccount",
+            "columnName": "counterpartyAccount",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "counterpartyKey",
+            "columnName": "counterpartyKey",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "destinationCountry",
+            "columnName": "destinationCountry",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "reversesCode",
+            "columnName": "reversesCode",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "isReversed",
+            "columnName": "isReversed",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fulizaDrawnCents",
+            "columnName": "fulizaDrawnCents",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "fulizaFeeCents",
+            "columnName": "fulizaFeeCents",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "fulizaOutstandingCents",
+            "columnName": "fulizaOutstandingCents",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "fulizaLimitCents",
+            "columnName": "fulizaLimitCents",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "fulizaDueDate",
+            "columnName": "fulizaDueDate",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "categoryKey",
+            "columnName": "categoryKey",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "note",
+            "columnName": "note",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "isHidden",
+            "columnName": "isHidden",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "searchText",
+            "columnName": "searchText",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "smsCount",
+            "columnName": "smsCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "code"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_transactions_occurredAt",
+            "unique": false,
+            "columnNames": [
+              "occurredAt"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_transactions_occurredAt` ON `${TABLE_NAME}` (`occurredAt`)"
+          },
+          {
+            "name": "index_transactions_flow_occurredAt",
+            "unique": false,
+            "columnNames": [
+              "flow",
+              "occurredAt"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_transactions_flow_occurredAt` ON `${TABLE_NAME}` (`flow`, `occurredAt`)"
+          },
+          {
+            "name": "index_transactions_categoryKey_occurredAt",
+            "unique": false,
+            "columnNames": [
+              "categoryKey",
+              "occurredAt"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_transactions_categoryKey_occurredAt` ON `${TABLE_NAME}` (`categoryKey`, `occurredAt`)"
+          },
+          {
+            "name": "index_transactions_lineId",
+            "unique": false,
+            "columnNames": [
+              "lineId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_transactions_lineId` ON `${TABLE_NAME}` (`lineId`)"
+          },
+          {
+            "name": "index_transactions_counterpartyKey",
+            "unique": false,
+            "columnNames": [
+              "counterpartyKey"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_transactions_counterpartyKey` ON `${TABLE_NAME}` (`counterpartyKey`)"
+          },
+          {
+            "name": "index_transactions_reversesCode",
+            "unique": false,
+            "columnNames": [
+              "reversesCode"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_transactions_reversesCode` ON `${TABLE_NAME}` (`reversesCode`)"
+          }
+        ]
+      },
+      {
+        "tableName": "overrides",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`code` TEXT NOT NULL, `categoryKey` TEXT, `note` TEXT, `lineId` INTEGER, `ownAccount` INTEGER, `hidden` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, PRIMARY KEY(`code`))",
+        "fields": [
+          {
+            "fieldPath": "code",
+            "columnName": "code",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "categoryKey",
+            "columnName": "categoryKey",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "note",
+            "columnName": "note",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "lineId",
+            "columnName": "lineId",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "ownAccount",
+            "columnName": "ownAccount",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "hidden",
+            "columnName": "hidden",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "code"
+          ]
+        }
+      },
+      {
+        "tableName": "rules",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `field` TEXT NOT NULL, `pattern` TEXT NOT NULL, `action` TEXT NOT NULL, `categoryKey` TEXT, `origin` TEXT NOT NULL, `priority` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL, `enabled` INTEGER NOT NULL DEFAULT 1)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "field",
+            "columnName": "field",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "pattern",
+            "columnName": "pattern",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "action",
+            "columnName": "action",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "categoryKey",
+            "columnName": "categoryKey",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "origin",
+            "columnName": "origin",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "priority",
+            "columnName": "priority",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "enabled",
+            "columnName": "enabled",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "1"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "categories",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`key` TEXT NOT NULL, `name` TEXT NOT NULL, `groupKey` TEXT NOT NULL, `icon3d` TEXT NOT NULL, `color` TEXT, `colorDark` TEXT, `tracked` INTEGER NOT NULL, `sortOrder` INTEGER NOT NULL, `origin` TEXT NOT NULL, `archived` INTEGER NOT NULL, PRIMARY KEY(`key`))",
+        "fields": [
+          {
+            "fieldPath": "key",
+            "columnName": "key",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "groupKey",
+            "columnName": "groupKey",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "icon3d",
+            "columnName": "icon3d",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "color",
+            "columnName": "color",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "colorDark",
+            "columnName": "colorDark",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "tracked",
+            "columnName": "tracked",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sortOrder",
+            "columnName": "sortOrder",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "origin",
+            "columnName": "origin",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "archived",
+            "columnName": "archived",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "key"
+          ]
+        }
+      },
+      {
+        "tableName": "lines",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `subscriptionId` INTEGER, `phoneNumber` TEXT, `displayName` TEXT NOT NULL, `color` TEXT NOT NULL, `isPrimary` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "subscriptionId",
+            "columnName": "subscriptionId",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "phoneNumber",
+            "columnName": "phoneNumber",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "displayName",
+            "columnName": "displayName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "color",
+            "columnName": "color",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isPrimary",
+            "columnName": "isPrimary",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_lines_subscriptionId",
+            "unique": true,
+            "columnNames": [
+              "subscriptionId"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_lines_subscriptionId` ON `${TABLE_NAME}` (`subscriptionId`)"
+          }
+        ]
+      },
+      {
+        "tableName": "alerts",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`key` TEXT NOT NULL, `type` TEXT NOT NULL, `title` TEXT NOT NULL, `body` TEXT NOT NULL, `targetCode` TEXT, `createdAt` INTEGER NOT NULL, `readAt` INTEGER, PRIMARY KEY(`key`))",
+        "fields": [
+          {
+            "fieldPath": "key",
+            "columnName": "key",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "type",
+            "columnName": "type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "title",
+            "columnName": "title",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "body",
+            "columnName": "body",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "targetCode",
+            "columnName": "targetCode",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "readAt",
+            "columnName": "readAt",
+            "affinity": "INTEGER"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "key"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_alerts_createdAt",
+            "unique": false,
+            "columnNames": [
+              "createdAt"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_alerts_createdAt` ON `${TABLE_NAME}` (`createdAt`)"
+          }
+        ]
+      },
+      {
+        "tableName": "meta",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`key` TEXT NOT NULL, `value` TEXT NOT NULL, PRIMARY KEY(`key`))",
+        "fields": [
+          {
+            "fieldPath": "key",
+            "columnName": "key",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "value",
+            "columnName": "value",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "key"
+          ]
+        }
+      }
+    ],
+    "views": [
+      {
+        "viewName": "ledger",
+        "createSql": "CREATE VIEW `${VIEW_NAME}` AS SELECT code, lineId, occurredAt, kind, flow, categoryKey, counterpartyKey, amountCents, CASE WHEN isReversed = 0 AND flow = 'SPEND' THEN amountCents ELSE 0 END AS spendCents, CASE WHEN isReversed = 0 AND flow = 'INCOME' THEN amountCents ELSE 0 END AS inCents, CASE WHEN isReversed = 0 THEN feeCents ELSE 0 END AS feeCents FROM transactions WHERE isHidden = 0"
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '9b3107580b8285045a2154437871cdde')"
+    ]
+  }
+}
