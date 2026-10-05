@@ -1,11 +1,17 @@
 package com.ledga.core.audit
 
+import com.ledga.core.derive.BalanceChain
+import com.ledga.core.derive.Derivation
+import com.ledga.core.derive.RuleEngine
+import com.ledga.core.derive.SourceSms
+import com.ledga.core.model.Categories
 import com.ledga.core.model.TxKind
 import com.ledga.core.money.Money
 import com.ledga.core.parse.MpesaParser
 import com.ledga.core.parse.ParseOutcome
 import com.ledga.core.parse.ParsedSms
 import org.junit.jupiter.api.Assumptions.assumeTrue
+import java.time.Instant
 import kotlin.test.Test
 import kotlin.test.assertTrue
 
@@ -108,5 +114,26 @@ class CorpusAuditTest {
         val grouped = problems.groupingBy { it }.eachCount().entries.sortedByDescending { it.value }
         grouped.take(40).forEach { (p, n) -> println("PROBLEM x$n  $p") }
         assertTrue(problems.isEmpty(), "${problems.size} corpus problems (${grouped.size} distinct); see printed skeletons")
+    }
+
+    /**
+     * Informational: the v1 export lacks every payment SMS that v1 dropped (every companion is an
+     * orphans), so gaps and some breaks are expected. Record the numbers; Phase 7 compares them on device.
+     */
+    @Test
+    fun `balance chain report on the real corpus`() {
+        assumeTrue(Corpus.available(), "corpus not present at ${Corpus.file} — skipped")
+        val engine = RuleEngine(RuleEngine.systemRules(Instant.EPOCH)) { Categories.seed(it)?.group }
+        val txs = Corpus.load().mapIndexedNotNull { i, row ->
+            val p = (MpesaParser.parse(row.rawSms, row.timestamp) as? ParseOutcome.Parsed)?.sms ?: return@mapIndexedNotNull null
+            Derivation.derive(listOf(SourceSms(i.toLong(), p, row.timestamp, null)), null, engine)
+        }
+        val report = BalanceChain.check(txs)
+        val kindByCode = txs.associate { it.code to it.kind }
+        println("=== Balance chain: transactions=${txs.size} checked=${report.checked} gaps=${report.gaps} breaks=${report.breaks.size}")
+        report.breaks.groupingBy { kindByCode.getValue(it.code) }.eachCount()
+            .entries.sortedByDescending { it.value }
+            .forEach { (kind, n) -> println("  breaks at %-20s %d".format(kind, n)) }
+        assertTrue(report.checked > 0, "no chain steps could be checked at all")
     }
 }
