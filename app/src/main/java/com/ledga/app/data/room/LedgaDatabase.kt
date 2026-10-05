@@ -14,6 +14,7 @@ import com.ledga.app.data.room.dao.RulesDao
 import com.ledga.app.data.room.dao.SmsDao
 import com.ledga.app.data.room.dao.TransactionsDao
 import com.ledga.app.data.room.migration.LegacyMigrations
+import com.ledga.app.data.room.migration.MIGRATION_5_6
 
 /**
  * Ledga v2's database (schema 6), the same file v1 used. NOT opened at runtime until the Phase 4 switch-over:
@@ -39,7 +40,7 @@ abstract class LedgaDatabase : RoomDatabase() {
         const val FILE_NAME = "ledga.db"
 
         /** Every migration from any shipped v1.x schema to 6. */
-        val MIGRATIONS: Array<Migration> get() = LegacyMigrations.ALL
+        val MIGRATIONS: Array<Migration> get() = LegacyMigrations.ALL + MIGRATION_5_6
 
         fun builder(context: Context, name: String = FILE_NAME): RoomDatabase.Builder<LedgaDatabase> =
             Room.databaseBuilder(context, LedgaDatabase::class.java, name)
