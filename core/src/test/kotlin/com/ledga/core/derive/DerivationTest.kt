@@ -150,6 +150,27 @@ class DerivationTest {
     }
 
     @Test
+    fun `a manual category applies only where its group fits the flow`() {
+        // Savings is a Not-spending category: on a counted send it is ignored, so the send stays counted under its default.
+        val savingsOnSpend = derive(send, override = Override("TJK4AB12FB", categoryKey = Categories.SAVINGS))
+        assertEquals(FlowKind.SPEND, savingsOnSpend.flow)
+        assertEquals(Categories.SENT_TO_PEOPLE, savingsOnSpend.categoryKey)
+        assertEquals(ksh("500") + ksh("7"), Ledger.spent(listOf(savingsOnSpend)))
+
+        // Marking it as an own account is what takes it out of Spent; a Not-spending label then fits.
+        val savingsOwn = derive(send, override = Override("TJK4AB12FB", categoryKey = Categories.SAVINGS, ownAccount = true))
+        assertEquals(FlowKind.OWN_OUT, savingsOwn.flow)
+        assertEquals(Categories.SAVINGS, savingsOwn.categoryKey)
+
+        // A spending label on an own-account transfer gives way to Own accounts, and comes back when the toggle is off.
+        val foodOwn = derive(send, override = Override("TJK4AB12FB", categoryKey = Categories.FOOD, ownAccount = true))
+        assertEquals(Categories.OWN_ACCOUNTS, foodOwn.categoryKey)
+        val foodBack = Derivation.reclassify(foodOwn, Override("TJK4AB12FB", categoryKey = Categories.FOOD, ownAccount = false), rules)
+        assertEquals(FlowKind.SPEND, foodBack.flow)
+        assertEquals(Categories.FOOD, foodBack.categoryKey)
+    }
+
+    @Test
     fun `orphan companion is a FULIZA_ONLY spend of the drawn amount`() {
         val tx = derive(companion)
         assertEquals(TxKind.FULIZA_ONLY, tx.kind)

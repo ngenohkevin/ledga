@@ -70,10 +70,13 @@ class RuleEngine(rules: List<Rule>, private val groupOf: (String) -> CategoryGro
     fun isOwnAccount(cp: Counterparty?): Boolean =
         ordered.any { it.action == RuleAction.MARK_OWN_ACCOUNT && matches(it, cp) }
 
+    /** Whether [categoryKey]'s group may label a transaction with [flow]. Unknown categories fit nothing. */
+    fun fits(categoryKey: String, flow: FlowKind): Boolean = groupOf(categoryKey)?.accepts(flow) == true
+
     fun categoryFor(cp: Counterparty?, flow: FlowKind): String? = ordered.firstOrNull { rule ->
         rule.action == RuleAction.SET_CATEGORY &&
             rule.categoryKey != null &&
-            groupOf(rule.categoryKey)?.accepts(flow) == true &&
+            fits(rule.categoryKey, flow) &&
             matches(rule, cp)
     }?.categoryKey
 

@@ -104,9 +104,13 @@ object Derivation {
     private fun flowFor(kind: TxKind, cp: Counterparty?, override: Override?, rules: RuleEngine): FlowKind =
         Classifier.flowOf(kind, override?.ownAccount ?: rules.isOwnAccount(cp))
 
+    /**
+     * A category never changes what counts as spending: a manual category applies only where its group fits the
+     * flow (otherwise it falls through), so turning own-account on and off brings the manual choice back.
+     */
     private fun categoryFor(kind: TxKind, flow: FlowKind, cp: Counterparty?, override: Override?, rules: RuleEngine): String =
-        override?.categoryKey
-            ?: (if (flow == FlowKind.OWN_OUT || flow == FlowKind.OWN_IN) Categories.OWN_ACCOUNTS else null)
+        override?.categoryKey?.takeIf { rules.fits(it, flow) }
+            ?:(if (flow == FlowKind.OWN_OUT || flow == FlowKind.OWN_IN) Categories.OWN_ACCOUNTS else null)
             ?: rules.categoryFor(cp, flow)
             ?: KindDefaults.categoryFor(kind)
 }
