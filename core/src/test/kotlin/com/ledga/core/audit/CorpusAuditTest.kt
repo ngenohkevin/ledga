@@ -8,9 +8,12 @@ import com.ledga.core.derive.SourceSms
 import com.ledga.core.model.Categories
 import com.ledga.core.model.TxKind
 import com.ledga.core.money.Money
+import com.ledga.core.parse.Extract
 import com.ledga.core.parse.MpesaParser
 import com.ledga.core.parse.ParseOutcome
 import com.ledga.core.parse.ParsedSms
+import com.ledga.core.parse.Shapes
+import com.ledga.core.parse.SmsText
 import org.junit.jupiter.api.Assumptions.assumeTrue
 import java.time.Instant
 import kotlin.test.Test
@@ -69,6 +72,12 @@ class CorpusAuditTest {
             }
             shapes.merge(p.shape, 1) { a, b -> a + b }
             val sk by lazy { Corpus.skeleton(row.rawSms) }
+
+            // Multi-shape guard: one message matching 2+ distinct shape ids means shape order is hiding an ambiguity.
+            val text = SmsText.normalize(row.rawSms)
+            val facts = Extract.fuliza(text)
+            val matched = Shapes.ALL.filter { it.match(text, facts) != null }.map { it.id }.distinct()
+            if (matched.size >= 2) problems += "MULTI-SHAPE ${matched.joinToString("+")} $sk"
 
             compatible[row.type]?.let { if (p.kind !in it) problems += "KIND ${row.type}->${p.kind} $sk" }
 
