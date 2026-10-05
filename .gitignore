@@ -21,3 +21,9 @@ build/
 # Internal planning docs — kept locally, not pushed.
 LEDGA_REDESIGN.md
 PROJECT_PLAN.md
+
+# Brainstorm companion mockups (local only)
+.superpowers/
+
+# v2 design spec and phase plans (local only)
+docs/superpowers/
