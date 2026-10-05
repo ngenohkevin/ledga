@@ -5,11 +5,14 @@ import com.ledga.app.data.ingest.RawSms
 import com.ledga.app.data.ingest.SmsIngestor
 import com.ledga.app.data.room.LineBalance
 import com.ledga.app.data.room.SmsSource
+import com.ledga.app.data.room.TxRow
 import com.ledga.app.data.room.dao.CategoryTotal
 import com.ledga.app.testing.Sms
 import com.ledga.app.testing.TestDb
 import com.ledga.core.derive.Override
 import com.ledga.core.model.Categories
+import com.ledga.core.model.FlowKind
+import com.ledga.core.model.TxKind
 import com.ledga.core.money.Money
 import com.ledga.core.time.InstantRange
 import com.ledga.core.time.PeriodType
@@ -23,6 +26,7 @@ import org.robolectric.RobolectricTestRunner
 import java.time.Instant
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 @RunWith(RobolectricTestRunner::class)
 class LedgerQueriesTest {
@@ -73,6 +77,24 @@ class LedgerQueriesTest {
     fun `combined balance from the database`() = runTest {
         ingest(Sms.KPLC, Sms.SEND) // both unattributed: the later by occurredAt (KPLC, balance 2,000.00) wins
         assertEquals(Money(200_000), queries.combinedBalance())
+    }
+
+    @Test
+    fun `combined balance stays fast and correct with 10,000 transactions over three lines`() = runTest {
+        val base = Instant.parse("2026-01-01T06:00:00Z")
+        val rows = (0 until 10_000).map { i ->
+            TxRow(
+                "TJK" + i.toString().padStart(7, '0'), (i % 3 + 1).toLong(), base.plusSeconds(i * 60L), false, TxKind.SEND, FlowKind.SPEND,
+                100, 0, 1_000L + i, null, null, null, null, null, null, false, null, null, null, null, null, "other", null, false, "", 1,
+            )
+        }
+        rows.chunked(500).forEach { db.transactionsDao().upsertAll(it) }
+        val started = System.nanoTime()
+        val balance = queries.combinedBalance()
+        val millis = (System.nanoTime() - started) / 1_000_000
+        // The latest row of each line: i = 9999 (line 1), 9998 (line 3), 9997 (line 2).
+        assertEquals(Money(3 * 1_000L + 9_999 + 9_998 + 9_997), balance)
+        assertTrue(millis < 1_000, "combinedBalance took $millis ms over 10,000 rows")
     }
 
     @Test

@@ -49,11 +49,15 @@ interface TransactionsDao {
     )
     fun page(lineId: Long?, like: String?): PagingSource<Int, TxRow>
 
-    /** Each line's latest stated wallet balance (one row per lineId, the null line included). */
+    /**
+     * Each line's latest stated wallet balance (one row per lineId, the null line included). The latest-code subquery
+     * runs once per distinct line, not once per row (a per-row correlated subquery took ~10 s at 10k rows).
+     */
     @Query(
-        "SELECT t.lineId AS lineId, t.balanceCents AS balanceCents FROM transactions t WHERE t.balanceCents IS NOT NULL " +
-            "AND t.code = (SELECT t2.code FROM transactions t2 WHERE t2.balanceCents IS NOT NULL AND t2.lineId IS t.lineId " +
-            "ORDER BY t2.occurredAt DESC, t2.code DESC LIMIT 1)",
+        "SELECT t.lineId AS lineId, t.balanceCents AS balanceCents FROM transactions t WHERE t.code IN (" +
+            "SELECT (SELECT t2.code FROM transactions t2 WHERE t2.balanceCents IS NOT NULL AND t2.lineId IS l.lineId " +
+            "ORDER BY t2.occurredAt DESC, t2.code DESC LIMIT 1) " +
+            "FROM (SELECT DISTINCT lineId FROM transactions WHERE balanceCents IS NOT NULL) l)",
     )
     suspend fun latestBalances(): List<LineBalance>
 
