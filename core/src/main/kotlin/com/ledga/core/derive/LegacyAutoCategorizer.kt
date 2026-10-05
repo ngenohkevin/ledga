@@ -1,6 +1,7 @@
 package com.ledga.core.derive
 
 import com.ledga.core.model.Categories
+import com.ledga.core.model.CategoryGroup
 
 /**
  * Re-implementation of v1.6's auto-categoriser (app TransactionRepository.autoCategorize +
@@ -100,11 +101,12 @@ object LegacyCategoryMap {
 
     /**
      * The override to write for a legacy user choice, or null when none should be written:
-     * a v1 "Bills & Utilities" choice yields to a v2 Electricity/Water rule (spec §8).
+     * a v1 "Bills & Utilities" choice yields to any v2 rule whose category is in the
+     * [CategoryGroup.BILLS_UTILITIES] group (electricity, water, internet, tv, rent): spec §8 widened to its intent.
      */
     fun overrideFor(legacyId: Long, v2RuleCategory: String?): LegacyMapping? =
         if (legacyId == LegacyAutoCategorizer.BILLS &&
-            (v2RuleCategory == Categories.ELECTRICITY || v2RuleCategory == Categories.WATER)
+            v2RuleCategory != null && Categories.seed(v2RuleCategory)?.group == CategoryGroup.BILLS_UTILITIES
         ) {
             null
         } else {

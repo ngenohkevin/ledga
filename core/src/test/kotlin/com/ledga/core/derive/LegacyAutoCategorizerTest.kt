@@ -78,10 +78,13 @@ class LegacyAutoCategorizerTest {
     }
 
     @Test
-    fun `a Bills choice yields to a v2 Electricity or Water rule`() {
+    fun `a Bills choice yields to any v2 Bills and utilities rule`() {
         assertNull(LegacyCategoryMap.overrideFor(3, Categories.ELECTRICITY))
         assertNull(LegacyCategoryMap.overrideFor(3, Categories.WATER))
-        assertEquals(LegacyMapping.ToCategory(Categories.OTHER), LegacyCategoryMap.overrideFor(3, Categories.TV))
+        assertNull(LegacyCategoryMap.overrideFor(3, Categories.INTERNET))
+        assertNull(LegacyCategoryMap.overrideFor(3, Categories.TV))
+        assertNull(LegacyCategoryMap.overrideFor(3, Categories.RENT))
+        assertEquals(LegacyMapping.ToCategory(Categories.OTHER), LegacyCategoryMap.overrideFor(3, Categories.FOOD))
         assertEquals(LegacyMapping.ToCategory(Categories.OTHER), LegacyCategoryMap.overrideFor(3, null))
         assertEquals(LegacyMapping.ToCategory(Categories.FOOD), LegacyCategoryMap.overrideFor(5, Categories.ELECTRICITY))
         assertEquals(Categories.FUEL, LegacyCategoryMap.carTag("FUEL"))
