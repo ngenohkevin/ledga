@@ -9,14 +9,14 @@ class SmsTextTest {
 
     @Test
     fun `normalises every whitespace variant to single spaces`() {
-        val messy = "  TJK4AB12CD  Confirmed.\r\nKsh500.00\tsent to JANE  TESTER on 21/3/26 at 1:30 PM.\n"
+        val messy = "  TJK4AB12CD  Confirmed.\r\nKsh500.00\tsent to JANE  TESTER on 21/3/26 at 1:30 PM.\n"
         assertEquals("TJK4AB12CD Confirmed. Ksh500.00 sent to JANE TESTER on 21/3/26 at 1:30 PM.", SmsText.normalize(messy))
     }
 
     @Test
     fun `hash is stable across whitespace variants and differs for different text`() {
         val a = SmsText.hash("TJK4AB12CD Confirmed. Ksh500.00 sent to JANE TESTER")
-        val b = SmsText.hash("TJK4AB12CD  Confirmed. Ksh500.00 sent to\r\nJANE TESTER ")
+        val b = SmsText.hash("TJK4AB12CD  Confirmed. Ksh500.00 sent to\r\nJANE TESTER ")
         assertEquals(a, b)
         assertEquals(64, a.length)
         assertTrue(a.all { it in '0'..'9' || it in 'a'..'f' })
