@@ -39,6 +39,19 @@ class PreV6SnapshotTest {
     }
 
     @Test
+    fun `a corrupt database is copied as it is and never deleted`() {
+        val db = context.getDatabasePath("bad.db")
+        db.parentFile!!.mkdirs()
+        val garbage = ByteArray(8192) { (it % 251).toByte() }
+        db.writeBytes(garbage)
+        val snapshot = PreV6Snapshot(context, "bad.db")
+        assertTrue(snapshot.takeIfNeeded(), "an unreadable database is exactly what the snapshot is for")
+        assertTrue(db.exists(), "the original must survive")
+        assertTrue(garbage.contentEquals(db.readBytes()))
+        assertTrue(garbage.contentEquals(File(snapshot.dir, "bad.db").readBytes()))
+    }
+
+    @Test
     fun `no database or an already-v6 database needs no snapshot`() {
         assertFalse(PreV6Snapshot(context, "missing.db").takeIfNeeded())
         SchemaFixture.create(context, "six.db", 6).use { it.writableDatabase }
