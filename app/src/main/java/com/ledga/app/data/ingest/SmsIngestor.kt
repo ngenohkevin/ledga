@@ -23,7 +23,11 @@ data class RawSms(
 /** [newCodes]: PARSED codes of newly stored rows (Phase 5 fires alerts only for these). */
 data class IngestResult(val inserted: Int, val duplicates: Int, val rejected: Int, val newCodes: Set<String>)
 
-/** Spec §7.2 steps 1–3: normalise + hash -> INSERT OR IGNORE -> store the parse status -> re-derive the codes touched. */
+/**
+ * Spec §7.2 steps 1–3: normalise + hash -> INSERT OR IGNORE -> store the parse status -> re-derive the codes touched.
+ * Each chunk's inserts and its derive commit together: if deriving fails (or the app dies), the SMS rows roll back too,
+ * so the next delivery of the same message is not mistaken for a duplicate and is derived then.
+ */
 class SmsIngestor(private val db: LedgaDatabase, private val deriver: Deriver) {
 
     suspend fun ingest(raw: RawSms): IngestResult = ingestAll(listOf(raw))
@@ -35,6 +39,7 @@ class SmsIngestor(private val db: LedgaDatabase, private val deriver: Deriver) {
         val codes = linkedSetOf<String>()
         raws.chunked(Deriver.CHUNK).forEach { chunk ->
             db.withTransaction {
+                val chunkCodes = linkedSetOf<String>()
                 for (raw in chunk) {
                     if (!MpesaParser.isMpesaSender(raw.sender)) { rejected++; continue }
                     val s = ParseStatus.of(MpesaParser.parse(raw.body, raw.receivedAt))
@@ -49,12 +54,13 @@ class SmsIngestor(private val db: LedgaDatabase, private val deriver: Deriver) {
                         duplicates++
                     } else {
                         inserted++
-                        if (s.status == SmsStatus.PARSED) codes += s.code!!
+                        if (s.status == SmsStatus.PARSED) chunkCodes += s.code!!
                     }
                 }
+                deriver.rederive(chunkCodes) // joins this transaction
+                codes += chunkCodes
             }
         }
-        deriver.rederive(codes)
         return IngestResult(inserted, duplicates, rejected, codes)
     }
 }

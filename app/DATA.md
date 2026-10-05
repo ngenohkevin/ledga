@@ -13,6 +13,7 @@
 - Changing rules or categories: write the row, then `Deriver.reclassifyAll()`.
 - A parser/derivation version bump, a restore, or You → Data "Rebuild": `RebuildScheduler.enqueue(workManager)` (when `Deriver.needsRebuild()`).
 - New SMS: `SmsIngestor.ingest/ingestAll`. The caller resolves `lineId` (Phase 5, §9.2). `IngestResult.newCodes` drives alerts.
+- Ingest is atomic per chunk of `Deriver.CHUNK` messages: the SMS rows and their derive commit together, and a failure rolls back the whole chunk and throws (re-deliver it). A `lineId` that doesn't exist in `lines` is a foreign-key violation that `INSERT OR IGNORE` does not cover, so it fails its whole chunk. Phase 5 must pass only existing line ids.
 - SQL must run on SQLite 3.18 (API 26): no window functions or UPSERT clauses. Chunk `IN` lists to `Deriver.CHUNK`.
 - Hidden rows are absent from the view and the list. `isReversed` is maintained by `Deriver` (a reversal may arrive first).
 - KSP2 is required (`ksp.useKSP2=true` in `gradle.properties`): under KSP1, Room 2.8 crashes reading an exported schema.

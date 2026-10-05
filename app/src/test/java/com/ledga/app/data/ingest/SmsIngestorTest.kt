@@ -46,6 +46,18 @@ class SmsIngestorTest {
     }
 
     @Test
+    fun `a failed derive stores nothing, so the next delivery of the same SMS is retried`() = runTest {
+        // Simulates the app being killed (or derive failing) between storing an SMS and deriving it.
+        val sqlite = db.openHelper.writableDatabase
+        sqlite.execSQL("CREATE TRIGGER boom BEFORE INSERT ON transactions BEGIN SELECT RAISE(ABORT, 'boom'); END")
+        runCatching { ingestor.ingest(raw(Sms.SEND)) }
+        sqlite.execSQL("DROP TRIGGER boom")
+        assertEquals(0, db.smsDao().pageAfter(0, 10).size, "the SMS row must roll back with its failed derive")
+        assertEquals(1, ingestor.ingest(raw(Sms.SEND)).inserted)
+        assertEquals(50_000L, db.transactionsDao().get("TJK4AB12FB")!!.amountCents)
+    }
+
+    @Test
     fun `non M-Pesa senders are rejected`() = runTest {
         assertEquals(1, ingestor.ingest(raw(Sms.SEND, sender = "SAFARICOM")).rejected)
         assertEquals(0, db.smsDao().pageAfter(0, 10).size)
