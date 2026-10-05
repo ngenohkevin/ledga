@@ -5,6 +5,7 @@ plugins {
     id("org.jetbrains.kotlin.plugin.serialization")
     id("com.google.devtools.ksp")
     id("com.google.dagger.hilt.android")
+    id("androidx.room")
 }
 
 android {
@@ -59,6 +60,12 @@ android {
         buildConfig = true
     }
 
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+        }
+    }
+
     packaging {
         resources {
             excludes += setOf(
@@ -69,6 +76,10 @@ android {
             )
         }
     }
+}
+
+room {
+    schemaDirectory("$projectDir/schemas")
 }
 
 dependencies {
@@ -125,6 +136,18 @@ dependencies {
 
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
+
+    // v2 core (pure Kotlin domain)
+    implementation(project(":core"))
+
+    // Room paging (v2 transactions list)
+    implementation("androidx.room:room-paging:2.8.4")
+
+    // v2 data-layer tests
+    testImplementation(kotlin("test-junit"))
+    testImplementation("org.robolectric:robolectric:4.16")
+    testImplementation("androidx.test:core-ktx:1.6.1")
+    testImplementation("androidx.work:work-testing:2.11.1")
 
     // Testing
     testImplementation("junit:junit:4.13.2")
