@@ -1,6 +1,7 @@
 package com.ledga.core.time
 
 import java.time.DayOfWeek
+import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
@@ -85,16 +86,16 @@ object Periods {
         return generateSequence(current(type, now)) { it.previous() }.take(n).toList().reversed()
     }
 
-    /** The previous period's first k whole days, k = days elapsed in the current period including today. */
+    /**
+     * The previous period from its start for as long as the current one has run (same elapsed time, not whole
+     * days), clamped to the previous period's end. Never empty: at the first instant of a period it is 1 ms.
+     */
     fun comparisonWindow(type: PeriodType, now: Instant): InstantRange {
         val current = current(type, now)
-        val elapsed = ChronoUnit.DAYS.between(current.start, dateOf(now)) + 1
         val previous = current.previous()
-        val days = minOf(elapsed, previous.lengthInDays.toLong())
-        return InstantRange(
-            previous.startInstant,
-            previous.start.plusDays(days).atStartOfDay(Nairobi.ZONE).toInstant(),
-        )
+        val elapsed = maxOf(Duration.between(current.startInstant, now), Duration.ofMillis(1))
+        val end = minOf(previous.startInstant.plus(elapsed), previous.endInstant)
+        return InstantRange(previous.startInstant, end)
     }
 
     fun nextMidnight(now: Instant): Instant = dateOf(now).plusDays(1).atStartOfDay(Nairobi.ZONE).toInstant()

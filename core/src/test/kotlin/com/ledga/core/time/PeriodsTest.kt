@@ -71,13 +71,15 @@ class PeriodsTest {
     }
 
     @Test
-    fun `comparison window is the same elapsed days of the previous period`() {
-        // 5 Mar → 1–5 Feb.
-        assertEquals(InstantRange(at("2026-01-31T21:00:00Z"), at("2026-02-05T21:00:00Z")), Periods.comparisonWindow(MONTH, at("2026-03-05T09:00:00Z")))
-        // 31 Mar → all of February (clamped to its 28 days).
+    fun `comparison window is the same elapsed time of the previous period`() {
+        // Thu 5 Mar 12:00 Nairobi -> 1 Feb 00:00 .. 5 Feb 12:00 Nairobi.
+        assertEquals(InstantRange(at("2026-01-31T21:00:00Z"), at("2026-02-05T09:00:00Z")), Periods.comparisonWindow(MONTH, at("2026-03-05T09:00:00Z")))
+        // 31 Mar 12:00 -> all of February (clamped to its end).
         assertEquals(InstantRange(at("2026-01-31T21:00:00Z"), at("2026-02-28T21:00:00Z")), Periods.comparisonWindow(MONTH, at("2026-03-31T09:00:00Z")))
-        // Wed 7 Oct → Mon–Wed of the previous week.
-        assertEquals(InstantRange(at("2026-09-27T21:00:00Z"), at("2026-09-30T21:00:00Z")), Periods.comparisonWindow(WEEK, at("2026-10-07T09:00:00Z")))
+        // Wed 7 Oct 12:00 -> Mon 28 Sep 00:00 .. Wed 30 Sep 12:00.
+        assertEquals(InstantRange(at("2026-09-27T21:00:00Z"), at("2026-09-30T09:00:00Z")), Periods.comparisonWindow(WEEK, at("2026-10-07T09:00:00Z")))
+        // Exactly at the first instant of a period the window is not empty (InstantRange forbids that): 1 ms.
+        assertEquals(InstantRange(at("2026-01-31T21:00:00Z"), at("2026-01-31T21:00:00.001Z")), Periods.comparisonWindow(MONTH, at("2026-02-28T21:00:00Z")))
     }
 
     @Test
