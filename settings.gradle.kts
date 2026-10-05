@@ -16,3 +16,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "Ledga"
 include(":app")
+include(":core")
