@@ -44,6 +44,7 @@ class RuleEngine(rules: List<Rule>, private val groupOf: (String) -> CategoryGro
 
     fun matches(rule: Rule, cp: Counterparty?): Boolean {
         if (cp == null) return false
+        if (rule.pattern.none { it.isLetterOrDigit() }) return false
         return when (rule.field) {
             RuleField.NAME_CONTAINS -> {
                 val name = cp.name ?: return false
@@ -55,7 +56,13 @@ class RuleEngine(rules: List<Rule>, private val groupOf: (String) -> CategoryGro
             }
             RuleField.PHONE_EQUALS -> {
                 val phone = cp.phone ?: return false
-                Phones.key(phone) == Phones.key(rule.pattern)
+                if (rule.pattern.count { it.isDigit() } < 7) return false
+                if ('*' !in rule.pattern && '*' !in phone) {
+                    // Both sides are full numbers: compare them exactly, not by first-4/last-3.
+                    Phones.local(phone) == Phones.local(rule.pattern)
+                } else {
+                    Phones.key(phone) == Phones.key(rule.pattern)
+                }
             }
         }
     }

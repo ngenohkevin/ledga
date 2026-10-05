@@ -36,10 +36,15 @@ object Phones {
     /** Masked form M-Pesa prints on receipts, e.g. 0712***111. */
     const val MASKED = """(?:\+?254|0)[17]\d{1,2}\*{2,4}\d{2,3}"""
 
+    /** Canonical local form: digits (and mask `*`) only, `254…`/`+254…` rewritten to `0…`. */
+    fun local(phone: String): String {
+        val compact = phone.filter { it.isDigit() || it == '*' }
+        return if (compact.startsWith("254")) "0" + compact.drop(3) else compact
+    }
+
     /** First 4 + last 3 characters of the local 0-prefixed form. */
     fun key(phone: String): String {
-        val compact = phone.filter { it.isDigit() || it == '*' }
-        val local = if (compact.startsWith("254")) "0" + compact.drop(3) else compact
+        val local = local(phone)
         return if (local.length < 7) local else local.take(4) + local.takeLast(3)
     }
 }

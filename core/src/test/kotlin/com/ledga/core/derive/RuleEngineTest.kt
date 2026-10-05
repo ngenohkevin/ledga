@@ -98,4 +98,29 @@ class RuleEngineTest {
         val e = RuleEngine(system, groupOf)
         assertEquals(Categories.WATER, e.categoryFor(cp("SAMPLE WATER & SEWERAGE CO"), FlowKind.SPEND))
     }
+
+    @Test
+    fun `phone rule on a full number does not match a different person sharing its ends`() {
+        val e = RuleEngine(listOf(user(1, RuleField.PHONE_EQUALS, "0712345111", Categories.RENT)), groupOf)
+        val rule = e.ordered.single()
+        assertFalse(e.matches(rule, cp("OTHER", phone = "0712999111")))
+        assertTrue(e.matches(rule, cp("JANE", phone = "0712345111")))
+        assertTrue(e.matches(rule, cp("JANE", phone = "0712***111")))
+        assertTrue(e.matches(rule, cp("JANE", phone = "+254712345111")))
+    }
+
+    @Test
+    fun `blank or degenerate patterns match nothing`() {
+        val names = listOf(cp("SAMPLE WATER & SEWERAGE CO"), cp("B9 - KIOSK"))
+        listOf("", "  ", " - ").forEach { p ->
+            val e = RuleEngine(listOf(user(1, RuleField.NAME_CONTAINS, p, Categories.RENT)), groupOf)
+            names.forEach { assertFalse(e.matches(e.ordered.single(), it), "pattern '$p'") }
+        }
+        val acc = RuleEngine(listOf(user(2, RuleField.ACCOUNT_EQUALS, "  ", Categories.RENT)), groupOf)
+        assertFalse(acc.matches(acc.ordered.single(), cp("X", account = "")))
+        assertFalse(acc.matches(acc.ordered.single(), cp("X", account = " ")))
+        val ph = RuleEngine(listOf(user(3, RuleField.PHONE_EQUALS, "123", Categories.RENT)), groupOf)
+        assertFalse(ph.matches(ph.ordered.single(), cp("X", phone = "123")))
+        assertFalse(ph.matches(ph.ordered.single(), cp("X", phone = "0712345123")))
+    }
 }
