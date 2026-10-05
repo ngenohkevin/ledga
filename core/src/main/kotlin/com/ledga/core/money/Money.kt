@@ -18,9 +18,15 @@ value class Money(val cents: Long) : Comparable<Money> {
     val isZero: Boolean get() = cents == 0L
     val isNegative: Boolean get() = cents < 0L
 
+    /** |cents|, throwing instead of silently overflowing for Long.MIN_VALUE (avoids the Java 15 `Math.absExact`). */
+    private fun absCents(): Long {
+        if (cents == Long.MIN_VALUE) throw ArithmeticException("Long overflow")
+        return kotlin.math.abs(cents)
+    }
+
     /** "1,200", "1,200.50" (AUTO), "1,200.00" (ALWAYS), "1,201" (NEVER, half-up). */
     fun amountText(decimals: Decimals = Decimals.AUTO): String {
-        val abs = Math.absExact(cents)
+        val abs = absCents()
         val frac = abs % 100
         val body = when (decimals) {
             Decimals.NEVER -> group(abs / 100 + if (frac >= 50) 1 else 0)
@@ -34,7 +40,7 @@ value class Money(val cents: Long) : Comparable<Money> {
 
     /** Every spelling of this amount a user might search for (no sign). */
     fun searchForms(): List<String> {
-        val abs = Math.absExact(cents)
+        val abs = absCents()
         val whole = abs / 100
         val frac = pad2(abs % 100)
         val plain = whole.toString()

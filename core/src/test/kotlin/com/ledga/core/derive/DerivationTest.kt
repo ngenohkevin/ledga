@@ -163,4 +163,15 @@ class DerivationTest {
         assertFailsWith<IllegalArgumentException> { derive(send, override = Override("TJK4AB12ZZ", note = "x")) }
         assertEquals(1, Derivation.VERSION)
     }
+
+    @Test
+    fun `reclassify leaves hidden and note of the input untouched`() {
+        val base = derive(send, override = Override(code = derive(send).code, note = "kept", hidden = true))
+        assertTrue(base.isHidden)
+        val updated = Derivation.reclassify(base, Override(code = base.code, note = "other", hidden = false, categoryKey = Categories.RENT), rules)
+        assertTrue(updated.isHidden)
+        assertEquals("kept", updated.note)
+        assertEquals(Categories.RENT, updated.categoryKey)
+        assertEquals(base.lineId, updated.lineId)
+    }
 }

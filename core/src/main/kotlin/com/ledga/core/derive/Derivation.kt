@@ -90,7 +90,11 @@ object Derivation {
         )
     }
 
-    /** Re-resolve flow and category after a rule/category change. No re-parse; everything else is kept. */
+    /**
+     * Re-resolve flow and category after a rule/category change. No re-parse; everything else is kept.
+     * Recomputes ONLY flow and categoryKey (for rule/category changes). It ignores override.note / hidden /
+     * lineId: when any of those change, re-derive the code with [derive].
+     */
     fun reclassify(tx: DerivedTx, override: Override?, rules: RuleEngine): DerivedTx {
         val cp = Counterparty(tx.counterpartyName, tx.counterpartyPhone, tx.counterpartyAccount, null)
         val flow = flowFor(tx.kind, cp, override, rules)

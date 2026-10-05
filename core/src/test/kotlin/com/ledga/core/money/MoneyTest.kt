@@ -57,4 +57,10 @@ class MoneyTest {
         assertTrue((b - a).isNegative)
         assertFailsWith<ArithmeticException> { Money(Long.MAX_VALUE) + Money(1) }
     }
+
+    @Test
+    fun `Long MIN_VALUE cannot be formatted`() {
+        assertFailsWith<ArithmeticException> { Money(Long.MIN_VALUE).amountText() }
+        assertFailsWith<ArithmeticException> { Money(Long.MIN_VALUE).searchForms() }
+    }
 }
