@@ -146,18 +146,18 @@ internal object Shapes {
 
     private val REVERSAL_SUCCESS = Shape(
         "reversal",
-        """Reversal of transaction\s+(?<target>[A-Z0-9]{10})\s+has been successfully reversed$CREDITED""",
+        """Reversal of transaction\s+(?<target>[A-Z0-9]{10})\s+has been successfully reversed(?<dated>\s+on\s+\d)?$CREDITED""",
     ) { m, _ ->
         ShapeMatch(
             TxKind.REVERSAL, m.money("amount") ?: Money.ZERO,
-            reversesCode = m.text("target")?.uppercase(), carriesDate = false,
+            reversesCode = m.text("target")?.uppercase(), carriesDate = m.text("dated") != null,
         )
     }
 
-    private val REVERSAL = Shape("reversal", """Transaction\s+(?<target>[A-Z0-9]{10})\s+has been reversed$CREDITED""") { m, _ ->
+    private val REVERSAL = Shape("reversal", """Transaction\s+(?<target>[A-Z0-9]{10})\s+has been reversed(?<dated>\s+on\s+\d)?$CREDITED""") { m, _ ->
         ShapeMatch(
             TxKind.REVERSAL, m.money("amount") ?: Money.ZERO,
-            reversesCode = m.text("target")?.uppercase(), carriesDate = false,
+            reversesCode = m.text("target")?.uppercase(), carriesDate = m.text("dated") != null,
         )
     }
 

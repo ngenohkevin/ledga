@@ -9,6 +9,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 /** All fixtures are synthetic: invented names, numbers, codes and amounts reproducing real shapes. */
 class MoneyInShapesTest {
@@ -208,5 +209,20 @@ class MoneyInShapesTest {
         assertEquals(Money.ZERO, short.amount)
         assertEquals(ksh("2000"), short.balance)
         assertFalse(short.occurredAtApprox)
+    }
+
+    @Test
+    fun `a reversal that prints an unparseable date is approximate, a dateless one is not`() {
+        val dated = parse(
+            "TJK4AB12DX Confirmed. Transaction TJK4AB12CE has been reversed on 31/2/26 at 3:00 PM and Ksh750.00 is credited to your M-PESA account. New M-PESA account balance is Ksh2,750.00.",
+        )
+        assertTrue(dated.occurredAtApprox)
+        assertFalse(dated.occurredAtFromBody)
+        val success = parse(
+            "TJK4AB12DY confirmed. Reversal of transaction TJK4AB12CD has been successfully reversed on 31/2/26 at 1:10 PM and Ksh350.00 is credited to your M-PESA account. New M-PESA account balance is Ksh1,915.00.",
+        )
+        assertTrue(success.occurredAtApprox)
+        val dateless = parse("TJK4AB12DW Confirmed. Transaction TJK4AB12CF has been reversed. Your account balance is Ksh2,000.00.")
+        assertFalse(dateless.occurredAtApprox)
     }
 }
