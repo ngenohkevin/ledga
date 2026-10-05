@@ -140,9 +140,102 @@ internal object Shapes {
         ShapeMatch(TxKind.AIRTIME_SELF, m.money("amount") ?: return@Shape null)
     }
 
+    // ---- Reversals ----
+
+    private const val CREDITED = """(?:.*?Ksh\s?(?<amount>${Extract.NUM})\s+is credited)?"""
+
+    private val REVERSAL_SUCCESS = Shape(
+        "reversal",
+        """Reversal of transaction\s+(?<target>[A-Z0-9]{10})\s+has been successfully reversed$CREDITED""",
+    ) { m, _ ->
+        ShapeMatch(
+            TxKind.REVERSAL, m.money("amount") ?: Money.ZERO,
+            reversesCode = m.text("target")?.uppercase(), carriesDate = false,
+        )
+    }
+
+    private val REVERSAL = Shape("reversal", """Transaction\s+(?<target>[A-Z0-9]{10})\s+has been reversed$CREDITED""") { m, _ ->
+        ShapeMatch(
+            TxKind.REVERSAL, m.money("amount") ?: Money.ZERO,
+            reversesCode = m.text("target")?.uppercase(), carriesDate = false,
+        )
+    }
+
+    // ---- Fuliza ----
+
+    private val FULIZA_REVERSAL = Shape("fuliza.reversal", """Fuliza M-?PESA of\s+${amt()}\s+has been reversed""") { m, _ ->
+        ShapeMatch(TxKind.FULIZA_REVERSAL, m.money("amount") ?: return@Shape null, named("FULIZA M-PESA"))
+    }
+
+    /** The companion SMS that shares the payment's code. Amount = drawn; merged by the Assembler. */
+    private val FULIZA_COMPANION = Shape("fuliza.companion", """^[A-Z0-9]{10}\s+Confirmed\.?\s*Fuliza M-?PESA amount is""") { _, facts ->
+        ShapeMatch(TxKind.FULIZA_ONLY, facts?.drawn ?: return@Shape null, carriesDate = false)
+    }
+
+    private val FULIZA_AUTO = Shape(
+        "fuliza.repay.auto",
+        """${amt()}\s+from your M-?PESA has been used to\s+(?<mode>fully|partially)\s+pay your outstanding Fuliza""",
+    ) { m, facts ->
+        val fully = m.text("mode").equals("fully", ignoreCase = true)
+        ShapeMatch(
+            TxKind.FULIZA_REPAY_AUTO, m.money("amount") ?: return@Shape null, named("FULIZA M-PESA"),
+            carriesDate = false,
+            // A full repayment means nothing is owed, even though the SMS doesn't say so.
+            fuliza = if (fully) (facts ?: FulizaFacts()).copy(outstanding = facts?.outstanding ?: Money.ZERO) else null,
+        )
+    }
+
+    private val FULIZA_MANUAL = Shape("fuliza.repay.manual", """You have paid\s+${amt()}\s+to Fuliza M-?PESA""") { m, _ ->
+        ShapeMatch(TxKind.FULIZA_REPAY_MANUAL, m.money("amount") ?: return@Shape null, named("FULIZA M-PESA"))
+    }
+
+    // ---- Savings ----
+
+    private val KCB_OUT = Shape("savings.kcb", """${amt()}\s+transferr?ed to KCB M-?PESA account""") { m, _ ->
+        ShapeMatch(TxKind.SAVINGS_OUT, m.money("amount") ?: return@Shape null, named("KCB M-PESA"))
+    }
+
+    private val KCB_IN = Shape("savings.kcb", """transferr?ed\s+${amt()}\s+from your KCB M-?PESA account""") { m, _ ->
+        ShapeMatch(TxKind.SAVINGS_IN, m.money("amount") ?: return@Shape null, named("KCB M-PESA"))
+    }
+
+    private val MSHWARI_OUT = Shape("savings.mshwari", """${amt()}\s+transferr?ed to M-?Shwari account""") { m, _ ->
+        ShapeMatch(TxKind.SAVINGS_OUT, m.money("amount") ?: return@Shape null, named("M-SHWARI"))
+    }
+
+    private val MSHWARI_IN = Shape("savings.mshwari", """${amt()}\s+transferr?ed from (?:your )?M-?Shwari account""") { m, _ ->
+        ShapeMatch(TxKind.SAVINGS_IN, m.money("amount") ?: return@Shape null, named("M-SHWARI"))
+    }
+
+    // ---- Money in ----
+
+    private val DEPOSIT_GIVE = Shape("deposit.givecash", """Give\s+${amt()}\s+cash to\s+(?<name>.+?)\s+New M-?PESA balance""") { m, _ ->
+        ShapeMatch(TxKind.DEPOSIT, m.money("amount") ?: return@Shape null, named(m.text("name")))
+    }
+
+    private val DEPOSIT = Shape("deposit", """You have deposited\s+${amt()}""") { m, _ ->
+        ShapeMatch(TxKind.DEPOSIT, m.money("amount") ?: return@Shape null)
+    }
+
+    private val GLOBALPAY = Regex("GlobalPay", RegexOption.IGNORE_CASE)
+
+    private val RECEIVE = Shape("receive", """You have received\s+${amt()}\s+from\s+(?<from>.+?)\s+on\s+$DT""") { m, _ ->
+        val from = m.text("from") ?: return@Shape null
+        val global = GLOBALPAY.containsMatchIn(from)
+        ShapeMatch(
+            if (global) TxKind.GLOBAL_RECEIVE else TxKind.RECEIVE,
+            m.money("amount") ?: return@Shape null,
+            sender(from),
+            subShape = if (global) "global.receive" else null,
+        )
+    }
+
     val ALL: List<Shape> = listOf(
+        REVERSAL_SUCCESS, REVERSAL, FULIZA_REVERSAL, FULIZA_COMPANION, FULIZA_AUTO, FULIZA_MANUAL,
+        KCB_OUT, KCB_IN, MSHWARI_OUT, MSHWARI_IN,
         GLOBAL_SEND, SEND_AMOUNT_FIRST, SEND, PAYBILL_OLD, BUY_GOODS,
         WITHDRAW_ATM, WITHDRAW_GLUED, WITHDRAW_DASH, WITHDRAW_NAMED,
+        DEPOSIT_GIVE, DEPOSIT, RECEIVE,
         AIRTIME_OTHER, AIRTIME_SELF_BOUGHT, AIRTIME_SELF_PURCHASED,
     )
 }
