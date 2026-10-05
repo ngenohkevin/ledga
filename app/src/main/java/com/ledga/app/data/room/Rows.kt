@@ -156,3 +156,6 @@ object MetaKeys {
     const val PARSER_VERSION = "parserVersion"
     const val DERIVATION_VERSION = "derivationVersion"
 }
+
+/** A line's latest stated wallet balance (query result, not a table). */
+data class LineBalance(val lineId: Long?, val balanceCents: Long)
