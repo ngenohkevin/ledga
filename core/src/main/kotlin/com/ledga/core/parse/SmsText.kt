@@ -3,18 +3,20 @@ package com.ledga.core.parse
 import java.security.MessageDigest
 
 object SmsText {
-    // Java's \s does not include no-break spaces; some ROMs and backup tools insert them.
-    private val WHITESPACE = Regex("[\\s\\u00A0\\u2007\\u202F]+")
-    // BOM, zero-width space/non-joiner/joiner and word joiner: invisible, removed (not spaced) so codes stay exposed.
-    private val ZERO_WIDTH = Regex("[\uFEFF\u200B\u200C\u200D\u2060]")
+    // Every Unicode White_Space char (no-break, figure, em, thin and ideographic spaces, NEL, line/paragraph
+    // separators) collapses to one space; Java's plain \s is ASCII-only.
+    private val WHITESPACE = Regex("""\p{IsWhite_Space}+""")
+    // Every invisible format char (Unicode category Cf: BOM, zero-width space/joiners, word joiner, LRM/RLM,
+    // soft hyphen, bidi embeddings, overrides and isolates) is removed, not spaced, so codes stay exposed.
+    private val INVISIBLE = Regex("""\p{Cf}""")
     private val SENDERS = setOf("MPESA", "M-PESA", "FULIZA")
 
     /**
-     * Removes zero-width characters, collapses whitespace, trims.
+     * Removes invisible format characters (Unicode Cf), collapses all Unicode whitespace to single spaces, trims.
      * Persisted as `sms.bodyHash` (UNIQUE dedupe key) in Phase 2 — changing either function requires a
      * migration that re-hashes every stored SMS.
      */
-    fun normalize(body: String): String = body.replace(ZERO_WIDTH, "").replace(WHITESPACE, " ").trim()
+    fun normalize(body: String): String = body.replace(INVISIBLE, "").replace(WHITESPACE, " ").trim()
 
     /**
      * Lowercase hex SHA-256 of the normalised body. The `sms.bodyHash` dedupe key.

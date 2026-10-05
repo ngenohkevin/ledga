@@ -48,12 +48,40 @@ class SmsTextTest {
         assertEquals(SmsText.hash("TJK4AB12CD Confirmed."), SmsText.hash(zeroWidth.first() + "TJK4AB12CD Confirmed."))
     }
 
+    /** The other invisible format characters (Unicode Cf): LRM, RLM, soft hyphen, Arabic letter mark, bidi embeddings, overrides and isolates. */
+    private val otherInvisible = (listOf(0x200E, 0x200F, 0x00AD, 0x061C) + (0x202A..0x202E) + (0x2066..0x2069))
+        .map { String(Character.toChars(it)) }
+
+    /** Unicode spaces that Java's plain \s misses: NEL, ogham, en quad to hair space, line/paragraph separators, math and ideographic spaces. */
+    private val unicodeSpaces = (listOf(0x0085, 0x1680, 0x2028, 0x2029, 0x205F, 0x3000) + (0x2000..0x200A))
+        .map { String(Character.toChars(it)) }
+
     @Test
-    fun `a body prefixed with a BOM or zero-width space still parses`() {
+    fun `every invisible format character is removed entirely`() {
+        otherInvisible.forEach { z ->
+            val label = "U+%04X".format(z.codePointAt(0))
+            assertEquals("TJK4AB12CD Confirmed.", SmsText.normalize(z + "TJK4AB12CD Confirmed." + z), label)
+            assertEquals("ABCD", SmsText.normalize("AB" + z + "CD"), label)
+        }
+    }
+
+    @Test
+    fun `every Unicode space collapses to one space`() {
+        unicodeSpaces.forEach { s ->
+            assertEquals("A B", SmsText.normalize(s + "A" + s + s + "B" + s), "U+%04X".format(s.codePointAt(0)))
+        }
+        assertEquals(
+            SmsText.hash("TJK4AB12CD Confirmed. Ksh500.00"),
+            SmsText.hash("TJK4AB12CD" + unicodeSpaces.last() + "Confirmed." + unicodeSpaces.first() + "Ksh500.00"),
+        )
+    }
+
+    @Test
+    fun `a body prefixed with any invisible format character still parses`() {
         val body = "TJK4AB12CD Confirmed. Ksh500.00 sent to JANE TESTER 0712345111 on 21/3/26 at 1:30 PM. New M-PESA balance is Ksh1,200.00. " +
             "Transaction cost, Ksh7.00. Amount you can transact within the day is 499,493.00."
         val at = java.time.Instant.parse("2026-03-21T10:45:12Z")
-        zeroWidth.take(2).forEach { z ->
+        (zeroWidth.take(2) + otherInvisible).forEach { z ->
             val outcome = MpesaParser.parse(z + body, at)
             kotlin.test.assertIs<ParseOutcome.Parsed>(outcome)
             assertEquals("TJK4AB12CD", outcome.sms.code)
