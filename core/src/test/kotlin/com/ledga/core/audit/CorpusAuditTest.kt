@@ -2,6 +2,7 @@ package com.ledga.core.audit
 
 import com.ledga.core.derive.BalanceChain
 import com.ledga.core.derive.Derivation
+import com.ledga.core.derive.LegacyAutoCategorizer
 import com.ledga.core.derive.RuleEngine
 import com.ledga.core.derive.SourceSms
 import com.ledga.core.model.Categories
@@ -135,5 +136,25 @@ class CorpusAuditTest {
             .entries.sortedByDescending { it.value }
             .forEach { (kind, n) -> println("  breaks at %-20s %d".format(kind, n)) }
         assertTrue(report.checked > 0, "no chain steps could be checked at all")
+    }
+
+    @Test
+    fun `legacy categoriser reproduces v1 stored categories`() {
+        assumeTrue(Corpus.available(), "corpus not present at ${Corpus.file} — skipped")
+        val rules = LegacyAutoCategorizer.DEFAULT_RULES
+        val rows = Corpus.load().filter { it.categoryId != null }
+        var agree = 0
+        var drift = 0
+        var userChoices = 0
+        val disagreements = sortedMapOf<String, Int>()
+        for (r in rows) {
+            val auto = LegacyAutoCategorizer.categorize(r.type, r.recipientName, r.accountNumber, rules)
+            if (auto == r.categoryId) { agree++; continue }
+            if (LegacyAutoCategorizer.isUserChoice(r.categoryId, r.type, r.recipientName, r.accountNumber, rules)) userChoices++ else drift++
+            disagreements.merge("${r.type}: stored ${r.categoryId}, auto $auto", 1) { a, b -> a + b }
+        }
+        println("=== Legacy categoriser: rows=${rows.size} agree=$agree drift=$drift userChoices=$userChoices")
+        disagreements.forEach { (k, n) -> println("  $k  x$n") }
+        assertTrue(agree * 100L >= rows.size * 99L, "v1 parity below 99%: $agree of ${rows.size}")
     }
 }
