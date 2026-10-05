@@ -104,4 +104,28 @@ class AssemblerTest {
         assertEquals(setOf("TJK4AB12CD"), Reversals.reversedCodes(listOf(null, "TJK4AB12CD", null)))
         assertEquals(emptySet<String>(), Reversals.reversedCodes(listOf<String?>(null, null)))
     }
+
+    @Test
+    fun `lineId fallback is deterministic across source list orders`() {
+        val a = src(1, payment, t0, lineId = null)
+        val b = src(2, payment, t0.plusSeconds(1), lineId = 5)
+        val c = src(3, companion, t0.plusSeconds(2), lineId = 7)
+        val orders = listOf(listOf(a, b, c), listOf(c, b, a), listOf(b, c, a), listOf(c, a, b))
+        assertEquals(setOf<Long?>(5L), orders.map { Assembler.assemble(it).lineId }.toSet())
+        val companionOnly = listOf(src(4, companion, t0, lineId = null), src(5, companion, t0.plusSeconds(1), lineId = 9), src(6, companion, t0.plusSeconds(2), lineId = 8))
+        assertEquals(setOf<Long?>(9L), listOf(companionOnly, companionOnly.reversed()).map { Assembler.assemble(it).lineId }.toSet())
+    }
+
+    @Test
+    fun `two different payment SMS on one code keep the earliest payment`() {
+        val first = src(1, "TJK4AB12ED Confirmed. Ksh500.00 sent to JANE TESTER 0712345111 on 9/6/26 at 7:48 PM. New M-PESA balance is Ksh1,200.00. Transaction cost, Ksh7.00.", t0)
+        val second = src(2, "TJK4AB12ED Confirmed. Ksh900.00 sent to JANE TESTER 0712345111 on 9/6/26 at 7:49 PM. New M-PESA balance is Ksh300.00. Transaction cost, Ksh9.00.", t0.plusSeconds(60))
+        listOf(listOf(first, second), listOf(second, first)).forEach {
+            val tx = Assembler.assemble(it)
+            assertEquals(ksh("500"), tx.amount)
+            assertEquals(ksh("7"), tx.fee)
+            assertEquals(TxKind.SEND, tx.kind)
+            assertEquals(2, tx.smsCount)
+        }
+    }
 }

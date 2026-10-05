@@ -43,7 +43,8 @@ object Assembler {
         val code = sources.first().parsed.code
         require(sources.all { it.parsed.code == code }) { "mixed codes in one assembly" }
 
-        val (companions, payments) = sources.sortedWith(ORDER).partition { it.parsed.kind == TxKind.FULIZA_ONLY }
+        val sorted = sources.sortedWith(ORDER)
+        val (companions, payments) = sorted.partition { it.parsed.kind == TxKind.FULIZA_ONLY }
         val primary = payments.firstOrNull() ?: companions.first()
         val facts = companions.fold(primary.parsed.fuliza ?: FulizaFacts()) { acc, c -> acc.mergedWith(c.parsed.fuliza) }
             .takeUnless { it.isEmpty }
@@ -64,7 +65,7 @@ object Assembler {
                 destinationCountry = p.destinationCountry,
                 reversesCode = p.reversesCode,
                 fuliza = facts,
-                lineId = primary.lineId ?: sources.firstNotNullOfOrNull { it.lineId },
+                lineId = primary.lineId ?: sorted.firstNotNullOfOrNull { it.lineId },
                 smsCount = sources.size,
             )
         } else {
@@ -81,7 +82,7 @@ object Assembler {
                 destinationCountry = null,
                 reversesCode = null,
                 fuliza = facts,
-                lineId = primary.lineId ?: sources.firstNotNullOfOrNull { it.lineId },
+                lineId = primary.lineId ?: sorted.firstNotNullOfOrNull { it.lineId },
                 smsCount = sources.size,
             )
         }
