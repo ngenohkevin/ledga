@@ -10,7 +10,7 @@ internal data class ShapeMatch(
     val counterparty: Counterparty? = null,
     val destinationCountry: String? = null,
     val reversesCode: String? = null,
-    /** False for shapes that never print a date (Fuliza companion, auto-repay, reversals). */
+    /** False for shapes that print no date (Fuliza companion, auto-repay, and reversals in their undated wording). */
     val carriesDate: Boolean = true,
     /** Replaces the generically extracted Fuliza facts when non-null. */
     val fuliza: FulizaFacts? = null,

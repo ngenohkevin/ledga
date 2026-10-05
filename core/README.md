@@ -18,9 +18,9 @@ Everything Ledga computes that doesn't need Android: no Android or Room imports,
 ## Contracts Phase 2 must honour
 
 - `isReversed` is recomputed by the caller (via `Reversals.reversedCodes`); `Derivation.derive` always emits `false`.
-- `SmsText.normalize` and `SmsText.hash` are persisted keys (`sms.bodyHash`, UNIQUE). Changing either needs a migration that re-hashes every stored SMS.
+- `SmsText.normalize` and `SmsText.hash` are persisted keys (`sms.bodyHash`, UNIQUE). Changing either needs a migration that re-hashes every stored SMS. `normalize` removes every Unicode format character (category Cf) and collapses every Unicode White_Space run to one space; that set is final for v6.
 - `MpesaParser.VERSION` and `Derivation.VERSION` trigger full rebuilds when bumped.
-- R3: a rule applies only where its category's group accepts the flow; own-account flows (`OWN_OUT`/`OWN_IN`) always go to `own_accounts`; overrides are never filtered.
+- A category never changes what counts as spending (`RuleEngine.fits`). A rule (R3) or a manual override category applies only where its group accepts the flow; one that doesn't fit falls through. Own-account flows (`OWN_OUT`/`OWN_IN`) go to `own_accounts` unless a manual Not-spending category is chosen. The category picker must offer only fitting categories, and "My own account" is the one switch that takes a send out of Spent.
 - `Derivation.reclassify` recomputes flow and categoryKey only. When an override's note, hidden flag or lineId changes, re-derive the code with `derive`.
 - `Ledger` is the oracle: the Phase 2 `ledger` SQL view must produce the same per-row values (`PipelineGoldenTest` pins an end-to-end month).
 
