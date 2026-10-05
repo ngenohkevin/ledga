@@ -159,3 +159,15 @@ object MetaKeys {
 
 /** A line's latest stated wallet balance (query result, not a table). */
 data class LineBalance(val lineId: Long?, val balanceCents: Long)
+
+/** One transaction carrying a Fuliza fact (draw, repayment, limit or outstanding). */
+data class FulizaReading(
+    val code: String,
+    val lineId: Long?,
+    val kind: TxKind,
+    val occurredAt: Instant,
+    val amountCents: Long,
+    val fulizaOutstandingCents: Long?,
+    val fulizaLimitCents: Long?,
+    val fulizaDueDate: LocalDate?,
+)

@@ -4,6 +4,7 @@ import androidx.paging.PagingSource
 import androidx.room.Dao
 import androidx.room.Query
 import androidx.room.Upsert
+import com.ledga.app.data.room.FulizaReading
 import com.ledga.app.data.room.LineBalance
 import com.ledga.app.data.room.TxRow
 import com.ledga.core.model.FlowKind
@@ -55,4 +56,11 @@ interface TransactionsDao {
             "ORDER BY t2.occurredAt DESC, t2.code DESC LIMIT 1)",
     )
     suspend fun latestBalances(): List<LineBalance>
+
+    @Query(
+        "SELECT code, lineId, kind, occurredAt, amountCents, fulizaOutstandingCents, fulizaLimitCents, fulizaDueDate FROM transactions " +
+            "WHERE fulizaOutstandingCents IS NOT NULL OR fulizaLimitCents IS NOT NULL " +
+            "OR kind IN ('FULIZA_REPAY_AUTO', 'FULIZA_REPAY_MANUAL') ORDER BY occurredAt, code",
+    )
+    suspend fun fulizaReadings(): List<FulizaReading>
 }
