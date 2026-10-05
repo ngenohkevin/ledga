@@ -11,7 +11,10 @@ import kotlin.test.assertTrue
 
 /**
  * Opt-in audit against the owner's real v1 export (spec §15.1). Skipped when the file is
- * absent (always in CI). Prints counts and masked skeletons only. Run with:
+ * absent (always in CI). Tolerated v1 defects (exactly these): (1) Fuliza rows with v1 fee 0,
+ * (2) KCB/M-Shwari rows where v1 stored the savings balance as wallet balance, (3) <=1% date
+ * disagreements (v1 fell back to receive time), (4) v1 balance 0.0 meaning "not stated".
+ * Prints counts and masked skeletons only. Run with:
  *   ./gradlew :core:test --tests 'com.ledga.core.audit.CorpusAuditTest' --rerun
  */
 class CorpusAuditTest {
@@ -74,9 +77,12 @@ class CorpusAuditTest {
             val v2Balance = p.balance
             val balanceOk = when {
                 v2Balance == null -> v1Balance == 0L
-                v1Balance == 0L -> true // v1 missed it (e.g. "New balance is") or it really is zero
+                // Tolerated v1 defect #4: v1 encoded "no balance stated" as 0.0 (e.g. airtime-for-other
+                // "New balance is"), so a non-zero v2 balance against v1 0 cannot be checked from v1 data.
+                v1Balance == 0L -> true
                 v1Balance == v2Balance.cents -> true
-                v1Balance == p.savingsBalance?.cents -> true // v1 took the savings balance (fixed later in v1)
+                // v1 took the KCB/M-Shwari savings balance as the wallet balance (fixed later in v1)
+                (row.type == "KCB_MPESA" || row.type == "MSHWARI") && v1Balance == p.savingsBalance?.cents -> true
                 else -> false
             }
             if (!balanceOk) problems += "BALANCE ${row.type}->${p.kind} $sk"

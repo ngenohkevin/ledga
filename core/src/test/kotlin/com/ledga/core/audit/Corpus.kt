@@ -38,27 +38,40 @@ object Corpus {
 
     fun available(): Boolean = file.isFile
 
+    /**
+     * Any failure is rethrown as a sanitized error: the original exception (and its message, which
+     * can embed raw SMS text or field values) is never attached, so nothing leaks to logs/reports.
+     */
     fun load(): List<CorpusRow> {
-        val root = Json.parseToJsonElement(file.readText()).jsonObject
-        return root.getValue("transactions").jsonArray.map { el ->
-            val o = el.jsonObject
-            CorpusRow(
-                code = o.str("transactionCode")!!,
-                type = o.str("type")!!,
-                amount = o.dbl("amount") ?: 0.0,
-                fee = o.dbl("transactionCost") ?: 0.0,
-                balance = o.dbl("balance") ?: 0.0,
-                recipientName = o.str("recipientName"),
-                accountNumber = o.str("accountNumber"),
-                categoryId = o["categoryId"]?.takeUnless { it is JsonNull }?.jsonPrimitive?.long,
-                fulizaAmount = o.dbl("fulizaAmount"),
-                fulizaOutstanding = o.dbl("fulizaOutstanding"),
-                reversedCode = o.str("reversedTransactionCode"),
-                rawSms = o.str("rawSms")!!,
-                timestamp = Instant.ofEpochMilli(o.getValue("timestamp").jsonPrimitive.long),
-            )
+        var index = -1
+        try {
+            val root = Json.parseToJsonElement(file.readText()).jsonObject
+            return root.getValue("transactions").jsonArray.mapIndexed { i, el ->
+                index = i
+                val o = el.jsonObject
+                CorpusRow(
+                    code = o.req(o.str("transactionCode")),
+                    type = o.req(o.str("type")),
+                    amount = o.req(o.dbl("amount")),
+                    fee = o.req(o.dbl("transactionCost")),
+                    balance = o.req(o.dbl("balance")),
+                    recipientName = o.str("recipientName"),
+                    accountNumber = o.str("accountNumber"),
+                    categoryId = o["categoryId"]?.takeUnless { it is JsonNull }?.jsonPrimitive?.long,
+                    fulizaAmount = o.dbl("fulizaAmount"),
+                    fulizaOutstanding = o.dbl("fulizaOutstanding"),
+                    reversedCode = o.str("reversedTransactionCode"),
+                    rawSms = o.req(o.str("rawSms")),
+                    timestamp = Instant.ofEpochMilli(o.getValue("timestamp").jsonPrimitive.long),
+                )
+            }
+        } catch (e: Throwable) {
+            val where = if (index >= 0) " at row $index" else ""
+            throw IllegalStateException("corpus unreadable$where (${e::class.simpleName})")
         }
     }
+
+    private fun <T : Any> JsonObject.req(v: T?): T = v ?: throw NoSuchElementException()
 
     /** v1 stored doubles; round to cents for comparison. Test-only bridge. */
     fun cents(v1: Double): Long = Math.round(v1 * 100)
