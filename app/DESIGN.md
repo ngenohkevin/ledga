@@ -76,6 +76,10 @@ Everything lives in `com.ledga.app.ui.design`. Until Phase 4 uses it, R8 strips 
   A search request focuses the field a frame later and is then consumed (`TransactionsActions.onSearchFocused`), so
   coming back to the pane doesn't take the focus again. Each Spending request also counts in `ActivityLinks.spendingHops`,
   and `SpendingViewModel` returns to the current month on each one (R57), however far back the person stepped before.
+  A hop from another tab's screen (Home, or Tracker detail's "See all") remembers that tab: Back in Activity returns to
+  it, to the screen it left; tapping a tab ends that. Trackers open single-top, so a double tap opens one.
+  `LedgaNavHost` takes its screens as `LedgaScreens` (`AppScreens` in the app), so `LedgaNavHostTest` drives the real
+  routes with stand-ins.
 - **Home (4c).** `HomeRoute` owns the permission requests (4a M3: the first tap asks Android; once Android won't ask
   again, the next tap opens Settings), the sheets (`HomeSheets`: payment, picker, Fuliza; Hide closes the Fuliza sheet
   too) and Undo. `HomeContent` is stateless.

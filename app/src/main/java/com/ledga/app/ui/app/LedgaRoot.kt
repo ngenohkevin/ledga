@@ -2,6 +2,7 @@ package com.ledga.app.ui.app
 
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
+import androidx.activity.compose.BackHandler
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -10,7 +11,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -23,13 +27,8 @@ import androidx.navigation.compose.rememberNavController
 import com.ledga.app.data.settings.Settings
 import com.ledga.app.data.settings.TextSize
 import com.ledga.app.startup.StartupState
-import com.ledga.app.ui.activity.ActivityTab
 import com.ledga.app.ui.design.theme.LedgaTheme
 import com.ledga.app.ui.home.HomeNav
-import com.ledga.app.ui.trackers.TrackerDetailRoute
-import com.ledga.app.ui.trackers.TrackersTab
-import com.ledga.app.ui.home.HomeRoute as HomeScreenRoute
-import com.ledga.app.ui.onboarding.OnboardingRoute as OnboardingScreenRoute
 import java.io.File
 
 /** The whole app: theme and text size from settings, then startup's verdict (spec §8, §10.4). */
@@ -73,29 +72,56 @@ fun LedgaRootContent(
 
 /** The app once started (spec §10.4): onboarding until it's done, then four tabs. */
 @Composable
-fun LedgaNavHost(onboarded: Boolean) {
+fun LedgaNavHost(onboarded: Boolean, screens: LedgaScreens = AppScreens) {
     val nav = rememberNavController()
     val entry by nav.currentBackStackEntryAsState()
     val start: Any = remember { if (onboarded) HomeRoute else OnboardingRoute }
-    ShellFrame(selected = Tab.of(entry?.destination), onSelect = { nav.openTab(it) }) {
+    // A hop into Activity from a screen in another tab (R61): Back returns to that tab, to the screen it left. A tab
+    // tapped meanwhile ends it.
+    var backTo by rememberSaveable { mutableStateOf<Tab?>(null) }
+    fun hop(from: Tab) {
+        backTo = from
+        nav.openTab(Tab.ACTIVITY)
+    }
+    // One tracker per tap, however fast the taps come.
+    fun openTracker(key: String) = nav.navigate(TrackerRoute(key)) { launchSingleTop = true }
+    ShellFrame(
+        selected = Tab.of(entry?.destination),
+        onSelect = {
+            backTo = null
+            nav.openTab(it)
+        },
+    ) {
         NavHost(nav, startDestination = start) {
             composable<OnboardingRoute> {
-                OnboardingScreenRoute(onDone = { nav.navigate(HomeRoute) { popUpTo<OnboardingRoute> { inclusive = true } } })
+                screens.Onboarding(onDone = { nav.navigate(HomeRoute) { popUpTo<OnboardingRoute> { inclusive = true } } })
             }
             composable<HomeRoute> {
-                HomeScreenRoute(
+                screens.Home(
                     HomeNav(
-                        openActivity = { nav.openTab(Tab.ACTIVITY) },
+                        openActivity = { hop(Tab.HOME) },
                         openTrackers = { nav.openTab(Tab.TRACKERS) },
-                        openTracker = { nav.navigate(TrackerRoute(it)) },
+                        openTracker = ::openTracker,
                         openYou = { nav.openTab(Tab.YOU) },
                     ),
                 )
             }
-            composable<ActivityRoute> { ActivityTab() }
-            composable<TrackersRoute> { TrackersTab(onOpen = { nav.navigate(TrackerRoute(it)) }) }
-            composable<TrackerRoute> { TrackerDetailRoute(onBack = { nav.popBackStack() }, onSeeAll = { nav.openTab(Tab.ACTIVITY) }) }
-            composable<YouRoute> { ComingNext(Tab.YOU) }
+            composable<ActivityRoute> {
+                BackHandler(enabled = backTo != null) {
+                    val to = backTo ?: return@BackHandler
+                    backTo = null
+                    nav.openTab(to)
+                }
+                screens.Activity()
+            }
+            composable<TrackersRoute> { screens.Trackers(onOpen = ::openTracker) }
+            composable<TrackerRoute> {
+                screens.Tracker(
+                    onBack = { nav.popBackStack() },
+                    onSeeAll = { hop(Tab.of(nav.previousBackStackEntry?.destination) ?: Tab.HOME) },
+                )
+            }
+            composable<YouRoute> { screens.You() }
         }
     }
 }
