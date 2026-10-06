@@ -26,6 +26,7 @@ import com.ledga.app.startup.StartupState
 import com.ledga.app.ui.activity.ActivityTab
 import com.ledga.app.ui.design.theme.LedgaTheme
 import com.ledga.app.ui.home.HomeNav
+import com.ledga.app.ui.trackers.TrackerDetailRoute
 import com.ledga.app.ui.trackers.TrackersTab
 import com.ledga.app.ui.home.HomeRoute as HomeScreenRoute
 import com.ledga.app.ui.onboarding.OnboardingRoute as OnboardingScreenRoute
@@ -86,15 +87,14 @@ fun LedgaNavHost(onboarded: Boolean) {
                     HomeNav(
                         openActivity = { nav.openTab(Tab.ACTIVITY) },
                         openTrackers = { nav.openTab(Tab.TRACKERS) },
-                        // Task 12 points this at Tracker detail.
-                        openTracker = { nav.openTab(Tab.TRACKERS) },
+                        openTracker = { nav.navigate(TrackerRoute(it)) },
                         openYou = { nav.openTab(Tab.YOU) },
                     ),
                 )
             }
             composable<ActivityRoute> { ActivityTab() }
-            // Task 12 points onOpen at Tracker detail.
-            composable<TrackersRoute> { TrackersTab(onOpen = { }) }
+            composable<TrackersRoute> { TrackersTab(onOpen = { nav.navigate(TrackerRoute(it)) }) }
+            composable<TrackerRoute> { TrackerDetailRoute(onBack = { nav.popBackStack() }, onSeeAll = { nav.openTab(Tab.ACTIVITY) }) }
             composable<YouRoute> { ComingNext(Tab.YOU) }
         }
     }

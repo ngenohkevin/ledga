@@ -102,7 +102,8 @@ fun RuleChip(text: String, modifier: Modifier = Modifier, onRemove: (() -> Unit)
             .padding(start = 10.dp, end = if (onRemove == null) 10.dp else 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(text, style = LedgaType.label, color = c.ink2, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(vertical = 5.dp))
+        // The label gives way to the ×: a long rule ("KPLC Prepaid · account …") at large text pushed it out of reach.
+        Text(text, style = LedgaType.label, color = c.ink2, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false).padding(vertical = 5.dp))
         if (onRemove != null) {
             Box(
                 Modifier
