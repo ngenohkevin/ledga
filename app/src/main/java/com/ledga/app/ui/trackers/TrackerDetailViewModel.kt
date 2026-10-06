@@ -60,7 +60,7 @@ data class TrackerDetailUi(
     val buckets: List<Bucket> = emptyList(),
     val bars: List<Bar> = emptyList(),
     val selectedIndex: Int? = null,
-    /** The dashed line: per month, or per completed year once All shows years (R54). */
+    /** The dashed line: per month, or per completed year once All shows years (R54; a first year counts its months only). */
     val averageCents: Long? = null,
     val thisMonthCents: Long = 0,
     val lastMonthCents: Long = 0,
@@ -206,7 +206,7 @@ class TrackerDetailViewModel @Inject constructor(
             buckets = buckets,
             bars = buckets.mapIndexed { i, b -> bar(b, i == running) },
             selectedIndex = (pick ?: running).takeIf { it in buckets.indices },
-            averageCents = if (years) Bucketing.averageOfCompleted(buckets, now)?.cents else s.averageCents,
+            averageCents = if (years) Bucketing.averagePerYear(d.allMonths, now)?.cents else s.averageCents,
             thisMonthCents = s.thisMonth.total.cents,
             lastMonthCents = s.lastMonth.total.cents,
             monthlyAverageCents = s.averageCents,

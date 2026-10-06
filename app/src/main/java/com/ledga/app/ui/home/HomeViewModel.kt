@@ -237,11 +237,15 @@ class HomeViewModel @Inject constructor(
 
     private fun spendingCard(type: PeriodType, lineId: Long?, now: Instant): Flow<SpendingCardUi> {
         val periods = Periods.lastN(type, now, HomeSpending.BARS)
-        return combine(
-            ledger.totals(Periods.liveRange(periods.last(), now), lineId),
-            ledger.spent(Periods.comparisonWindow(type, now), lineId),
-            ledger.spentByPeriod(type, InstantRange(periods.first().startInstant, null), lineId),
-        ) { totals, before, sums -> HomeSpending.card(type, now, totals, before, sums) }
+        val span = InstantRange(periods.first().startInstant, null)
+        val totals = ledger.totals(Periods.liveRange(periods.last(), now), lineId)
+        val before = ledger.spent(Periods.comparisonWindow(type, now), lineId)
+        val sums = ledger.spentByPeriod(type, span, lineId)
+        // Year's average needs the months too: a first year counts only the months since the first payment.
+        if (type != PeriodType.YEAR) return combine(totals, before, sums) { t, b, s -> HomeSpending.card(type, now, t, b, s) }
+        return combine(totals, before, sums, ledger.spentByPeriod(PeriodType.MONTH, span, lineId)) { t, b, s, m ->
+            HomeSpending.card(type, now, t, b, s, m)
+        }
     }
 }
 

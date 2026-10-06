@@ -96,7 +96,9 @@ Everything lives in `com.ledga.app.ui.design`. Until Phase 4 uses it, R8 strips 
   - Text comes only from `TrackerText`: tile caption, row context and detail, rule chips, tooltips, payment lines and
     the add-rule preview.
   - Tracker detail is a pushed route (`TrackerRoute(categoryKey)`) with no bottom bar, so it pads `safeDrawing`
-    vertically. Its "All" range uses `Bucketing.allTime` (years after 12 months, R54).
+    vertically. Its "All" range uses `Bucketing.allTime` (years after 12 months, R54). A per-year average (that
+    dashed line, and Home's Year "Avg/year") is `Bucketing.averagePerYear` over months: a first year counts only the
+    months since the first payment.
   - "Matched by" chips sit on a `LedgaCard`: a chip's plate barely shows on the canvas. `RuleChip`'s label ellipsizes
     before its ×, so a long rule stays removable at large text.
   - Stop tracking closes the detail (R51); the screen below, Trackers or Home, then says "Stopped tracking <name>" with

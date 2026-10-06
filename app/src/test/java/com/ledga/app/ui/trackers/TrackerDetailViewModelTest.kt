@@ -100,7 +100,8 @@ class TrackerDetailViewModelTest {
         vm.setRange(DetailRange.ALL)
         val all = vm.ui.first { it.range == DetailRange.ALL }
         assertEquals(listOf("2024", "2025", "2026"), all.bars.map { it.label })
-        assertEquals(200_000, all.averageCents, "2024 and 2025, the completed years")
+        // 2024's history starts in June: 7 months, so it's 7/12 of a year. Ksh 4,000 over 19 months is Ksh 2,526.32 a year.
+        assertEquals(252_632, all.averageCents, "the completed years, a first year counted for its months only")
         assertEquals(2, all.selectedIndex)
     }
 

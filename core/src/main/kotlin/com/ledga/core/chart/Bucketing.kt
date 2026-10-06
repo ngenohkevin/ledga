@@ -37,6 +37,19 @@ object Bucketing {
         return Money(BigDecimal(sum).divide(BigDecimal(fromFirstPayment.size), 0, RoundingMode.HALF_UP).longValueExact())
     }
 
+    /**
+     * The average per completed year, from month buckets: each completed year counts only the months since the first
+     * payment, so seven months of a first year are 7/12 of a year, not a whole one. Null until a year has completed.
+     */
+    fun averagePerYear(months: List<Bucket>, now: Instant): Money? {
+        require(months.all { it.period.type == PeriodType.MONTH }) { "averagePerYear reads months" }
+        val running = Periods.dateOf(now).year
+        val counted = months.dropWhile { it.count == 0 }.filter { it.period.start.year < running }
+        if (counted.isEmpty()) return null
+        val perYear = BigDecimal(counted.sumOf { it.total.cents }).multiply(BigDecimal(12)).divide(BigDecimal(counted.size), 0, RoundingMode.HALF_UP)
+        return Money(perYear.longValueExact())
+    }
+
     fun usualDayOfMonth(paymentTimes: Iterable<Instant>): Int? {
         val days = paymentTimes.sortedDescending().take(6).map { Periods.dateOf(it).dayOfMonth }.sorted()
         return if (days.isEmpty()) null else days[(days.size - 1) / 2]

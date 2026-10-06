@@ -107,4 +107,15 @@ class BucketingTest {
         val thirteen = Periods.since(PeriodType.MONTH, at("2025-10-01T09:00:00Z"), now).map { Bucket(it, Money.ZERO, 0) }
         assertEquals(listOf("2025", "2026"), Bucketing.allTime(thirteen).map { it.period.key })
     }
+
+    @Test
+    fun `a year's average counts the first year only for the months since the first payment`() {
+        // Nothing until June 2024, then Ksh 100 a month: 2024 has 7 months of history, 2025 has 12, 2026 is running.
+        val months = Periods.since(PeriodType.MONTH, at("2024-01-10T09:00:00Z"), now).map { p ->
+            val paid = p.start >= java.time.LocalDate.of(2024, 6, 1)
+            Bucket(p, if (paid) ksh("100") else Money.ZERO, if (paid) 1 else 0)
+        }
+        assertEquals(ksh("1200"), Bucketing.averagePerYear(months, now), "19 months of Ksh 100 is Ksh 1,200 a year, not Ksh 950")
+        assertNull(Bucketing.averagePerYear(months.filter { it.period.start.year == 2026 }, now), "no year has completed")
+    }
 }

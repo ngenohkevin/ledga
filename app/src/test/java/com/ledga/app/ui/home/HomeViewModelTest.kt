@@ -148,6 +148,21 @@ class HomeViewModelTest {
     }
 
     @Test
+    fun `the Year card's average counts a first year only for its months`() = runTest {
+        db.transactionsDao().upsertAll(
+            listOf(
+                txRow(code = "TJK4AB12QC", amountCents = 100_000, at = Instant.parse("2024-06-10T07:00:00Z")),
+                txRow(code = "TJK4AB12QD", amountCents = 300_000, at = Instant.parse("2025-06-10T07:00:00Z")),
+            ),
+        )
+        val vm = vm()
+        vm.ui.first { it.loaded }
+        vm.setPeriod(PeriodType.YEAR)
+        // History starts in June 2024: Ksh 4,000 over 19 months is Ksh 2,526.32 a year, not Ksh 2,000.
+        assertEquals(252_632, vm.ui.first { it.spending.type == PeriodType.YEAR }.spending.averageCents)
+    }
+
+    @Test
     fun `when the month ends, the spending card and the trackers move on`() = runTest {
         ingest(Sms.KPLC) // 21 March, Ksh 1,000
         val ticks = Channel<Unit>()

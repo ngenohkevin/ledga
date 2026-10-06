@@ -52,8 +52,18 @@ object HomeSpending {
     const val BARS = 6
     private val DASH = Char(0x2013)
 
-    /** The card for the running [type] period at [now]: [before] is the same elapsed time of the previous one (spec §7.6). */
-    fun card(type: PeriodType, now: Instant, totals: PeriodTotals, before: Money, sums: Map<String, PeriodSum>): SpendingCardUi {
+    /**
+     * The card for the running [type] period at [now]: [before] is the same elapsed time of the previous one (spec §7.6).
+     * For Year, [months] (the same span by month) lets the average count a first year only for its months.
+     */
+    fun card(
+        type: PeriodType,
+        now: Instant,
+        totals: PeriodTotals,
+        before: Money,
+        sums: Map<String, PeriodSum>,
+        months: Map<String, PeriodSum>? = null,
+    ): SpendingCardUi {
         val periods = Periods.lastN(type, now, BARS)
         val buckets = Bucketing.zeroFill(sums.mapValues { Money(it.value.cents) }, sums.mapValues { it.value.count }, periods)
         val labels = periods.map(::label)
@@ -68,7 +78,12 @@ object HomeSpending {
             bars = buckets.map { it.total.cents },
             labels = labels,
             shortLabels = periods.map(::shortLabel),
-            averageCents = Bucketing.averageOfCompleted(buckets, now)?.cents,
+            averageCents = if (type == PeriodType.YEAR && months != null) {
+                val monthly = Periods.since(PeriodType.MONTH, periods.first().startInstant, now)
+                Bucketing.averagePerYear(Bucketing.zeroFill(months.mapValues { Money(it.value.cents) }, months.mapValues { it.value.count }, monthly), now)?.cents
+            } else {
+                Bucketing.averageOfCompleted(buckets, now)?.cents
+            },
             summary = summary(type, labels, buckets),
         )
     }
