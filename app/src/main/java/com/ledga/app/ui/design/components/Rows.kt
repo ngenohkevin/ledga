@@ -58,10 +58,18 @@ fun ValueRow(
     onClick: (() -> Unit)? = null,
     onLongClick: (() -> Unit)? = null,
     subtitleTail: String? = null,
+    onClickLabel: String? = null,
+    onLongClickLabel: String? = null,
 ) {
     val c = LedgaTheme.colors
     val interaction = if (onClick != null || onLongClick != null) {
-        Modifier.combinedClickable(onClick = onClick ?: {}, onLongClick = onLongClick)
+        // TalkBack names both actions ("Open payment", "Change category"): Phase 3 deferred M10.
+        Modifier.combinedClickable(
+            onClickLabel = onClickLabel,
+            onLongClickLabel = onLongClickLabel,
+            onLongClick = onLongClick,
+            onClick = onClick ?: {},
+        )
     } else {
         Modifier
     }
@@ -133,6 +141,8 @@ fun TxRow(
     onClick: (() -> Unit)? = null,
     onLongClick: (() -> Unit)? = null,
     subtitleTail: String? = null,
+    onClickLabel: String? = null,
+    onLongClickLabel: String? = null,
 ) = ValueRow(
     leading = leading,
     title = title,
@@ -145,6 +155,8 @@ fun TxRow(
     onClick = onClick,
     onLongClick = onLongClick,
     subtitleTail = subtitleTail,
+    onClickLabel = onClickLabel,
+    onLongClickLabel = onLongClickLabel,
 )
 
 /** First item of a day card: "TODAY ……… Out 4,500 · In 5,000" (spec §10.4). A TalkBack heading. */

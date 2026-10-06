@@ -34,9 +34,19 @@ import com.ledga.app.ui.design.type.LedgaType
 
 private val Pill = RoundedCornerShape(percent = 50)
 
-/** Activity's filter chips (spec §10.4): selected is ink on canvas, unselected surface with a line border. */
+/**
+ * Activity's filter chips (spec §10.4): selected is ink on canvas, unselected surface with a line border.
+ * [role] is a checkbox for chips that toggle on their own, a radio button for a single choice among chips.
+ */
 @Composable
-fun ChoiceChip(text: String, selected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier, icon: ImageVector? = null) {
+fun ChoiceChip(
+    text: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    icon: ImageVector? = null,
+    role: Role = Role.Checkbox,
+) {
     val c = LedgaTheme.colors
     val fg = if (selected) c.canvas else c.ink2
     Row(
@@ -46,7 +56,7 @@ fun ChoiceChip(text: String, selected: Boolean, onClick: () -> Unit, modifier: M
             .clip(Pill)
             .background(if (selected) c.ink else c.surface)
             .border(Sizes.hairline, if (selected) c.ink else c.line, Pill)
-            .selectable(selected = selected, role = Role.Checkbox, onClick = onClick)
+            .selectable(selected = selected, role = role, onClick = onClick)
             .padding(horizontal = Spacing.m, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Spacing.xs),

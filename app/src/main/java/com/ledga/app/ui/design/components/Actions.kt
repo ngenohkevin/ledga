@@ -1,6 +1,7 @@
 package com.ledga.app.ui.design.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
@@ -18,6 +19,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -35,6 +38,26 @@ fun PrimaryPill(text: String, onClick: () -> Unit, modifier: Modifier = Modifier
 @Composable
 fun SoftPill(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, icon: ImageVector? = null) =
     Pill(text, onClick, modifier, icon, LedgaTheme.colors.primarySoft, LedgaTheme.colors.onPrimarySoft)
+
+/** A quiet action on a sheet ("Share", "Hide"): a line border and ink2 text on whatever is behind it. */
+@Composable
+fun OutlinePill(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, icon: ImageVector? = null) {
+    val c = LedgaTheme.colors
+    val shape = RoundedCornerShape(percent = 50)
+    Row(
+        modifier
+            .minimumInteractiveComponentSize()
+            .clip(shape)
+            .border(Sizes.hairline, c.line, shape)
+            .clickable(role = Role.Button, onClick = onClick)
+            .padding(horizontal = Spacing.l, vertical = 10.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (icon != null) Icon(icon, contentDescription = null, tint = c.ink2, modifier = Modifier.size(Sizes.iconSmall))
+        Text(text, style = LedgaType.label, color = c.ink2)
+    }
+}
 
 @Composable
 private fun Pill(text: String, onClick: () -> Unit, modifier: Modifier, icon: ImageVector?, container: Color, content: Color) {
@@ -71,17 +94,22 @@ fun LinkButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier)
 /** Spending up is Bad (red), down is Good (green). The caller writes the text ("▲ 9% vs Aug"). */
 enum class DeltaTone { Good, Bad, Neutral }
 
+/**
+ * Spending up is Bad (red), down is Good (green). The caller writes the text ("▲ 9% vs Aug") and, for TalkBack,
+ * [speech] ("9 percent more than Aug"): the arrow glyphs would otherwise be read out by name (Phase 3 deferred M10).
+ */
 @Composable
-fun DeltaBadge(text: String, tone: DeltaTone, modifier: Modifier = Modifier) {
+fun DeltaBadge(text: String, tone: DeltaTone, modifier: Modifier = Modifier, speech: String? = null) {
     val c = LedgaTheme.colors
     val (container, content) = when (tone) {
         DeltaTone.Good -> c.primarySoft to c.onPrimarySoft
         DeltaTone.Bad -> c.dangerSoft to c.danger
         DeltaTone.Neutral -> c.plate to c.ink2
     }
+    val spoken = if (speech != null) Modifier.clearAndSetSemantics { contentDescription = speech } else Modifier
     Text(
         text,
-        modifier.clip(RoundedCornerShape(percent = 50)).background(container).padding(horizontal = 8.dp, vertical = 3.dp),
+        modifier.then(spoken).clip(RoundedCornerShape(percent = 50)).background(container).padding(horizontal = 8.dp, vertical = 3.dp),
         style = LedgaType.label,
         color = content,
     )

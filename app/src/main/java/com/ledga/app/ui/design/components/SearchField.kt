@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
@@ -19,8 +21,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.ledga.app.ui.design.icons.Ph
@@ -29,17 +33,32 @@ import com.ledga.app.ui.design.tokens.Sizes
 import com.ledga.app.ui.design.tokens.Spacing
 import com.ledga.app.ui.design.type.LedgaType
 
-/** Activity's search pill (spec §10.4): magnifier, placeholder in muted, and a clear button once there is text. */
+/**
+ * Activity's search pill (spec §10.4): magnifier, placeholder in muted, and a clear button once there is text. The
+ * keyboard's action key is Search: it closes the keyboard and calls [onSearch] (the list already follows the text).
+ */
 @Composable
-fun SearchField(query: String, onQueryChange: (String) -> Unit, placeholder: String, modifier: Modifier = Modifier) {
+fun SearchField(
+    query: String,
+    onQueryChange: (String) -> Unit,
+    placeholder: String,
+    modifier: Modifier = Modifier,
+    onSearch: (() -> Unit)? = null,
+) {
     val c = LedgaTheme.colors
     val pill = RoundedCornerShape(percent = 50)
+    val keyboard = LocalSoftwareKeyboardController.current
     BasicTextField(
         value = query,
         onValueChange = onQueryChange,
         singleLine = true,
         textStyle = LedgaType.body.copy(color = c.ink),
         cursorBrush = SolidColor(c.primary),
+        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+        keyboardActions = KeyboardActions(onSearch = {
+            keyboard?.hide()
+            onSearch?.invoke()
+        }),
         modifier = modifier.fillMaxWidth().semantics { contentDescription = placeholder },
         decorationBox = { field ->
             Row(

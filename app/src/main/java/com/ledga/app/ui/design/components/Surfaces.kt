@@ -93,27 +93,31 @@ enum class Segment { Single, Top, Middle, Bottom }
  * Draws the card surface and border for one item of a card that spans several lazy-list items, so a paged list
  * still looks like PayPal's day cards (spec §10.4). [dividerAbove] adds the lineSubtle rule between rows.
  * The rounded rect is extended past every edge this segment shares and then clipped, so only this item's part shows.
+ * Whatever the item draws after this modifier (a clickable's ripple, a pressed colour) is clipped to the card's
+ * outer corners, so it never bleeds past the rounding (Phase 3 deferred M16).
  */
 @Composable
 fun Modifier.cardSegment(segment: Segment, dividerAbove: Boolean = false): Modifier {
     val c = LedgaTheme.colors
+    val roundTop = segment == Segment.Top || segment == Segment.Single
+    val roundBottom = segment == Segment.Bottom || segment == Segment.Single
+    val top = if (roundTop) Radii.card else 0.dp
+    val bottom = if (roundBottom) Radii.card else 0.dp
     return drawBehind {
         val r = Radii.card.toPx()
         val stroke = Sizes.hairline.toPx()
-        val roundTop = segment == Segment.Top || segment == Segment.Single
-        val roundBottom = segment == Segment.Bottom || segment == Segment.Single
-        val top = if (roundTop) 0f else -2 * r
-        val bottom = if (roundBottom) size.height else size.height + 2 * r
+        val drawTop = if (roundTop) 0f else -2 * r
+        val drawBottom = if (roundBottom) size.height else size.height + 2 * r
         clipRect {
-            drawRoundRect(c.surface, topLeft = Offset(0f, top), size = Size(size.width, bottom - top), cornerRadius = CornerRadius(r))
+            drawRoundRect(c.surface, topLeft = Offset(0f, drawTop), size = Size(size.width, drawBottom - drawTop), cornerRadius = CornerRadius(r))
             drawRoundRect(
                 c.line,
-                topLeft = Offset(stroke / 2, top + stroke / 2),
-                size = Size(size.width - stroke, bottom - top - stroke),
+                topLeft = Offset(stroke / 2, drawTop + stroke / 2),
+                size = Size(size.width - stroke, drawBottom - drawTop - stroke),
                 cornerRadius = CornerRadius(r),
                 style = Stroke(stroke),
             )
             if (dividerAbove) drawLine(c.lineSubtle, Offset(stroke, stroke / 2), Offset(size.width - stroke, stroke / 2), stroke)
         }
-    }
+    }.clip(RoundedCornerShape(topStart = top, topEnd = top, bottomStart = bottom, bottomEnd = bottom))
 }

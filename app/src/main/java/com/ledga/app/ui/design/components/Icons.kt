@@ -18,11 +18,12 @@ import com.ledga.app.ui.design.icons.Fluent
 import com.ledga.app.ui.design.theme.LedgaTheme
 import com.ledga.app.ui.design.type.LedgaType
 
-/** Icon-well sizes (R20): rows use Medium, tiles and pickers Small, tracker detail Large. */
+/** Icon-well sizes (R20): rows use Medium, tiles and pickers Small, tracker detail Large, the transaction sheet XLarge. */
 enum class WellSize(val box: Dp, val radius: Dp) {
     Small(34.dp, 11.dp),
     Medium(40.dp, 13.dp),
     Large(44.dp, 14.dp),
+    XLarge(60.dp, 18.dp),
 }
 
 /**

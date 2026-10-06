@@ -30,3 +30,22 @@ fun snapScreen(name: String, content: @Composable () -> Unit) {
         }
     }
 }
+
+/**
+ * One landscape file per appearance at font scale 1.0, 800×360 dp (owner ruling M5): each new screen family gets one.
+ * Writes `src/test/screenshots/screens/<name>_land_<light|dark>.png`.
+ */
+@OptIn(ExperimentalRoborazziApi::class)
+fun snapScreenLandscape(name: String, content: @Composable () -> Unit) {
+    for (appearance in listOf(Appearance.LIGHT, Appearance.DARK)) {
+        captureRoboImage(
+            filePath = "src/test/screenshots/screens/${name}_land_${appearance.name.lowercase()}.png",
+            roborazziComposeOptions = RoborazziComposeOptions {
+                size(widthDp = 800, heightDp = 360)
+                fontScale(1f)
+            },
+        ) {
+            LedgaTheme(appearance = appearance, reducedMotion = true) { content() }
+        }
+    }
+}
