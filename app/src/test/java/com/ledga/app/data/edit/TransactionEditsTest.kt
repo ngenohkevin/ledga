@@ -267,6 +267,15 @@ class TransactionEditsTest {
     }
 
     @Test
+    fun `the add-rule preview names the person's rule it would replace in another category`() = runTest {
+        ingest(water501, water502)
+        edits.setCategory("TJK4AB12WA", Categories.RENT, ApplyTo.ALL_FROM_NAME) // "all from SAMPLE WATER CO" → Rent
+        assertEquals("Rent", edits.rulePreview(Categories.WATER, "sample water co", null)?.replaces)
+        assertNull(edits.rulePreview(Categories.WATER, "sample water", null)?.replaces, "a different pattern replaces nothing")
+        assertNull(edits.rulePreview(Categories.RENT, "sample water co", null)?.replaces, "the same category isn't a replacement")
+    }
+
+    @Test
     fun `an account narrows the new rule to that business's account`() = runTest {
         ingest(water501, water502, water501Again)
         assertEquals(RulePreview(2, 2, 0), edits.rulePreview(Categories.WATER, "SAMPLE WATER CO", "ACC 501"))

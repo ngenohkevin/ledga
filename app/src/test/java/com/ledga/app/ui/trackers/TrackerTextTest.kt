@@ -100,5 +100,9 @@ class TrackerTextTest {
         assertEquals("Matches 3 payments, all already in Water.", TrackerText.rulePreview(RulePreview(3, 0, 0), "sample", "Water"))
         assertEquals("Matches 3 payments. 3 move to Water.", TrackerText.rulePreview(RulePreview(3, 3, 0), "sample", "Water"))
         assertEquals("Matches 3 payments. 3 move to Water, 1 of them filed elsewhere by you.", TrackerText.rulePreview(RulePreview(3, 3, 1), "sample", "Water"))
+        assertEquals(
+            "Matches 3 payments. 3 move to Water. Replaces your rule for Rent.",
+            TrackerText.rulePreview(RulePreview(3, 3, 0, replaces = "Rent"), "sample", "Water"),
+        )
     }
 }

@@ -88,7 +88,8 @@
   - `addRule(categoryKey, name, account?)` behaves like "Apply to all" (R36, R48): a USER `NAME_CONTAINS` rule, or
     `NAME_AND_ACCOUNT` with an account, replacing a USER rule like it, with the person's own category choices cleared on
     every payment it will label. The name is stored upper-cased and needs at least two letters or digits.
-    `rulePreview` counts matches, movers, and the movers the person had filed elsewhere.
+    `rulePreview` counts matches, movers, and the movers the person had filed elsewhere, and names the category of the
+    person's own rule for the same words that saving replaces (`RulesDao.userLike`).
   - `removeRule(id)` deletes a USER rule or switches a SYSTEM rule off (`enabled = 0`); `restoreRule` undoes either
     (R49). Restoring does not bring back category choices an earlier "apply to all" cleared.
 - **Settings.** `notificationNudgeDismissed` (R59): Home's notifications banner is gone for good after "Not now".

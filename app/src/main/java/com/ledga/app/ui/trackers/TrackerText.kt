@@ -103,12 +103,13 @@ object TrackerText {
 
     fun rulePreview(preview: RulePreview?, name: String, categoryName: String): String {
         fun payments(n: Int) = "$n ${if (n == 1) "payment" else "payments"}"
-        return when {
-            preview == null -> if (name.isBlank()) "Type part of a name, like KPLC." else "Type at least two letters or numbers."
+        val counted = when {
+            preview == null -> return if (name.isBlank()) "Type part of a name, like KPLC." else "Type at least two letters or numbers."
             preview.matches == 0 -> "No payments match yet. Future ones will go to $categoryName."
             preview.moving == 0 -> "Matches ${payments(preview.matches)}, all already in $categoryName."
             preview.handFiled == 0 -> "Matches ${payments(preview.matches)}. ${preview.moving} move to $categoryName."
             else -> "Matches ${payments(preview.matches)}. ${preview.moving} move to $categoryName, ${preview.handFiled} of them filed elsewhere by you."
         }
+        return preview.replaces?.let { "$counted Replaces your rule for $it." } ?: counted
     }
 }

@@ -41,7 +41,7 @@ data class ApplyCounts(val fromName: Int, val forAccount: Int?)
  * What "+ Add rule" would do (R48): [matches] payments end up in the category, [moving] of them aren't there now, and
  * [handFiled] of those the person had filed somewhere else themselves (their choice is cleared, as "all" says).
  */
-data class RulePreview(val matches: Int, val moving: Int, val handFiled: Int)
+data class RulePreview(val matches: Int, val moving: Int, val handFiled: Int, val replaces: String? = null)
 
 /** A rule taken off a tracker (R49): what Undo needs to put it back. */
 data class RemovedRule(val row: RuleRow)
@@ -180,13 +180,19 @@ class TransactionEdits(private val db: LedgaDatabase, private val deriver: Deriv
         true
     }
 
-    /** What "+ Add rule" would do (R48); null when [name] has fewer than two letters or digits. */
+    /**
+     * What "+ Add rule" would do (R48); null when [name] has fewer than two letters or digits. [RulePreview.replaces]
+     * names the category of the person's own rule for the same words that saving replaces.
+     */
     suspend fun rulePreview(categoryKey: String, name: String, account: String?): RulePreview? {
         val (rule, pattern) = trackerRule(categoryKey, name, account) ?: return null
         val rows = gainerRows(rule, pattern, categoryKey)
         val moving = rows.filter { it.categoryKey != categoryKey }
         val overrides = overridesFor(moving.map { it.code })
-        return RulePreview(rows.size, moving.size, moving.count { overrides[it.code]?.categoryKey != null })
+        val replacedKey = db.rulesDao().userLike(rule.field.name, rule.pattern, rule.action.name)
+            .firstOrNull { it.categoryKey != categoryKey }?.categoryKey
+        val replaces = replacedKey?.let { key -> db.categoriesDao().all().firstOrNull { it.key == key }?.name }
+        return RulePreview(rows.size, moving.size, moving.count { overrides[it.code]?.categoryKey != null }, replaces)
     }
 
     /**

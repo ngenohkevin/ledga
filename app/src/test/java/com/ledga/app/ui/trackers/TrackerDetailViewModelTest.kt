@@ -144,6 +144,23 @@ class TrackerDetailViewModelTest {
     }
 
     @Test
+    fun `removing the last rule ends edit mode, so the next rule doesn't arrive with a remove button`() = runTest {
+        ingest(Sms.paybill("TJK4AB12UJ", "SAMPLE LANDLORD", "HSE 4", "9,000.00"))
+        val edits = TransactionEdits(db, deriver, clock)
+        assertTrue(edits.addRule(Categories.RENT, "sample landlord", null))
+        val vm = vm(Categories.RENT)
+        val only = vm.ui.first { it.rules.size == 1 }.rules.single()
+        vm.toggleEditing()
+        vm.ui.first { it.editing }
+        val removed = CompletableDeferred<RemovedRule>()
+        vm.removeRule(only.id) { removed.complete(it) }
+        removed.await()
+        vm.ui.first { it.rules.isEmpty() }
+        assertTrue(edits.addRule(Categories.RENT, "sample landlord", null))
+        assertFalse(vm.ui.first { it.rules.size == 1 }.editing, "edit mode ended with the last rule")
+    }
+
+    @Test
     fun `a hidden payment leaves the tracker, and Undo brings it back`() = runTest {
         ingest(Sms.paybill("TJK4AB12UG", "KPLC PREPAID", "37100000001", "900.00", "2/10/26 at 9:00 AM"))
         val vm = vm()

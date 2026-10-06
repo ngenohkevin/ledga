@@ -135,9 +135,14 @@ class TrackerDetailViewModel @Inject constructor(
         viewModelScope.launch { line.select(id) }
     }
 
-    /** R49: removes a rule; [onRemoved] gets what Undo needs. */
+    /** R49: removes a rule; [onRemoved] gets what Undo needs. Removing the last one ends edit mode. */
     fun removeRule(id: Long, onRemoved: (RemovedRule) -> Unit) {
-        viewModelScope.launch { edits.removeRule(id)?.let(onRemoved) }
+        val last = ui.value.rules.none { it.id != id }
+        viewModelScope.launch {
+            val removed = edits.removeRule(id) ?: return@launch
+            if (last) editing.value = false
+            onRemoved(removed)
+        }
     }
 
     fun restoreRule(removed: RemovedRule) {
