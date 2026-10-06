@@ -141,7 +141,8 @@ fun FulizaSheetContent(ui: FulizaSheetUi, items: LazyPagingItems<TxRow>, onOpenT
                 // The draw sits under the amount, which never gives way: as the subtitle it was cut by a long date.
                 balanceText = drawn?.let { "Fuliza ${AmountFormat.CURRENCY} ${AmountFormat.plain(it)}" },
                 inflow = TxText.isInflow(row.flow),
-                speech = TxText.speech(row, ui.today ?: day),
+                // The row is read as one phrase, so the draw, which is what this sheet is for, has to be in it.
+                speech = TxText.speech(row, ui.today ?: day) + drawn?.let { ", ${AmountFormat.CURRENCY} ${AmountFormat.plain(it)} from Fuliza" }.orEmpty(),
                 onClick = { onOpenTx(row.code) },
                 onClickLabel = "Open payment",
             )

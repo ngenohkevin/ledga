@@ -100,7 +100,7 @@ Everything lives in `com.ledga.app.ui.design`. Until Phase 4 uses it, R8 strips 
     `TrackerDetailViewModel.addRule` refuses other text: the rule clears hand-filed choices that removing it won't
     bring back (R48).
 - **Fuliza sheet (4c).** Its rows show the date as the subtitle and the draw ("Fuliza Ksh 463") under the amount, where
-  it never gives way (`FulizaSheetBehaviourTest`).
+  it never gives way (`FulizaSheetBehaviourTest`). A row is read as one phrase, so the draw is in that phrase too.
 - **Shared sheets keep their state (R62).** Hosts pass a saveable session id (`rememberSaveable(code) { Random.nextLong() }`);
   `open(code, session)` reloads only for a new session. `PickerState.code` stops a stale picker frame. `OpenSheets` lives
   in `ui.tx`.

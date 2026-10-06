@@ -5,6 +5,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.Density
@@ -61,5 +62,22 @@ class FulizaSheetBehaviourTest {
             val needs = layout.multiParagraph.intrinsics.maxIntrinsicWidth
             assertTrue(needs <= layout.size.width + 0.5f, "'$text' is cut: it needs $needs px and has ${layout.size.width}")
         }
+    }
+
+    @Test
+    fun `TalkBack hears how much of a payment Fuliza covered`() {
+        val paid = txRow(
+            code = "TJK4AB12RF", kind = TxKind.BUY_GOODS, name = "SAMPLE SUPERMARKET", account = null,
+            categoryKey = Categories.GROCERIES, amountCents = 173_450, fulizaDrawnCents = 28_750, at = Instant.parse("2026-10-02T15:00:00Z"),
+        )
+        val complete = LoadStates(LoadState.NotLoading(false), LoadState.NotLoading(true), LoadState.NotLoading(true))
+        compose.setContent {
+            LedgaTheme(Appearance.LIGHT, reducedMotion = true) {
+                val items = remember { flowOf(PagingData.from(listOf(paid), complete)) }.collectAsLazyPagingItems()
+                FulizaSheetContent(FulizaSheetUi(loaded = true, today = LocalDate.parse("2026-10-06")), items, onOpenTx = {})
+            }
+        }
+        // The row reads one phrase for the whole row, so the draw has to be in it: it is what this sheet is for.
+        compose.onNodeWithContentDescription("Ksh 287.50 from Fuliza", substring = true).assertExists()
     }
 }
