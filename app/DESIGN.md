@@ -41,6 +41,21 @@ Everything lives in `com.ledga.app.ui.design`. Until Phase 4 uses it, R8 strips 
 - Touch targets are at least 48 dp. The one exception is `RuleChip`'s ×, a 22 dp visual button whose hit area Compose widens to 48 dp. An icon is decorative (`null`) only when text beside it names it.
 - Sheets use `LedgaModalSheet`. Its content doesn't scroll by itself: wrap long content in `verticalScroll` so actions stay reachable at large font scales. A lazy list inside a sheet scrolls itself; never wrap it in `verticalScroll`. Bottom navigation is `LedgaBottomBar`, which pads for the navigation bar; edge-to-edge for the rest of the screen is Phase 4's job.
 
+## Screens (Phase 4)
+
+- Edge-to-edge (targetSdk 35): `MainActivity` draws behind the system bars, and `LedgaRoot` sets their icons from `LedgaTheme.colors.isDark`. Every screen pads its own insets:
+  - tab screens pad `WindowInsets.statusBars` at the top (`ShellFrame`'s `LedgaBottomBar` pads the navigation bar);
+  - full-screen flows (onboarding, recovery) pad `WindowInsets.safeDrawing`, which includes the keyboard.
+- Text size: `LedgaRoot` applies You → Appearance → Text size by overriding `LocalDensity.fontScale`. `TextSize.SYSTEM` leaves Android's own non-linear scaling alone.
+- `ui.app` building blocks:
+  - `ShellFrame` (content + bottom bar; the content keeps its place, so a NavHost survives the bar hiding);
+  - `ScreenTitle` (24/800, a heading) and `HeroIcon` (96 dp raised 3D tile);
+  - `Tab` + `NavController.openTab`;
+  - `@Serializable` routes in `ui/app/Routes.kt`.
+- A one-question screen (onboarding) scrolls its content and pins its actions to the bottom, so they're reachable at 1.3× and with the keyboard open. Keep an outlined field's label short: a label that wraps at 1.3× runs into the border (`OnboardingLayoutTest`).
+- Pixel assertions on Robolectric: draw the window's root view into a `Bitmap` (`ChartContrastTest`); Compose's `captureToImage` uses PixelCopy and times out under software rendering.
+- Until 4b–4d land, `ComingNext` holds the Activity, Trackers and You tabs and `InterimHome` holds Home (R32). Development builds only.
+
 ## Screenshot tests
 
 - **Component groups:** `compose.snap("name") { … }` in a Robolectric class annotated `@GraphicsMode(NATIVE)` and `@Config(qualifiers = SPECIMEN_QUALIFIERS)`. It writes `src/test/screenshots/design/<name>.png`, a 2×2 grid of light/dark × 1.0/1.3.
