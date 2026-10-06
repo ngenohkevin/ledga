@@ -20,6 +20,7 @@ import com.ledga.app.ui.design.components.LedgaBottomBar
 import com.ledga.app.ui.design.theme.LedgaTheme
 import com.ledga.app.ui.design.tokens.Spacing
 import com.ledga.app.ui.design.type.LedgaType
+import java.util.Locale
 
 /**
  * The four-tab frame (spec §10.4): the screen above, `LedgaBottomBar` below. The bar pads the navigation bar itself;
@@ -51,3 +52,6 @@ fun ScreenTitle(text: String, modifier: Modifier = Modifier) = Text(
     style = LedgaType.screenTitle,
     color = LedgaTheme.colors.ink,
 )
+
+/** "1,111": a count with thousands separators (onboarding's import counts). */
+internal fun grouped(n: Int): String = String.format(Locale.ENGLISH, "%,d", n)

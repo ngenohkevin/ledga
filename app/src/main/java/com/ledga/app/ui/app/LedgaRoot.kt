@@ -25,6 +25,8 @@ import com.ledga.app.data.settings.TextSize
 import com.ledga.app.startup.StartupState
 import com.ledga.app.ui.activity.ActivityTab
 import com.ledga.app.ui.design.theme.LedgaTheme
+import com.ledga.app.ui.home.HomeNav
+import com.ledga.app.ui.home.HomeRoute as HomeScreenRoute
 import com.ledga.app.ui.onboarding.OnboardingRoute as OnboardingScreenRoute
 import java.io.File
 
@@ -78,7 +80,17 @@ fun LedgaNavHost(onboarded: Boolean) {
             composable<OnboardingRoute> {
                 OnboardingScreenRoute(onDone = { nav.navigate(HomeRoute) { popUpTo<OnboardingRoute> { inclusive = true } } })
             }
-            composable<HomeRoute> { InterimHomeRoute() }
+            composable<HomeRoute> {
+                HomeScreenRoute(
+                    HomeNav(
+                        openActivity = { nav.openTab(Tab.ACTIVITY) },
+                        openTrackers = { nav.openTab(Tab.TRACKERS) },
+                        // Task 12 points this at Tracker detail.
+                        openTracker = { nav.openTab(Tab.TRACKERS) },
+                        openYou = { nav.openTab(Tab.YOU) },
+                    ),
+                )
+            }
             composable<ActivityRoute> { ActivityTab() }
             composable<TrackersRoute> { ComingNext(Tab.TRACKERS) }
             composable<YouRoute> { ComingNext(Tab.YOU) }

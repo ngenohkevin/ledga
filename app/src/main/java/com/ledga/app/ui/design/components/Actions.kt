@@ -1,5 +1,6 @@
 package com.ledga.app.ui.design.components
 
+import kotlin.math.abs
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -112,6 +113,19 @@ fun DeltaBadge(text: String, tone: DeltaTone, modifier: Modifier = Modifier, spe
         modifier.then(spoken).clip(RoundedCornerShape(percent = 50)).background(container).padding(horizontal = 8.dp, vertical = 3.dp),
         style = LedgaType.label,
         color = content,
+    )
+}
+
+/** "▲ 9% vs Aug": up is Bad (red), down is Good (green); TalkBack hears it in words. Spending and Home's card share it. */
+@Composable
+fun ChangeBadge(percent: Int, comparedWith: String, modifier: Modifier = Modifier) {
+    val up = percent > 0
+    val arrow = if (up) Char(0x25B2) else Char(0x25BC)
+    DeltaBadge(
+        "$arrow ${abs(percent)}% vs $comparedWith",
+        if (up) DeltaTone.Bad else DeltaTone.Good,
+        modifier,
+        speech = "${abs(percent)} percent ${if (up) "more" else "less"} than $comparedWith",
     )
 }
 

@@ -26,3 +26,12 @@ fun Context.openAppSettings() {
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
     )
 }
+
+/** Android's notification settings for Ledga (R59): where a notification permission refused for good can still be granted. */
+fun Context.openNotificationSettings() {
+    startActivity(
+        Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+            .putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, packageName)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+    )
+}

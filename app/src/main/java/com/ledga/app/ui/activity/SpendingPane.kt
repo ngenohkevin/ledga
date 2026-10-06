@@ -1,5 +1,6 @@
 package com.ledga.app.ui.activity
 
+import com.ledga.app.ui.design.components.ChangeBadge
 import com.ledga.app.ui.lines.LinePicker
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -32,8 +33,6 @@ import androidx.compose.ui.unit.dp
 import com.ledga.app.ui.design.charts.ColumnChart
 import com.ledga.app.ui.design.charts.ShareBar
 import com.ledga.app.ui.design.components.AmountText
-import com.ledga.app.ui.design.components.DeltaBadge
-import com.ledga.app.ui.design.components.DeltaTone
 import com.ledga.app.ui.design.components.EmptyState
 import com.ledga.app.ui.design.components.LedgaCard
 import com.ledga.app.ui.design.components.RowDivider
@@ -51,7 +50,6 @@ import com.ledga.core.money.Decimals
 import java.time.YearMonth
 import java.time.format.TextStyle
 import java.util.Locale
-import kotlin.math.abs
 import kotlin.math.roundToInt
 
 /** Everything the Spending segment can do; `ActivityTab` wires it to the ViewModel. */
@@ -89,7 +87,7 @@ fun SpendingPane(ui: SpendingUi, actions: SpendingActions, modifier: Modifier = 
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
                 val name = month.month.getDisplayName(TextStyle.FULL, Locale.ENGLISH)
                 Text(if (ui.isCurrent) "Spent so far in $name" else "Spent in $name", Modifier.weight(1f), style = LedgaType.caption, color = c.muted)
-                ui.deltaPercent?.takeIf { it != 0 }?.let { Delta(it, ui.comparedWith) }
+                ui.deltaPercent?.takeIf { it != 0 }?.let { ChangeBadge(it, ui.comparedWith) }
             }
             AmountText(ui.totals.spentCents, Modifier.padding(top = 2.dp), style = LedgaType.amountL, decimals = Decimals.NEVER)
             Text("incl. ${ksh(ui.totals.feeCents)} fees · received ${ksh(ui.totals.inCents)}", style = LedgaType.caption, color = c.muted)
@@ -155,18 +153,6 @@ private fun StepButton(icon: ImageVector, label: String, enabled: Boolean, onCli
             Icon(icon, contentDescription = label, tint = if (enabled) c.ink2 else c.faint, modifier = Modifier.size(Sizes.iconSmall))
         }
     }
-}
-
-/** "▲ 9% vs Aug": up is Bad (red), down is Good (green); TalkBack hears it in words. */
-@Composable
-private fun Delta(percent: Int, comparedWith: String) {
-    val up = percent > 0
-    val arrow = if (up) Char(0x25B2) else Char(0x25BC)
-    DeltaBadge(
-        "$arrow ${abs(percent)}% vs $comparedWith",
-        if (up) DeltaTone.Bad else DeltaTone.Good,
-        speech = "${abs(percent)} percent ${if (up) "more" else "less"} than $comparedWith",
-    )
 }
 
 private fun ksh(cents: Long): String = "${AmountFormat.CURRENCY} ${AmountFormat.plain(cents, Decimals.NEVER)}"

@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -34,7 +35,8 @@ private data class BannerStyle(val container: Color, val content: Color, val ico
 
 /**
  * A full-width banner. Progress banners show [progress] when it is known, an indeterminate bar otherwise, and no
- * bar when motion is reduced (the text says what is happening).
+ * bar when motion is reduced (the text says what is happening). An optional [secondaryLabel] (e.g. "Not now", R59)
+ * sits before the main action.
  */
 @Composable
 fun Banner(
@@ -45,6 +47,8 @@ fun Banner(
     actionLabel: String? = null,
     onAction: (() -> Unit)? = null,
     progress: Float? = null,
+    secondaryLabel: String? = null,
+    onSecondary: (() -> Unit)? = null,
 ) {
     val c = LedgaTheme.colors
     val style = when (tone) {
@@ -53,15 +57,8 @@ fun Banner(
         BannerTone.Warning -> BannerStyle(c.warningSoft, c.ink2, c.warning, c.ink, Ph.Warning)
         BannerTone.Danger -> BannerStyle(c.dangerSoft, c.ink2, c.danger, c.ink, Ph.WarningCircle)
     }
-    Row(
-        modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(Radii.stat))
-            .background(style.container)
-            .padding(start = 12.dp, end = 4.dp, top = 6.dp, bottom = 6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
+    val twoActions = secondaryLabel != null && onSecondary != null
+    val body: @Composable RowScope.() -> Unit = {
         Icon(icon ?: style.glyph, contentDescription = null, tint = style.icon, modifier = Modifier.size(Sizes.icon))
         Column(Modifier.weight(1f).padding(vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(text, style = LedgaType.bodyStrong, color = style.content)
@@ -81,17 +78,40 @@ fun Banner(
                 }
             }
         }
-        if (actionLabel != null && onAction != null) {
-            Text(
-                actionLabel,
-                Modifier
-                    .minimumInteractiveComponentSize()
-                    .clip(RoundedCornerShape(8.dp))
-                    .clickable(role = Role.Button, onClick = onAction)
-                    .padding(horizontal = 10.dp),
-                style = LedgaType.label,
-                color = style.action,
-            )
+    }
+    val actions: @Composable () -> Unit = {
+        if (twoActions) BannerAction(secondaryLabel!!, onSecondary!!, style.content)
+        if (actionLabel != null && onAction != null) BannerAction(actionLabel, onAction, style.action)
+    }
+    val shape = Modifier.fillMaxWidth().clip(RoundedCornerShape(Radii.stat)).background(style.container)
+    if (twoActions) {
+        // Two actions beside the text would squeeze it until words break (R59): they get a row of their own.
+        Column(modifier.then(shape).padding(start = 12.dp, end = 4.dp, top = 6.dp, bottom = 2.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp), content = body)
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) { actions() }
+        }
+    } else {
+        Row(
+            modifier.then(shape).padding(start = 12.dp, end = 4.dp, top = 6.dp, bottom = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            body()
+            actions()
         }
     }
+}
+
+@Composable
+private fun BannerAction(label: String, onClick: () -> Unit, color: Color) {
+    Text(
+        label,
+        Modifier
+            .minimumInteractiveComponentSize()
+            .clip(RoundedCornerShape(8.dp))
+            .clickable(role = Role.Button, onClick = onClick)
+            .padding(horizontal = 10.dp),
+        style = LedgaType.label,
+        color = color,
+    )
 }
