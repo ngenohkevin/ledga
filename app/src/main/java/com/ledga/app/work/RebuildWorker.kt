@@ -8,11 +8,11 @@ import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import com.ledga.app.data.derive.Deriver
+import kotlinx.coroutines.CancellationException
 
 /**
  * Full history rebuild (spec §7.2): after a parser/derivation version change, the migration, a restore,
- * or You -> Data. Progress feeds the "Updating your history…" banner (Phase 4).
- * Phase 4 adds @HiltWorker/@AssistedInject when the v6 database is wired into the app.
+ * or You -> Data. Progress feeds the "Updating your history…" banner. Task 8 adds @HiltWorker.
  */
 class RebuildWorker(
     context: Context,
@@ -23,6 +23,8 @@ class RebuildWorker(
     override suspend fun doWork(): Result = try {
         deriver.rebuildAll { done, total -> setProgress(workDataOf(KEY_DONE to done, KEY_TOTAL to total)) }
         Result.success()
+    } catch (e: CancellationException) {
+        throw e // stopped by WorkManager: not a failure to retry (Phase 2 deferred M6)
     } catch (e: Exception) {
         if (runAttemptCount < MAX_ATTEMPTS) Result.retry() else Result.failure()
     }
