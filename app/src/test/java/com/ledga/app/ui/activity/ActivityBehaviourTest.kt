@@ -9,10 +9,12 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -31,6 +33,10 @@ import com.ledga.app.testing.txRow
 import com.ledga.app.ui.design.theme.Appearance
 import com.ledga.app.ui.design.theme.LedgaTheme
 import com.ledga.core.model.Categories
+import java.time.Instant
+import java.time.LocalDate
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 import kotlinx.coroutines.flow.flowOf
 import org.junit.Rule
 import org.junit.Test
@@ -38,9 +44,6 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
-import java.time.Instant
-import java.time.LocalDate
-import kotlin.test.assertEquals
 
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -117,5 +120,19 @@ class ActivityBehaviourTest {
         assertEquals("Last month", f.dates?.label)
         assertEquals(100_000L, f.minAmountCents)
         assertEquals(true, f.includeHidden)
+    }
+
+    @Test
+    fun `the filter count sits on the button's edge, clear of its round clip`() {
+        compose.setContent {
+            LedgaTheme(Appearance.LIGHT, reducedMotion = true) {
+                ActivityContent(ActivitySegment.TRANSACTIONS, onSegment = {}, filterCount = 2, onFilters = {}) {}
+            }
+        }
+        // Unclipped: boundsInRoot trims a node to its parents' bounds, which the overhanging badge passes by design.
+        val button = compose.onNodeWithContentDescription("Filters, 2 on").getUnclippedBoundsInRoot()
+        val count = compose.onNodeWithTag("filter-count", useUnmergedTree = true).getUnclippedBoundsInRoot()
+        // Inside the circle the clip shaved the badge and the digit (seen on the S26); on the edge nothing clips it.
+        assertTrue(count.top < button.top && count.right > button.right, "badge $count inside button $button")
     }
 }

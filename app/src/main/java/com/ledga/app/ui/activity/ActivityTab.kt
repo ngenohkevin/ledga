@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
@@ -36,6 +37,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTag
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -77,37 +79,41 @@ fun ActivityContent(
     }
 }
 
-/** The sliders button (mockup `activity`) with a count of the sheet's filters that are on. */
+/**
+ * The sliders button (mockup `activity`) with a count of the sheet's filters that are on. The count sits on the
+ * button's top-right edge, outside its round clip: inside it, the circle shaved the badge and the digit (S26 check).
+ */
 @Composable
 private fun FilterButton(count: Int, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val c = LedgaTheme.colors
-    Box(
-        modifier
-            .size(Sizes.touchTarget)
-            .clip(CircleShape)
-            .background(c.surface)
-            .border(Sizes.hairline, c.line, CircleShape)
-            .clickable(role = Role.Button, onClick = onClick)
-            .semantics { contentDescription = if (count == 0) "Filters" else "Filters, $count on" },
-        contentAlignment = Alignment.Center,
-    ) {
-        Icon(Ph.SlidersHorizontal, contentDescription = null, tint = c.ink2, modifier = Modifier.size(Sizes.icon))
+    Box(modifier.size(Sizes.touchTarget)) {
+        Box(
+            Modifier
+                .matchParentSize()
+                .clip(CircleShape)
+                .background(c.surface)
+                .border(Sizes.hairline, c.line, CircleShape)
+                .clickable(role = Role.Button, onClick = onClick)
+                .semantics { contentDescription = if (count == 0) "Filters" else "Filters, $count on" },
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(Ph.SlidersHorizontal, contentDescription = null, tint = c.ink2, modifier = Modifier.size(Sizes.icon))
+        }
         if (count > 0) {
-            Text(
-                "$count",
+            Box(
                 Modifier
                     .align(Alignment.TopEnd)
-                    .padding(top = 4.dp, end = 4.dp)
-                    .heightIn(min = 16.dp)
-                    .widthIn(min = 16.dp)
+                    .offset(x = 4.dp, y = (-4).dp)
+                    .heightIn(min = 18.dp)
+                    .widthIn(min = 18.dp)
+                    .clearAndSetSemantics { testTag = "filter-count" }
                     .clip(CircleShape)
                     .background(c.primary)
-                    .padding(horizontal = 3.dp)
-                    .clearAndSetSemantics {},
-                style = LedgaType.overline,
-                color = c.onPrimary,
-                textAlign = TextAlign.Center,
-            )
+                    .padding(horizontal = 4.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text("$count", style = LedgaType.overline, color = c.onPrimary, textAlign = TextAlign.Center)
+            }
         }
     }
 }
