@@ -114,4 +114,11 @@ class TxTextTest {
         assertEquals("Ksh 1,000 spent at KPLC Prepaid, yesterday 2:15 PM", TxText.speech(txRow(), today))
         assertEquals("Ksh 1,000 received from Jane Tester, yesterday 2:15 PM", TxText.speech(receipt, today))
     }
+
+    @Test
+    fun `money sent to a person is sent to them, not spent at them`() {
+        val sent = txRow(kind = TxKind.SEND, name = "JANE TESTER", phone = "0712345111", account = null, categoryKey = Categories.SENT_TO_PEOPLE)
+        assertEquals("Ksh 1,000 sent to Jane Tester, yesterday 2:15 PM", TxText.speech(sent, today))
+        assertEquals("Ksh 1,000 spent at KPLC Prepaid, yesterday 2:15 PM", TxText.speech(txRow(), today), "a paybill is still spent at")
+    }
 }

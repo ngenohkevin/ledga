@@ -53,9 +53,9 @@ object DateLabels {
      * Spec §10.5: "Ksh 1,200 spent at Naivas, yesterday 7:12 PM". The verb follows the transaction's [flow]: only
      * SPEND is "spent" (spec §5.3), so a savings deposit is "moved to savings at M-Shwari", not spending.
      */
-    fun txSpeech(cents: Long, flow: FlowKind, counterparty: String, at: Instant, today: LocalDate): String {
+    fun txSpeech(cents: Long, flow: FlowKind, counterparty: String, at: Instant, today: LocalDate, toPerson: Boolean = false): String {
         val verb = when (flow) {
-            FlowKind.SPEND -> "spent at"
+            FlowKind.SPEND -> if (toPerson) "sent to" else "spent at"
             FlowKind.INCOME -> "received from"
             FlowKind.SAVINGS_OUT -> "moved to savings at"
             FlowKind.SAVINGS_IN -> "taken from savings at"

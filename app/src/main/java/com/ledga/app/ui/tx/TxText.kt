@@ -75,7 +75,9 @@ object TxText {
         }
 
     /** Spec §10.5: "Ksh 1,200 spent at Naivas, yesterday 7:12 PM". */
-    fun speech(tx: TxRow, today: LocalDate): String = DateLabels.txSpeech(tx.amountCents, tx.flow, title(tx), tx.occurredAt, today)
+    /** "Ksh 1,000 spent at KPLC Prepaid, …"; money sent to a person is "sent to" them. */
+    fun speech(tx: TxRow, today: LocalDate): String =
+        DateLabels.txSpeech(tx.amountCents, tx.flow, title(tx), tx.occurredAt, today, toPerson = tx.kind == TxKind.SEND || tx.kind == TxKind.GLOBAL_SEND)
 
     /** "Personal ··23": a line's name and the last two digits of its number (mockup `txsheet`). */
     fun lineLabel(line: LineRow): String {
