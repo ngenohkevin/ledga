@@ -78,14 +78,19 @@ class CategoryPickerViewModel @Inject constructor(
     private var code: String? = null
     private var applyAllTouched = false
 
+    /** The category the payment had when the picker opened: saving it unchanged changes nothing (no rule, no override). */
+    private var initial: String? = null
+
     fun open(code: String) {
         this.code = code
         applyAllTouched = false
+        initial = null
         _state.value = PickerState()
         viewModelScope.launch {
             val tx = db.transactionsDao().get(code) ?: return@launch
             val groups = groupsFor(tx.flow)
             val selected = tx.categoryKey.takeIf { key -> groups.any { g -> g.items.any { it.key == key } } }
+            initial = selected
             _state.value = PickerState(
                 loaded = true,
                 txName = tx.counterpartyName?.let(NameFormat::display),
@@ -133,6 +138,11 @@ class CategoryPickerViewModel @Inject constructor(
         val c = code ?: return
         val s = _state.value
         val key = s.selected ?: return
+        // Nothing changed: an unchanged Save must not pin the category or file the name's other payments.
+        if (key == initial && s.applyTo == ApplyTo.THIS_ONE) {
+            onDone()
+            return
+        }
         viewModelScope.launch {
             edits.setCategory(c, key, s.applyTo)
             onDone()
@@ -143,7 +153,9 @@ class CategoryPickerViewModel @Inject constructor(
         val c = code ?: return
         val counts = edits.categoryCounts(c, key)
         _state.update { s ->
-            if (s.selected != key) s else s.copy(counts = counts, applyAll = if (applyAllTouched) s.applyAll else counts.fromName > 1)
+            // "Apply to all" defaults on only for a change (spec §7.4): the current category starts off.
+            val byDefault = counts.fromName > 1 && key != initial
+            if (s.selected != key) s else s.copy(counts = counts, applyAll = if (applyAllTouched) s.applyAll else byDefault)
         }
     }
 

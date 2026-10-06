@@ -163,4 +163,25 @@ class CategoryPickerViewModelTest {
             vm.state.value.visibleGroups,
         )
     }
+
+    @Test
+    fun `saving the picker unchanged changes nothing - no rule, and a hand-filed payment keeps its category`() = runTest {
+        ingest(
+            Sms.send("TJK4AB12KA", "500.00", "21/3/26 at 1:30 PM"),
+            Sms.send("TJK4AB12KB", "600.00", "22/3/26 at 1:30 PM"),
+            Sms.send("TJK4AB12KC", "700.00", "23/3/26 at 1:30 PM"),
+        )
+        edits.setCategory("TJK4AB12KB", Categories.RENT, ApplyTo.THIS_ONE)
+        val vm = vm()
+        vm.open("TJK4AB12KA")
+        val s = vm.state.first { it.loaded && it.counts.fromName > 0 }
+        assertEquals(Categories.SENT_TO_PEOPLE, s.selected)
+        assertFalse(s.applyAll, "the current category: apply to all starts off")
+        val saved = CompletableDeferred<Unit>()
+        vm.save { saved.complete(Unit) }
+        saved.await()
+        assertEquals(Categories.RENT, db.transactionsDao().get("TJK4AB12KB")?.categoryKey, "the hand-filed payment keeps its category")
+        assertTrue(db.rulesDao().all().none { it.origin == RuleOrigin.USER }, "no rule")
+        assertNull(db.overridesDao().get("TJK4AB12KA")?.categoryKey, "nothing pinned on the payment itself")
+    }
 }
