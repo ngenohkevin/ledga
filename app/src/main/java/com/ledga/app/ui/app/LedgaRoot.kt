@@ -24,11 +24,13 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.toRoute
 import com.ledga.app.data.settings.Settings
 import com.ledga.app.data.settings.TextSize
 import com.ledga.app.startup.StartupState
 import com.ledga.app.ui.design.theme.LedgaTheme
 import com.ledga.app.ui.home.HomeNav
+import com.ledga.app.ui.you.YouNav
 import java.io.File
 
 /** The whole app: theme and text size from settings, then startup's verdict (spec §8, §10.4). */
@@ -85,6 +87,11 @@ fun LedgaNavHost(onboarded: Boolean, screens: LedgaScreens = AppScreens) {
     }
     // One tracker per tap, however fast the taps come.
     fun openTracker(key: String) = nav.navigate(TrackerRoute(key)) { launchSingleTop = true }
+    // A pushed screen, once however fast the taps come.
+    fun push(route: Any) = nav.navigate(route) { launchSingleTop = true }
+    val back: () -> Unit = { nav.popBackStack() }
+    // R83: the tab the screen on top belongs to — the last tab root on the back stack, however deep the pushes go.
+    fun owningTab(): Tab = nav.currentBackStack.value.asReversed().firstNotNullOfOrNull { Tab.of(it.destination) } ?: Tab.HOME
     ShellFrame(
         selected = Tab.of(entry?.destination),
         onSelect = {
@@ -119,10 +126,32 @@ fun LedgaNavHost(onboarded: Boolean, screens: LedgaScreens = AppScreens) {
             composable<TrackerRoute> {
                 screens.Tracker(
                     onBack = { nav.popBackStack() },
-                    onSeeAll = { hop(Tab.of(nav.previousBackStackEntry?.destination) ?: Tab.HOME) },
+                    onSeeAll = { hop(owningTab()) },
                 )
             }
-            composable<YouRoute> { screens.You() }
+            composable<YouRoute> {
+                screens.You(
+                    YouNav(
+                        openLines = { push(LinesRoute) },
+                        openCategories = { push(CategoriesRoute) },
+                        openPeople = { hop(Tab.YOU) },
+                        openNotifications = { push(NotificationsRoute) },
+                        openAppearance = { push(AppearanceRoute) },
+                        openUnreadable = { push(UnreadableRoute) },
+                        openHistoryCheck = { push(HistoryCheckRoute) },
+                        openLicences = { push(LicencesRoute) },
+                    ),
+                )
+            }
+            composable<LinesRoute> { screens.Lines(onBack = back) }
+            composable<CategoriesRoute> { screens.Categories(onBack = back, onOpen = { push(CategoryRoute(it)) }) }
+            composable<CategoryRoute> { screens.Category(onBack = back, onSeePayments = { hop(owningTab()) }) }
+            composable<NotificationsRoute> { screens.NotificationSettings(onBack = back) }
+            composable<AppearanceRoute> { screens.AppearanceSettings(onBack = back) }
+            composable<UnreadableRoute> { screens.Unreadable(onBack = back) }
+            composable<HistoryCheckRoute> { screens.HistoryCheck(onBack = back) }
+            composable<LicencesRoute> { screens.Licences(onBack = back, onOpen = { push(LicenceRoute(it)) }) }
+            composable<LicenceRoute> { entry -> screens.Licence(entry.toRoute<LicenceRoute>().asset, onBack = back) }
             composable<AlertsRoute> { screens.Alerts(onBack = { nav.popBackStack() }) }
         }
     }

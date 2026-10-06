@@ -121,6 +121,7 @@ class ActivityViewModel @Inject constructor(
                         if (link.focusSearch) searchFocus.update { it + 1 }
                     }
                     ActivityLink.Spending -> _segment.value = ActivitySegment.SPENDING
+                    ActivityLink.People -> _segment.value = ActivitySegment.PEOPLE
                 }
                 links.taken(link)
             }

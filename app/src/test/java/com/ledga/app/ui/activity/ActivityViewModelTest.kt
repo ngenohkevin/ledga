@@ -165,4 +165,12 @@ class ActivityViewModelTest {
         // Frozen at apply time, "This month" would still list March's payment.
         assertTrue(vm.ui.first { it.today == LocalDate.parse("2026-04-01") && it.dayTotals.isEmpty() }.dayTotals.isEmpty())
     }
+
+    @Test
+    fun `People from You opens the People segment (R82)`() = runTest {
+        val links = ActivityLinks()
+        val vm = vm(links)
+        links.open(ActivityLink.People)
+        assertEquals(ActivitySegment.PEOPLE, vm.segment.first { it == ActivitySegment.PEOPLE })
+    }
 }

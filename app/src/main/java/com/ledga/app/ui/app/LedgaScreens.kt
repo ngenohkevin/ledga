@@ -8,6 +8,17 @@ import com.ledga.app.ui.trackers.TrackerDetailRoute
 import com.ledga.app.ui.trackers.TrackersTab
 import com.ledga.app.ui.home.HomeRoute as HomeScreenRoute
 import com.ledga.app.ui.onboarding.OnboardingRoute as OnboardingScreenRoute
+import com.ledga.app.ui.categories.CategoriesScreen
+import com.ledga.app.ui.categories.CategoryScreen
+import com.ledga.app.ui.you.AppearanceScreen
+import com.ledga.app.ui.you.HistoryCheckScreen
+import com.ledga.app.ui.you.LicenceScreen
+import com.ledga.app.ui.you.LicencesContent
+import com.ledga.app.ui.you.LinesScreen
+import com.ledga.app.ui.you.NotificationsScreen
+import com.ledga.app.ui.you.UnreadableScreen
+import com.ledga.app.ui.you.YouNav
+import com.ledga.app.ui.you.YouScreen
 
 /**
  * What each route shows. The app passes [AppScreens]; navigation tests pass stand-ins, so what they test is the wiring
@@ -24,7 +35,25 @@ interface LedgaScreens {
 
     @Composable fun Tracker(onBack: () -> Unit, onSeeAll: () -> Unit)
 
-    @Composable fun You()
+    @Composable fun You(nav: YouNav)
+
+    @Composable fun Lines(onBack: () -> Unit)
+
+    @Composable fun Categories(onBack: () -> Unit, onOpen: (String) -> Unit)
+
+    @Composable fun Category(onBack: () -> Unit, onSeePayments: () -> Unit)
+
+    @Composable fun NotificationSettings(onBack: () -> Unit)
+
+    @Composable fun AppearanceSettings(onBack: () -> Unit)
+
+    @Composable fun Unreadable(onBack: () -> Unit)
+
+    @Composable fun HistoryCheck(onBack: () -> Unit)
+
+    @Composable fun Licences(onBack: () -> Unit, onOpen: (String) -> Unit)
+
+    @Composable fun Licence(asset: String, onBack: () -> Unit)
 
     @Composable fun Alerts(onBack: () -> Unit)
 }
@@ -41,7 +70,25 @@ object AppScreens : LedgaScreens {
 
     @Composable override fun Tracker(onBack: () -> Unit, onSeeAll: () -> Unit) = TrackerDetailRoute(onBack = onBack, onSeeAll = onSeeAll)
 
-    @Composable override fun You() = ComingNext(Tab.YOU)
+    @Composable override fun You(nav: YouNav) = YouScreen(nav)
+
+    @Composable override fun Lines(onBack: () -> Unit) = LinesScreen(onBack = onBack)
+
+    @Composable override fun Categories(onBack: () -> Unit, onOpen: (String) -> Unit) = CategoriesScreen(onBack = onBack, onOpen = onOpen)
+
+    @Composable override fun Category(onBack: () -> Unit, onSeePayments: () -> Unit) = CategoryScreen(onBack = onBack, onSeePayments = onSeePayments)
+
+    @Composable override fun NotificationSettings(onBack: () -> Unit) = NotificationsScreen(onBack = onBack)
+
+    @Composable override fun AppearanceSettings(onBack: () -> Unit) = AppearanceScreen(onBack = onBack)
+
+    @Composable override fun Unreadable(onBack: () -> Unit) = UnreadableScreen(onBack = onBack)
+
+    @Composable override fun HistoryCheck(onBack: () -> Unit) = HistoryCheckScreen(onBack = onBack)
+
+    @Composable override fun Licences(onBack: () -> Unit, onOpen: (String) -> Unit) = LicencesContent(onBack = onBack, onOpen = onOpen)
+
+    @Composable override fun Licence(asset: String, onBack: () -> Unit) = LicenceScreen(asset = asset, onBack = onBack)
 
     @Composable override fun Alerts(onBack: () -> Unit) = AlertsScreen(onBack = onBack)
 }

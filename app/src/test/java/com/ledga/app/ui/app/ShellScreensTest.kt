@@ -14,11 +14,6 @@ import org.robolectric.annotation.GraphicsMode
 class ShellScreensTest {
 
     @Test
-    fun comingNext() = snapScreen("shell_coming") {
-        ShellFrame(Tab.ACTIVITY, onSelect = {}) { ComingNext(Tab.ACTIVITY) }
-    }
-
-    @Test
     fun recovery() = snapScreen("recovery") {
         RecoveryScreen("Migration didn't properly handle: transactions", canShare = true, onShare = {}, onRetry = {})
     }

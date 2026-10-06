@@ -14,6 +14,9 @@ sealed interface ActivityLink {
 
     /** Spending, at the current month (Home's spending card, R57). */
     data object Spending : ActivityLink
+
+    /** People (You's "People" row, R82). */
+    data object People : ActivityLink
 }
 
 /**
