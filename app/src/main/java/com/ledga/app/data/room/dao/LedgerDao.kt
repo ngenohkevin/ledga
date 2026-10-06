@@ -30,6 +30,9 @@ data class MonthTotal(val month: String, val cents: Long, val count: Int)
 /** A period's spent (including fees), its fees on their own, and money in. */
 data class PeriodTotals(val spentCents: Long, val feeCents: Long, val inCents: Long)
 
+/** Spent in one period: [period] reads like `Period.key`: "2026-09-28" (a week, by its Monday) or "2026" (a year). */
+data class PeriodSum(val period: String, val cents: Long, val count: Int)
+
 /** Every aggregate reads the `ledger` view: the spending definition exists once. [to] null = a live, open-ended range. */
 @Dao
 interface LedgerDao {
@@ -104,6 +107,24 @@ interface LedgerDao {
             "GROUP BY month",
     )
     fun spentByMonth(from: Instant, to: Instant?, lineId: Long?): Flow<List<MonthTotal>>
+
+    /** Home's week bars (R57): spent per Nairobi week, keyed by its Monday ('weekday 0' then '-6 days'). */
+    @Query(
+        "SELECT date((occurredAt + " + NAIROBI_OFFSET_MS + ") / 1000, 'unixepoch', 'weekday 0', '-6 days') AS period, " +
+            "SUM(spendCents + feeCents) AS cents, SUM(spendCents + feeCents > 0) AS count FROM ledger " +
+            "WHERE occurredAt >= :from AND (:to IS NULL OR occurredAt < :to) AND (:lineId IS NULL OR lineId = :lineId) " +
+            "GROUP BY period",
+    )
+    fun spentByWeek(from: Instant, to: Instant?, lineId: Long?): Flow<List<PeriodSum>>
+
+    /** Home's year bars (R57): spent per Nairobi year. */
+    @Query(
+        "SELECT strftime('%Y', (occurredAt + " + NAIROBI_OFFSET_MS + ") / 1000, 'unixepoch') AS period, " +
+            "SUM(spendCents + feeCents) AS cents, SUM(spendCents + feeCents > 0) AS count FROM ledger " +
+            "WHERE occurredAt >= :from AND (:to IS NULL OR occurredAt < :to) AND (:lineId IS NULL OR lineId = :lineId) " +
+            "GROUP BY period",
+    )
+    fun spentByYear(from: Instant, to: Instant?, lineId: Long?): Flow<List<PeriodSum>>
 
     @Query(
         "SELECT COALESCE(SUM(spendCents + feeCents), 0) AS spentCents, COALESCE(SUM(feeCents), 0) AS feeCents, " +

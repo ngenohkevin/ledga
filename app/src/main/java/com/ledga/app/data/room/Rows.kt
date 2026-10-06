@@ -163,6 +163,9 @@ object MetaKeys {
 /** A line's latest stated wallet balance (query result, not a table). */
 data class LineBalance(val lineId: Long?, val balanceCents: Long)
 
+/** A line's latest stated wallet balance and when M-Pesa stated it (Home's "Updated 2:15 PM", spec §10.4). */
+data class BalanceReading(val lineId: Long?, val balanceCents: Long, val occurredAt: Instant)
+
 /** How much history there is: transaction count and the first/last times (non-hidden rows). */
 data class TxSpan(val count: Int, val firstAt: Instant?, val lastAt: Instant?)
 

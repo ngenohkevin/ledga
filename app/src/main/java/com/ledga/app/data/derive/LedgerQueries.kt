@@ -1,5 +1,9 @@
 package com.ledga.app.data.derive
 
+import com.ledga.core.time.PeriodType
+import com.ledga.app.data.room.dao.PeriodSum
+import com.ledga.app.data.room.FulizaReading
+import com.ledga.app.data.room.BalanceReading
 import androidx.paging.PagingSource
 import com.ledga.app.data.room.LedgaDatabase
 import com.ledga.app.data.room.LineBalance
@@ -55,6 +59,28 @@ class LedgerQueries(private val db: LedgaDatabase) {
     fun totals(range: InstantRange, lineId: Long? = null): Flow<PeriodTotals> =
         db.ledgerDao().totals(range.start, range.endExclusive, lineId)
 
+    /** Each line's latest stated balance and its time (spec §7.5), live. */
+    fun balances(): Flow<List<BalanceReading>> = db.transactionsDao().observeLatestBalances()
+
+    /** Every Fuliza fact, oldest first, live (R58). */
+    fun fulizaReadings(): Flow<List<FulizaReading>> = db.transactionsDao().observeFulizaReadings()
+
+    /** The newest [limit] payments on [lineId] (null = all lines), hidden ones left out; or one category's. */
+    fun recent(lineId: Long?, categoryKey: String? = null, limit: Int = RECENT): Flow<List<TxRow>> =
+        db.transactionsDao().recent(lineId, categoryKey, limit)
+
+    /** Spent per Nairobi week, month or year, keyed like `Period.key` (Home's spending card, R57). */
+    fun spentByPeriod(type: PeriodType, range: InstantRange, lineId: Long? = null): Flow<Map<String, PeriodSum>> {
+        val dao = db.ledgerDao()
+        val rows: Flow<List<PeriodSum>> = when (type) {
+            PeriodType.WEEK -> dao.spentByWeek(range.start, range.endExclusive, lineId)
+            PeriodType.MONTH -> dao.spentByMonth(range.start, range.endExclusive, lineId).map { list -> list.map { PeriodSum(it.month, it.cents, it.count) } }
+            PeriodType.YEAR -> dao.spentByYear(range.start, range.endExclusive, lineId)
+            PeriodType.DAY -> error("a day's total is Activity's day header (dayTotals)")
+        }
+        return rows.map { list -> list.associateBy { it.period } }
+    }
+
     /** [TransactionFilter] as the shared SQL filter's arguments (`TX_FILTER`). */
     private class Args(f: TransactionFilter) {
         val includeHidden = f.includeHidden
@@ -70,6 +96,9 @@ class LedgerQueries(private val db: LedgaDatabase) {
     }
 
     companion object {
+        /** Home's Recent and Tracker detail's payments (spec §10.4: "last 5"). */
+        const val RECENT = 5
+
         /** Σ of each line's latest balance; with no line attribution at all, the latest overall (§7.5). */
         fun combine(latest: List<LineBalance>): Money? {
             val attributed = latest.filter { it.lineId != null }

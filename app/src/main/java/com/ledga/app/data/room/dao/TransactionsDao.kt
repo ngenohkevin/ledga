@@ -1,5 +1,6 @@
 package com.ledga.app.data.room.dao
 
+import com.ledga.app.data.room.BalanceReading
 import androidx.paging.PagingSource
 import androidx.room.Dao
 import androidx.room.Query
@@ -83,6 +84,30 @@ interface TransactionsDao {
             "FROM (SELECT DISTINCT lineId FROM transactions WHERE balanceCents IS NOT NULL) l)",
     )
     suspend fun latestBalances(): List<LineBalance>
+
+    /** [latestBalances] with each reading's time, live for Home (spec §7.5). Hidden payments count: the balance is the wallet's. */
+    @Query(
+        "SELECT t.lineId AS lineId, t.balanceCents AS balanceCents, t.occurredAt AS occurredAt FROM transactions t WHERE t.code IN (" +
+            "SELECT (SELECT t2.code FROM transactions t2 WHERE t2.balanceCents IS NOT NULL AND t2.lineId IS l.lineId " +
+            "ORDER BY t2.occurredAt DESC, t2.code DESC LIMIT 1) " +
+            "FROM (SELECT DISTINCT lineId FROM transactions WHERE balanceCents IS NOT NULL) l)",
+    )
+    fun observeLatestBalances(): Flow<List<BalanceReading>>
+
+    /** [fulizaReadings], live for Home's Fuliza strip (R58). */
+    @Query(
+        "SELECT code, lineId, kind, occurredAt, amountCents, fulizaOutstandingCents, fulizaLimitCents, fulizaDueDate FROM transactions " +
+            "WHERE fulizaOutstandingCents IS NOT NULL OR fulizaLimitCents IS NOT NULL " +
+            "OR kind IN ('FULIZA_REPAY_AUTO', 'FULIZA_REPAY_MANUAL') ORDER BY occurredAt, code",
+    )
+    fun observeFulizaReadings(): Flow<List<FulizaReading>>
+
+    /** Home's Recent and Tracker detail's payments: newest first, in Activity's order; hidden ones left out. */
+    @Query(
+        "SELECT * FROM transactions WHERE isHidden = 0 AND (:lineId IS NULL OR lineId = :lineId) " +
+            "AND (:categoryKey IS NULL OR categoryKey = :categoryKey) ORDER BY occurredAt DESC, code DESC LIMIT :limit",
+    )
+    fun recent(lineId: Long?, categoryKey: String?, limit: Int): Flow<List<TxRow>>
 
     @Query(
         "SELECT code, lineId, kind, occurredAt, amountCents, fulizaOutstandingCents, fulizaLimitCents, fulizaDueDate FROM transactions " +
