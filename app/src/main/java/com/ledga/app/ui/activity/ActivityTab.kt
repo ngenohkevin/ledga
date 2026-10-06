@@ -142,7 +142,20 @@ fun ActivityTab(vm: ActivityViewModel = hiltViewModel()) {
                         onClearFilters = vm::clearFilters,
                     ),
                 )
-                ActivitySegment.SPENDING -> SegmentArrivesNext("Spending")
+                ActivitySegment.SPENDING -> {
+                    val spending: SpendingViewModel = hiltViewModel()
+                    val s by spending.ui.collectAsStateWithLifecycle()
+                    SpendingPane(
+                        s,
+                        SpendingActions(
+                            onPrevious = spending::previous,
+                            onNext = spending::next,
+                            onSelect = spending::select,
+                            onByGroup = spending::setByGroup,
+                            onShare = { vm.showTransactions(spending.transactionsFor(it)) },
+                        ),
+                    )
+                }
                 ActivitySegment.PEOPLE -> SegmentArrivesNext("People")
             }
         }
