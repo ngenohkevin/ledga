@@ -9,7 +9,18 @@ import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap
 
 /** Paybill/till numbers never appear in SMS, so they are deliberately not a match field. */
-enum class RuleField { NAME_CONTAINS, ACCOUNT_EQUALS, PHONE_EQUALS }
+enum class RuleField {
+    NAME_CONTAINS,
+    ACCOUNT_EQUALS,
+    PHONE_EQUALS,
+
+    /**
+     * "Only this account number" (spec §7.4, R35): the business's name (whole words) AND the account. The pattern is
+     * [RuleEngine.nameAndAccount]. A bare [ACCOUNT_EQUALS] would also file other businesses' payments to an account
+     * that many paybills share, such as a phone number or "1".
+     */
+    NAME_AND_ACCOUNT,
+}
 enum class RuleAction { SET_CATEGORY, MARK_OWN_ACCOUNT }
 enum class RuleOrigin { SYSTEM, USER }
 
@@ -54,6 +65,13 @@ class RuleEngine(rules: List<Rule>, private val groupOf: (String) -> CategoryGro
                 val account = cp.accountRef ?: return false
                 collapse(account).equals(collapse(rule.pattern), ignoreCase = true)
             }
+            RuleField.NAME_AND_ACCOUNT -> {
+                val (namePart, accountPart) = splitNameAndAccount(rule.pattern) ?: return false
+                val name = cp.name ?: return false
+                val account = cp.accountRef ?: return false
+                namePatterns.getOrPut(namePart) { wholeWords(namePart) }.containsMatchIn(name) &&
+                    collapse(account).equals(accountPart, ignoreCase = true)
+            }
             RuleField.PHONE_EQUALS -> {
                 val phone = cp.phone ?: return false
                 if (rule.pattern.count { it.isDigit() } < 7) return false
@@ -83,6 +101,22 @@ class RuleEngine(rules: List<Rule>, private val groupOf: (String) -> CategoryGro
     companion object {
         private val WS = Regex("\\s+")
         private fun collapse(s: String) = s.replace(WS, " ").trim()
+
+        /** U+001F UNIT SEPARATOR: neither whitespace nor text, and never in an SMS, so it splits the two halves. */
+        private val UNIT = Char(0x1F)
+
+        /** A [RuleField.NAME_AND_ACCOUNT] pattern: the name and the account, each whitespace-collapsed (R35). */
+        fun nameAndAccount(name: String, account: String): String = collapse(name) + UNIT + collapse(account)
+
+        /** The two halves of a [RuleField.NAME_AND_ACCOUNT] pattern, or null when either is missing or empty. */
+        fun splitNameAndAccount(pattern: String): Pair<String, String>? {
+            val i = pattern.indexOf(UNIT)
+            if (i < 0) return null
+            val name = pattern.substring(0, i)
+            val account = pattern.substring(i + 1)
+            if (name.none { it.isLetterOrDigit() } || account.none { it.isLetterOrDigit() }) return null
+            return name to account
+        }
 
         /** Whole-word, case-insensitive containment of the pattern's word sequence. */
         private fun wholeWords(pattern: String): Regex {

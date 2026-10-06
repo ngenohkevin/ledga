@@ -123,4 +123,30 @@ class RuleEngineTest {
         assertFalse(ph.matches(ph.ordered.single(), cp("X", phone = "123")))
         assertFalse(ph.matches(ph.ordered.single(), cp("X", phone = "0712345123")))
     }
+
+    @Test
+    fun `only this account number is scoped to the business it was set on`() {
+        val rule = user(100, RuleField.NAME_AND_ACCOUNT, RuleEngine.nameAndAccount("SAMPLE ACADEMY", "ADM 1024"), Categories.SCHOOL)
+        val e = RuleEngine(listOf(rule), groupOf)
+        assertEquals(Categories.SCHOOL, e.categoryFor(cp("SAMPLE ACADEMY", account = "ADM 1024"), FlowKind.SPEND))
+        assertEquals(Categories.SCHOOL, e.categoryFor(cp("SAMPLE ACADEMY", account = "adm  1024"), FlowKind.SPEND), "case and spacing")
+        assertNull(e.categoryFor(cp("SAMPLE ACADEMY", account = "ADM 2048"), FlowKind.SPEND), "another account at the same business")
+        assertNull(e.categoryFor(cp("SAMPLE CLINIC", account = "ADM 1024"), FlowKind.SPEND), "the same account number at another business")
+        assertNull(e.categoryFor(cp("SAMPLE ACADEMY"), FlowKind.SPEND), "no account at all")
+    }
+
+    @Test
+    fun `a scoped account pattern without both halves matches nothing`() {
+        val broken = listOf(
+            "SAMPLE ACADEMY",
+            RuleEngine.nameAndAccount("", "ADM 1024"),
+            RuleEngine.nameAndAccount("SAMPLE ACADEMY", " "),
+        )
+        broken.forEachIndexed { i, pattern ->
+            val e = RuleEngine(listOf(user(200L + i, RuleField.NAME_AND_ACCOUNT, pattern, Categories.SCHOOL)), groupOf)
+            assertNull(e.categoryFor(cp("SAMPLE ACADEMY", account = "ADM 1024"), FlowKind.SPEND), "pattern #$i")
+            assertNull(RuleEngine.splitNameAndAccount(pattern), "pattern #$i does not split")
+        }
+        assertEquals("SAMPLE ACADEMY" to "ADM 1024", RuleEngine.splitNameAndAccount(RuleEngine.nameAndAccount(" SAMPLE  ACADEMY ", "ADM 1024")))
+    }
 }
