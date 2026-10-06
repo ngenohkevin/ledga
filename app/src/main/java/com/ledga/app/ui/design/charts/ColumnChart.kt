@@ -78,8 +78,9 @@ fun ColumnChart(
     height: Dp = 150.dp,
     tooltip: (@Composable (Int) -> Unit)? = null,
 ) {
-    require(colors.isNotEmpty()) { "ColumnChart needs at least one colour" }
     val c = LedgaTheme.colors
+    // A stacked Trackers chart with nothing tracked passes no colours: draw in chartPrimary rather than crash.
+    val colors = colors.ifEmpty { listOf(c.chartPrimary) }
     val measurer = rememberTextMeasurer()
     val top = ChartMath.scaleMax(bars.map { it.total }, average)
     val headroom = if (tooltip != null) 34.dp else 8.dp

@@ -132,4 +132,13 @@ class ColumnChartTest {
             assertEquals(1, layouts.map { it.layoutInput.text.text.length > 1 }.toSet().size, "scale $fontScale: mixed full names and initials")
         }
     }
+    @Test
+    fun `a chart with no colours - nothing tracked - draws in chartPrimary instead of crashing`() {
+        compose.setContent {
+            LedgaTheme(Appearance.LIGHT, reducedMotion = true) {
+                ColumnChart(bars(10_000L, 20_000L), colors = emptyList(), summary = "Trackers, nothing tracked")
+            }
+        }
+        compose.onNodeWithContentDescription("Trackers, nothing tracked").assertExists()
+    }
 }
