@@ -10,6 +10,7 @@ import com.ledga.app.data.room.TxRow
 import com.ledga.app.data.room.TxSpan
 import com.ledga.core.model.FlowKind
 import kotlinx.coroutines.flow.Flow
+import java.time.Instant
 
 @Dao
 interface TransactionsDao {
@@ -48,12 +49,20 @@ interface TransactionsDao {
     @Query("SELECT COUNT(*) AS count, MIN(occurredAt) AS firstAt, MAX(occurredAt) AS lastAt FROM transactions WHERE isHidden = 0")
     fun observeSpan(): Flow<TxSpan>
 
-    /** The transactions list (§7.5): newest first, hidden excluded; [like] is an already-escaped LIKE pattern. */
-    @Query(
-        "SELECT * FROM transactions WHERE isHidden = 0 AND (:lineId IS NULL OR lineId = :lineId) " +
-            "AND (:like IS NULL OR searchText LIKE :like ESCAPE '\\') ORDER BY occurredAt DESC, code DESC",
-    )
-    fun page(lineId: Long?, like: String?): PagingSource<Int, TxRow>
+    /** Activity › Transactions (§7.5, R38): newest first, through the shared `TX_FILTER`. */
+    @Query("SELECT t.* FROM transactions t WHERE " + TX_FILTER + " ORDER BY t.occurredAt DESC, t.code DESC")
+    fun page(
+        includeHidden: Boolean,
+        lineId: Long?,
+        like: String?,
+        flow: String,
+        anyCategory: Boolean,
+        categories: List<String>,
+        from: Instant?,
+        to: Instant?,
+        minCents: Long?,
+        counterpartyKey: String?,
+    ): PagingSource<Int, TxRow>
 
     /**
      * Each line's latest stated wallet balance (one row per lineId, the null line included). The latest-code subquery

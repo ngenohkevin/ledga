@@ -102,7 +102,7 @@ class LedgerQueriesTest {
         ingest(Sms.KPLC, Sms.SEND, Sms.buyGoods("TJK4AB12HD", "SAMPLE 50% SHOP", "120.00"))
         deriver.saveOverride(Override("TJK4AB12FB", hidden = true))
         suspend fun codes(q: String?): List<String> {
-            val page = queries.transactions(null, q).load(PagingSource.LoadParams.Refresh(null, 50, false)) as PagingSource.LoadResult.Page
+            val page = queries.transactions(TransactionFilter(query = q.orEmpty())).load(PagingSource.LoadParams.Refresh(null, 50, false)) as PagingSource.LoadResult.Page
             return page.data.map { it.code }
         }
         assertEquals(listOf("TJK4AB12HD", "TJK4AB12FA"), codes(null), "newest first; the hidden send is absent")
