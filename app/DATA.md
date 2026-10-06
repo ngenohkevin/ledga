@@ -62,6 +62,36 @@
   - **New categories** (R43): key `user_<slug>[_n]`, origin USER, icon `fluent_label`, untracked; a duplicate name in the same group reuses that category.
 - **Live periods.** `LiveClock` (R34) is a Hilt singleton; `MainActivity.onResume` pokes it.
 
+## Home and Trackers (Phase 4c)
+
+- **Reads.**
+  - `LedgerQueries.balances()` is each line's latest stated balance with its time; hidden payments count, because the
+    balance is the wallet's.
+  - `HomeBalance.of(readings, lineId)` adds up each line's latest under all lines, or takes the latest overall when no
+    reading has a line.
+  - `fulizaReadings()` with `FulizaStatus.forLine(readings, lineId)` gives a line's status or the lines added up.
+    Ceiling and available are known only when every line's are; the earliest due date leads.
+  - `recent(lineId, categoryKey?)` is the newest five, in Activity's order.
+  - `spentByPeriod(WEEK | MONTH | YEAR, range, lineId)` is keyed like `Period.key`. Weeks start on Nairobi's Monday
+    (`'weekday 0', '-6 days'`).
+  - `spentByCategoryMonth` and `latestSpends` feed `Trackers`. That is one reader: 13 months per tracker, the average of
+    completed months from the first payment, "usually by" only for a bill paid in each of the last three months
+    (`Bucketing.isMonthly`), and all-time months for the detail.
+- **Line choice (R47).** `Settings.selectedLineId` through `SelectedLine` → `LineChoice.lineId`. It is null (all lines)
+  on a phone with fewer than two lines or for a line that no longer exists, so a v1 choice never hides unattributed
+  payments.
+- **Writes.** `TransactionEdits` runs its writes one at a time (a `Mutex`, R63; `TransactionEditsTest` pauses one edit
+  mid-way and proves a second waits); its counts don't lock.
+  - `setTracked` and `renameCategory` change no transaction, so nothing reclassifies. A rename refuses a blank name or one
+    another category in the same group has (R51).
+  - `addRule(categoryKey, name, account?)` behaves like "Apply to all" (R36, R48): a USER `NAME_CONTAINS` rule, or
+    `NAME_AND_ACCOUNT` with an account, replacing a USER rule like it, with the person's own category choices cleared on
+    every payment it will label. The name is stored upper-cased and needs at least two letters or digits.
+    `rulePreview` counts matches, movers, and the movers the person had filed elsewhere.
+  - `removeRule(id)` deletes a USER rule or switches a SYSTEM rule off (`enabled = 0`); `restoreRule` undoes either
+    (R49). Restoring does not bring back category choices an earlier "apply to all" cleared.
+- **Settings.** `notificationNudgeDismissed` (R59): Home's notifications banner is gone for good after "Not now".
+
 ## Phase 5 acceptance step (from the 2026-10-05 Phase 1 review)
 
 The v1 export can't prove inbox-wide coverage: v1 never stored the messages its parser rejected. So after the first full inbox rescan **on the owner's phone**, record:

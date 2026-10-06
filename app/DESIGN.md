@@ -51,7 +51,7 @@ Everything lives in `com.ledga.app.ui.design`. Until Phase 4 uses it, R8 strips 
   - `@Serializable` routes in `ui/app/Routes.kt`.
 - A one-question screen (onboarding) scrolls its content and pins its actions to the bottom, so they're reachable at 1.3× and with the keyboard open. Keep an outlined field's label short: a label that wraps at 1.3× runs into the border (`OnboardingLayoutTest`).
 - Pixel assertions on Robolectric: draw the window's root view into a `Bitmap` (`ChartContrastTest`); Compose's `captureToImage` uses PixelCopy and times out under software rendering.
-- Until 4b–4d land, `ComingNext` holds the Activity, Trackers and You tabs and `InterimHome` holds Home (R32). Development builds only.
+- Until 4d lands, `ComingNext` holds the You tab (R32). Development builds only.
 - **Activity (4b).** `ActivityTab` hosts three segments, each with its own ViewModel: Transactions in `ActivityViewModel`, `SpendingViewModel`, `PeopleViewModel`.
   - Spending's "tap a category" calls `ActivityViewModel.showTransactions(filter)`.
   - Flow chips are a single choice (`ChoiceChip(role = Role.RadioButton)` in a `selectableGroup`); line chips toggle (`Role.Checkbox`).
@@ -67,6 +67,38 @@ Everything lives in `com.ledga.app.ui.design`. Until Phase 4 uses it, R8 strips 
 - **Landscape (owner ruling M5).** `ShellFrame` pads `WindowInsets.safeDrawing` horizontally, so tab screens never sit under a landscape cutout or a side navigation bar. Each screen family has one `snapScreenLandscape` golden (800×360 dp). In a pane shorter than 400 dp (a phone in landscape), Transactions' search and chips are the list's first item and scroll away with it (`ActivityLandscapeTest`); People's controls always scroll with its list.
 - **Sheet screenshots.** Robolectric doesn't capture `ModalBottomSheet`'s dialog window. Snap a sheet's stateless content inside `SheetScaffold` instead (`TransactionSheetScreensTest`).
 - **Category picker.** "Apply to all" defaults on (N > 1) only when the person picks a different category; Save with the payment's own category and "apply to all" off changes nothing. The grid shows four columns while a cell holds the longest seeded word at the current text size, else three (`CategoryPickerBehaviourTest`).
+- **One line choice (R47).** `SelectedLine.choice` (a `LineChoice`) narrows Home, Activity › Spending and People (and the
+  person sheet), Trackers and Tracker detail. Every one of them shows `LinePicker`, the chip plus switcher sheet, which
+  draws nothing on a phone with fewer than two lines. Read `LineChoice.lineId`, never `selectedId`: the choice counts only
+  with two or more lines and while that line exists. Transactions keeps its own line chips; a link into it carries the line.
+- **Links into Activity (R61).** A screen that opens Activity calls `ActivityLinks.open(…)` and then switches tabs.
+  `ActivityViewModel` applies each request once: `ActivityLink.Transactions(filter, focusSearch)` or `ActivityLink.Spending`.
+  A search request focuses the field a frame later and is then consumed (`TransactionsActions.onSearchFocused`), so
+  coming back to the pane doesn't take the focus again.
+- **Home (4c).** `HomeRoute` owns the permission requests (4a M3: the first tap asks Android; once Android won't ask
+  again, the next tap opens Settings), the sheets (`HomeSheets`: payment, picker, Fuliza; Hide closes the Fuliza sheet
+  too) and Undo. `HomeContent` is stateless.
+  - Recent rows take `HomeText.rowTime` as their tail: the time today, then "Yesterday" or the date. No balance (R56).
+  - The spending card's labels sit under `MiniBars` in its slots and fall back to short labels when the full ones don't
+    fit. Its fees line and badge, and its two footer figures, are `FlowRow`s: side by side while they fit, else wrapped
+    (`HomeBehaviourTest`). `ChangeBadge` is the shared "▲ 9% vs Aug" badge.
+  - `Banner` takes an optional second action ("Not now", R59). With two actions they sit in a row under the text:
+    beside it they squeezed it until words broke.
+  - A tracker tile is 13 caption font sizes wide (`TILE_EMS`), not a fixed dp, so "usually by the 12th" stays whole at
+    1.3× (Android 14 grows dp lengths less than small text).
+- **Trackers and Tracker detail (4c).**
+  - Every tracker number comes from `data/trackers/Trackers`: Home's tile, the Trackers row and the detail always agree.
+  - Text comes only from `TrackerText`: tile caption, row context and detail, rule chips, tooltips, payment lines and
+    the add-rule preview.
+  - Tracker detail is a pushed route (`TrackerRoute(categoryKey)`) with no bottom bar, so it pads `safeDrawing`
+    vertically. Its "All" range uses `Bucketing.allTime` (years after 12 months, R54).
+  - "Matched by" chips sit on a `LedgaCard`: a chip's plate barely shows on the canvas. `RuleChip`'s label ellipsizes
+    before its ×, so a long rule stays removable at large text.
+- **Fuliza sheet (4c).** Its rows show the date as the subtitle and the draw ("Fuliza Ksh 463") under the amount, where
+  it never gives way (`FulizaSheetBehaviourTest`).
+- **Shared sheets keep their state (R62).** Hosts pass a saveable session id (`rememberSaveable(code) { Random.nextLong() }`);
+  `open(code, session)` reloads only for a new session. `PickerState.code` stops a stale picker frame. `OpenSheets` lives
+  in `ui.tx`.
 
 ## Screenshot tests
 
@@ -89,3 +121,7 @@ Everything lives in `com.ledga.app.ui.design`. Until Phase 4 uses it, R8 strips 
 - Write state from a test inside `Snapshot.withMutableSnapshot { … }` when the clock is paused (`mainClock.autoAdvance = false`).
 - `LedgaModalSheet` exposes M3's experimental `SheetState`, so call sites `@OptIn(ExperimentalMaterial3Api::class)`.
 - Chart period labels share one size: full labels while they fit (down to 8 sp), else first letters. Pass full names ("SEP"); the chart decides.
+- Robolectric fakes `System.nanoTime`, so coroutine delays and timeouts (`withTimeoutOrNull`, also under `runBlocking`) never fire. For real time, use `Thread.sleep`.
+- A failing assertion inside `runBlocking`/`runTest` still waits for running children: a latch-parked child turns a RED into a hang. Release latches in `finally`, and give a deliberately parked coroutine its own thread (`TransactionEditsTest`).
+- A ViewModel callback that runs after a suspend edit (e.g. `addRule(…) { onDone }`) arrives after the UI state has already changed. Wait on a `CompletableDeferred` rather than reading a flag at once.
+- Text that must fit at large font scales: check `TextLayoutResult` (`maxIntrinsicWidth` ≤ width for a line that mustn't be cut, `minIntrinsicWidth` ≤ width for no word broken, `lineCount` for no wrap). Size containers that hold text in the text's own font size, not dp.
