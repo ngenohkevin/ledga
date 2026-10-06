@@ -120,4 +120,30 @@ class RowsTest {
         compose.onNode(isHeading() and hasText("TODAY")).assertExists()
         compose.onNodeWithText("Out 4,500 · In 5,000", useUnmergedTree = true).assertExists()
     }
+    @Test
+    fun `the time stays whole while the category ellipsizes - 1_3x, 328 dp row with a balance`() {
+        compose.setContent {
+            val base = LocalDensity.current
+            CompositionLocalProvider(LocalDensity provides Density(base.density, 1.3f)) {
+                LedgaTheme(Appearance.LIGHT, reducedMotion = true) {
+                    Box(Modifier.width(328.dp)) {
+                        TxRow(
+                            leading = Leading.Icon("fluent_shopping_cart"),
+                            title = "Naivas Supermarket Westlands",
+                            subtitle = "Fuliza Ksh 300 · Groceries",
+                            amountCents = 85_000,
+                            inflow = false,
+                            speech = "s",
+                            balanceText = "Bal 104,231.50",
+                            subtitleTail = "9:15 AM",
+                        )
+                    }
+                }
+            }
+        }
+        val tail = layoutOf(" · 9:15 AM")
+        assertEquals(1, tail.lineCount)
+        assertFalse(tail.isLineEllipsized(0))
+        assertTrue(tail.size.width >= ceil(tail.multiParagraph.intrinsics.maxIntrinsicWidth).toInt(), "time squeezed")
+    }
 }

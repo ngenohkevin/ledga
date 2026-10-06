@@ -36,26 +36,27 @@ private fun DaySpecimen() {
     Column {
         DayHeader("TODAY", outCents = 535_000, inCents = 500_000, modifier = Modifier.cardSegment(Segment.Top))
         TxRow(
-            Leading.Icon("fluent_fuel_pump"), "Rubis Langata", "Fuel · 6:40 PM", 300_000, inflow = false,
-            speech = "s", balanceText = "Bal 4,231.50", modifier = Modifier.cardSegment(Segment.Middle),
+            Leading.Icon("fluent_fuel_pump"), "Rubis Langata", "Fuel", 300_000, inflow = false,
+            speech = "s", balanceText = "Bal 4,231.50", modifier = Modifier.cardSegment(Segment.Middle), subtitleTail = "6:40 PM",
         )
         TxRow(
-            Leading.Icon("fluent_high_voltage"), "KPLC Prepaid", "Electricity · 2:15 PM", 150_000, inflow = false,
-            speech = "s", modifier = Modifier.cardSegment(Segment.Middle, dividerAbove = true),
+            Leading.Icon("fluent_high_voltage"), "KPLC Prepaid", "Electricity", 150_000, inflow = false,
+            speech = "s", modifier = Modifier.cardSegment(Segment.Middle, dividerAbove = true), subtitleTail = "2:15 PM",
         )
         TxRow(
-            Leading.Avatar("Jane Doe", inflow = true), "Jane Doe", "Received · 11:02 AM", 500_000, inflow = true,
-            speech = "s", modifier = Modifier.cardSegment(Segment.Middle, dividerAbove = true),
+            Leading.Avatar("Jane Doe", inflow = true), "Jane Doe", "Received", 500_000, inflow = true,
+            speech = "s", modifier = Modifier.cardSegment(Segment.Middle, dividerAbove = true), subtitleTail = "11:02 AM",
         )
         TxRow(
-            Leading.Icon("fluent_shopping_cart"), "Naivas Supermarket Westlands", "Groceries · Fuliza Ksh 300 · 9:15 AM",
+            Leading.Icon("fluent_shopping_cart"), "Naivas Supermarket Westlands", "Fuliza Ksh 300 · Groceries",
             85_000, inflow = false, speech = "s", modifier = Modifier.cardSegment(Segment.Bottom, dividerAbove = true),
+            subtitleTail = "9:15 AM",
         )
         Spacer(Modifier.height(Spacing.m))
         DayHeader("THU, 2 OCT 2025", outCents = 120_000, inCents = 0, modifier = Modifier.cardSegment(Segment.Top))
         TxRow(
-            Leading.Icon("fluent_dollar_banknote"), "Agent 123456", "Cash withdrawal · 4:05 PM", 120_000, inflow = false,
-            speech = "s", modifier = Modifier.cardSegment(Segment.Bottom),
+            Leading.Icon("fluent_dollar_banknote"), "Agent 123456", "Cash withdrawal", 120_000, inflow = false,
+            speech = "s", modifier = Modifier.cardSegment(Segment.Bottom), subtitleTail = "4:05 PM",
         )
     }
 }

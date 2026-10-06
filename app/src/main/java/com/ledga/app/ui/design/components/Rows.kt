@@ -57,6 +57,7 @@ fun ValueRow(
     speech: String? = null,
     onClick: (() -> Unit)? = null,
     onLongClick: (() -> Unit)? = null,
+    subtitleTail: String? = null,
 ) {
     val c = LedgaTheme.colors
     val interaction = if (onClick != null || onLongClick != null) {
@@ -80,8 +81,29 @@ fun ValueRow(
         }
         Column(Modifier.weight(1f)) {
             Text(title, style = LedgaType.bodyStrong, color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            if (subtitle != null) {
-                Text(subtitle, style = LedgaType.caption, color = c.muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            if (subtitle != null || subtitleTail != null) {
+                // The tail (a time, an amount) never truncates; the subtitle before it ellipsizes instead.
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (subtitle != null) {
+                        Text(
+                            subtitle,
+                            Modifier.weight(1f, fill = false),
+                            style = LedgaType.caption,
+                            color = c.muted,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                    if (subtitleTail != null) {
+                        Text(
+                            if (subtitle != null) " · $subtitleTail" else subtitleTail,
+                            style = LedgaType.caption,
+                            color = c.muted,
+                            maxLines = 1,
+                            softWrap = false,
+                        )
+                    }
+                }
             }
         }
         Column(horizontalAlignment = Alignment.End) {
@@ -91,7 +113,11 @@ fun ValueRow(
     }
 }
 
-/** A transaction row (spec §10.4): outflows "−1,200.00" in ink, inflows "+5,000.00" in inflow green. */
+/**
+ * A transaction row (spec §10.4): outflows in ink with a minus (U+2212), inflows in inflow green with a "+".
+ * Pass the category as [subtitle] and the time as [subtitleTail], so the time stays whole at large font scales;
+ * in notes put money first ("Fuliza Ksh 300 · Groceries").
+ */
 @Composable
 fun TxRow(
     leading: Leading,
@@ -104,6 +130,7 @@ fun TxRow(
     balanceText: String? = null,
     onClick: (() -> Unit)? = null,
     onLongClick: (() -> Unit)? = null,
+    subtitleTail: String? = null,
 ) = ValueRow(
     leading = leading,
     title = title,
@@ -115,6 +142,7 @@ fun TxRow(
     speech = speech,
     onClick = onClick,
     onLongClick = onLongClick,
+    subtitleTail = subtitleTail,
 )
 
 /** First item of a day card: "TODAY ……… Out 4,500 · In 5,000" (spec §10.4). A TalkBack heading. */
