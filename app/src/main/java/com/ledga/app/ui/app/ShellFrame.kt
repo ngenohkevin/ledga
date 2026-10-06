@@ -53,5 +53,14 @@ fun ScreenTitle(text: String, modifier: Modifier = Modifier) = Text(
     color = LedgaTheme.colors.ink,
 )
 
+/** A group's label above its card (mockup `you`: MONEY, APP, DATA, ABOUT), announced as a heading. */
+@Composable
+fun GroupLabel(text: String, modifier: Modifier = Modifier) = Text(
+    text.uppercase(Locale.ENGLISH),
+    modifier.padding(start = Spacing.xs, top = Spacing.l, bottom = Spacing.s).semantics { heading() },
+    style = LedgaType.overline,
+    color = LedgaTheme.colors.muted,
+)
+
 /** "6,385": a count with thousands separators (onboarding's import counts). */
 internal fun grouped(n: Int): String = String.format(Locale.ENGLISH, "%,d", n)
