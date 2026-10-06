@@ -7,6 +7,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.test.core.app.ApplicationProvider
+import com.ledga.app.ui.design.tokens.Contrast
 import com.ledga.app.ui.design.tokens.DarkColors
 import com.ledga.app.ui.design.tokens.LedgaColors
 import com.ledga.app.ui.design.tokens.LightColors
@@ -88,6 +89,31 @@ class LedgaThemeTest {
             assertEquals(LightColors.ink, inverseSurface)
             assertEquals(LightColors.muted, onSurfaceVariant)
             assertTrue(surfaceTint == Color.Transparent)
+        }
+    }
+    private fun schemes(): List<ColorScheme> {
+        val seen = mutableListOf<ColorScheme>()
+        compose.setContent {
+            LedgaTheme(Appearance.LIGHT, reducedMotion = false) { seen += MaterialTheme.colorScheme }
+            LedgaTheme(Appearance.DARK, reducedMotion = false) { seen += MaterialTheme.colorScheme }
+        }
+        compose.waitForIdle()
+        return seen.takeLast(2)
+    }
+
+    @Test
+    fun `snackbar actions are readable - M3 draws them in inversePrimary on inverseSurface`() {
+        schemes().forEach { scheme ->
+            val ratio = Contrast.ratio(scheme.inversePrimary, scheme.inverseSurface)
+            assertTrue(ratio >= 4.5, "inversePrimary on inverseSurface is %.2f:1".format(ratio))
+        }
+    }
+
+    @Test
+    fun `M3 outlines are visible - OutlinedTextField borders need 3 to 1 against the surface`() {
+        schemes().forEach { scheme ->
+            val ratio = Contrast.ratio(scheme.outline, scheme.surface)
+            assertTrue(ratio >= 3.0, "outline on surface is %.2f:1".format(ratio))
         }
     }
 }

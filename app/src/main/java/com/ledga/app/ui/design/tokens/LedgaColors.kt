@@ -26,6 +26,8 @@ data class LedgaColors(
     val faint: Color,
     val primary: Color,
     val onPrimary: Color,
+    /** Actions on `ink` (snackbar Undo): the other theme's primary, as M3's inversePrimary. */
+    val inversePrimary: Color,
     val chartPrimary: Color,
     val primarySoft: Color,
     val onPrimarySoft: Color,
@@ -54,6 +56,7 @@ val LightColors = LedgaColors(
     faint = Color(0xFFA3ACA8),
     primary = Color(0xFF0A6B4B),
     onPrimary = Color(0xFFFFFFFF),
+    inversePrimary = Color(0xFF43E0A0),
     chartPrimary = Color(0xFF0E9F6E),
     primarySoft = Color(0xFFE3F2EA),
     onPrimarySoft = Color(0xFF0A5A3F),
@@ -82,6 +85,7 @@ val DarkColors = LedgaColors(
     faint = Color(0xFF5E6964),
     primary = Color(0xFF43E0A0),
     onPrimary = Color(0xFF03160F),
+    inversePrimary = Color(0xFF0A6B4B),
     chartPrimary = Color(0xFF43E0A0),
     primarySoft = Color(0xFF16271F),
     onPrimarySoft = Color(0xFFB9F5D9),
@@ -137,4 +141,5 @@ fun LedgaColors.textPairs(): List<TextPair> = listOf(
     TextPair("warning/surface", warning, surface),
     TextPair("warning/warningSoft", warning, warningSoft),
     TextPair("canvas/ink", canvas, ink),
+    TextPair("inversePrimary/ink", inversePrimary, ink),
 )
