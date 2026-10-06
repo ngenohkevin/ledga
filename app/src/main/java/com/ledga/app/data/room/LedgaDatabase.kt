@@ -9,6 +9,7 @@ import androidx.room.migration.Migration
 import com.ledga.app.data.room.dao.CategoriesDao
 import com.ledga.app.data.room.dao.LedgerDao
 import com.ledga.app.data.room.dao.LegacyDao
+import com.ledga.app.data.room.dao.LinesDao
 import com.ledga.app.data.room.dao.MetaDao
 import com.ledga.app.data.room.dao.OverridesDao
 import com.ledga.app.data.room.dao.RulesDao
@@ -37,6 +38,7 @@ abstract class LedgaDatabase : RoomDatabase() {
     abstract fun overridesDao(): OverridesDao
     abstract fun ledgerDao(): LedgerDao
     abstract fun legacyDao(): LegacyDao
+    abstract fun linesDao(): LinesDao
 
     companion object {
         const val FILE_NAME = "ledga.db"
