@@ -1,5 +1,6 @@
 package com.ledga.app.ui.tx
 
+import kotlin.random.Random
 import android.content.ClipData
 import android.content.Intent
 import androidx.compose.foundation.background
@@ -405,7 +406,9 @@ fun TransactionSheetHost(
     vm: TxSheetViewModel = hiltViewModel(key = "tx-sheet"),
 ) {
     if (code == null) return
-    LaunchedEffect(code) { vm.open(code) }
+    // R62: a saveable session id survives a rotation, so re-opening the same code keeps the sheet's state.
+    val session = rememberSaveable(code) { Random.nextLong() }
+    LaunchedEffect(code, session) { vm.open(code, session) }
     val state by vm.state.collectAsStateWithLifecycle()
     val shown = state.takeIf { it.tx?.code == code } ?: TxSheetState()
     val context = LocalContext.current

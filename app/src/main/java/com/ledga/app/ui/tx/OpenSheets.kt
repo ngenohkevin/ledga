@@ -1,10 +1,10 @@
-package com.ledga.app.ui.activity
+package com.ledga.app.ui.tx
 
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.listSaver
 
 /**
- * The sheets Activity has open over its screen (spec §10.4): a payment ([payment], its code), the category picker
+ * The sheets a screen has open over it (Activity, Home and Tracker detail, spec §10.4): a payment ([payment], its code), the category picker
  * over it ([picker]) and a person ([person], their `counterpartyKey`). The screen keeps only these keys; each sheet's
  * host owns its ViewModel.
  */

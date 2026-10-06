@@ -77,7 +77,15 @@ class TxSheetViewModel @Inject constructor(
         .combine(pending) { s, p -> s.copy(pendingOwn = p) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), TxSheetState())
 
-    fun open(code: String) {
+    private var session: Long? = null
+
+    /**
+     * Opens [code] for the host's [session] (a saveable id, R62). A rotation re-runs the host's effect with the same
+     * session and changes nothing, so a pending own-account question survives; a new opening starts clean.
+     */
+    fun open(code: String, session: Long = System.nanoTime()) {
+        if (this.session == session && this.code.value == code) return
+        this.session = session
         pending.value = null
         this.code.value = code
     }

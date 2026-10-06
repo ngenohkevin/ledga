@@ -1,5 +1,6 @@
 package com.ledga.app.ui.tx
 
+import kotlin.random.Random
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -290,13 +291,16 @@ private fun ToggleLine(title: String, caption: String, checked: Boolean, onChang
 @Composable
 fun CategoryPickerHost(code: String?, onDismiss: () -> Unit, vm: CategoryPickerViewModel = hiltViewModel(key = "category-picker")) {
     if (code == null) return
-    LaunchedEffect(code) { vm.open(code) }
+    val session = rememberSaveable(code) { Random.nextLong() }
+    LaunchedEffect(code, session) { vm.open(code, session) }
     val state by vm.state.collectAsStateWithLifecycle()
+    // R62: never a frame of the previous payment's picker.
+    val shown = state.takeIf { it.code == code } ?: PickerState(code = code)
     var searchOpen by rememberSaveable(code) { mutableStateOf(false) }
     LedgaModalSheet(onDismiss = onDismiss, title = null) {
         Column(Modifier.verticalScroll(rememberScrollState())) {
             CategoryPickerContent(
-                state = state,
+                state = shown,
                 actions = PickerActions(
                     onSelect = vm::select,
                     onQuery = vm::setQuery,

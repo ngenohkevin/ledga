@@ -25,6 +25,8 @@ data class PickerGroup(val group: CategoryGroup, val items: List<PickerItem>)
 
 /** The category picker (spec §10.4, mockup `picker`): the categories that fit, by group, and "apply to all" (R36). */
 data class PickerState(
+    /** The payment this state belongs to: the host shows nothing of another one's (R62). */
+    val code: String? = null,
     val loaded: Boolean = false,
     /** The display name "apply to all" names (R44); null when the SMS names no one. */
     val txName: String? = null,
@@ -81,17 +83,23 @@ class CategoryPickerViewModel @Inject constructor(
     /** The category the payment had when the picker opened: saving it unchanged changes nothing (no rule, no override). */
     private var initial: String? = null
 
-    fun open(code: String) {
+    private var session: Long? = null
+
+    /** Loads [code] afresh for a new [session] (a save may have changed it); the same session again (a rotation) keeps the choice (R62). */
+    fun open(code: String, session: Long = System.nanoTime()) {
+        if (this.session == session && this.code == code) return
+        this.session = session
         this.code = code
         applyAllTouched = false
         initial = null
-        _state.value = PickerState()
+        _state.value = PickerState(code = code)
         viewModelScope.launch {
             val tx = db.transactionsDao().get(code) ?: return@launch
             val groups = groupsFor(tx.flow)
             val selected = tx.categoryKey.takeIf { key -> groups.any { g -> g.items.any { it.key == key } } }
             initial = selected
             _state.value = PickerState(
+                code = code,
                 loaded = true,
                 txName = tx.counterpartyName?.let(NameFormat::display),
                 account = tx.counterpartyAccount?.takeIf { tx.kind == TxKind.PAYBILL },

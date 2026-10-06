@@ -109,4 +109,18 @@ class TxSheetViewModelTest {
         val s = vm.state.first { it.tx?.code == "TJK4AB12KA" && !it.isOwnAccount }
         assertNull(s.pendingOwn, "one payment changes: no question about all 3")
     }
+
+    @Test
+    fun `reopening in the same session keeps the own-account question - a rotation`() = runTest {
+        ingest(Sms.BANK_APP, Sms.receive("TJK4AB12LA", "EXAMPLE BANK LIMITED- APP", "3,000.00"))
+        val vm = vm()
+        vm.open("TJK4AB12FC", session = 1)
+        vm.state.first { it.tx != null }
+        vm.setOwnAccount(true)
+        vm.state.first { it.pendingOwn != null }
+        vm.open("TJK4AB12FC", session = 1)
+        assertEquals(2, vm.state.value.pendingOwn?.count)
+        vm.open("TJK4AB12FC", session = 2)
+        assertNull(vm.state.first { it.pendingOwn == null }.pendingOwn)
+    }
 }

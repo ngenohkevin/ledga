@@ -1,4 +1,4 @@
-package com.ledga.app.ui.activity
+package com.ledga.app.ui.tx
 
 import org.junit.Test
 import kotlin.test.assertEquals

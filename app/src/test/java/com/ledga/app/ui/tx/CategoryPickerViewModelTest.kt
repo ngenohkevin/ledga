@@ -190,4 +190,27 @@ class CategoryPickerViewModelTest {
         assertTrue(db.rulesDao().all().none { it.origin == RuleOrigin.USER }, "no rule")
         assertNull(db.overridesDao().get("TJK4AB12KA")?.categoryKey, "nothing pinned on the payment itself")
     }
+
+    @Test
+    fun `reopening in the same session keeps the choice - a rotation`() = runTest {
+        ingest(Sms.KPLC)
+        val vm = vm()
+        vm.open("TJK4AB12FA", session = 1)
+        vm.state.first { it.loaded }
+        vm.select(Categories.WATER)
+        vm.open("TJK4AB12FA", session = 1)
+        assertEquals(Categories.WATER, vm.state.value.selected)
+    }
+
+    @Test
+    fun `a new session loads the payment afresh, and the state names its code`() = runTest {
+        ingest(Sms.KPLC)
+        val vm = vm()
+        vm.open("TJK4AB12FA", session = 1)
+        vm.state.first { it.loaded }
+        vm.select(Categories.WATER)
+        vm.open("TJK4AB12FA", session = 2)
+        val fresh = vm.state.first { it.loaded && it.selected == Categories.ELECTRICITY }
+        assertEquals("TJK4AB12FA", fresh.code)
+    }
 }
