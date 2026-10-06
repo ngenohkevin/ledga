@@ -180,3 +180,6 @@ data class FulizaReading(
     val fulizaLimitCents: Long?,
     val fulizaDueDate: LocalDate?,
 )
+
+/** How many payments that show are on a line (null = Ledga couldn't tell which SIM, spec §9.1). */
+data class LineCount(val lineId: Long?, val count: Int)

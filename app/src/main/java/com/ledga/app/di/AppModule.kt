@@ -11,6 +11,7 @@ import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStoreFile
 import androidx.work.WorkManager
+import com.ledga.app.data.lines.PhoneAccess
 import com.ledga.app.data.settings.SettingsStore
 import com.ledga.app.data.settings.V1SettingsMigration
 import com.ledga.app.startup.SmsAccess
@@ -60,5 +61,10 @@ object AppModule {
     fun notificationAccess(@ApplicationContext context: Context): NotificationAccess = NotificationAccess {
         Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
             ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+    }
+
+    @Provides
+    fun phoneAccess(@ApplicationContext context: Context): PhoneAccess = PhoneAccess {
+        ContextCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED
     }
 }

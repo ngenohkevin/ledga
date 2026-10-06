@@ -7,6 +7,7 @@ import androidx.room.Query
 import androidx.room.Upsert
 import com.ledga.app.data.room.FulizaReading
 import com.ledga.app.data.room.LineBalance
+import com.ledga.app.data.room.LineCount
 import com.ledga.app.data.room.TxRow
 import com.ledga.app.data.room.TxSpan
 import com.ledga.core.model.FlowKind
@@ -53,6 +54,10 @@ interface TransactionsDao {
 
     @Query("SELECT COUNT(*) FROM transactions")
     suspend fun count(): Int
+
+    /** You → M-Pesa lines (R65): payments that show, per line. */
+    @Query("SELECT lineId, COUNT(*) AS count FROM transactions WHERE isHidden = 0 GROUP BY lineId")
+    fun observeCountsByLine(): Flow<List<LineCount>>
 
     /** A category's screen (R72's archive question): its payments that show. */
     @Query("SELECT COUNT(*) FROM transactions WHERE categoryKey = :categoryKey AND isHidden = 0")

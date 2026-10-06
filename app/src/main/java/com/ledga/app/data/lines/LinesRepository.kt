@@ -71,10 +71,20 @@ class LinesRepository(
         }
     }
 
-    suspend fun rename(id: Long, name: String) = dao.rename(id, name.trim())
+    /** R65: the person's name for a line, spaces collapsed, cut to [NAME_MAX]. False (nothing saved) for a blank name. */
+    suspend fun rename(id: Long, name: String): Boolean {
+        val clean = name.replace(WS, " ").trim().take(NAME_MAX).trim()
+        if (clean.isEmpty()) return false
+        dao.rename(id, clean)
+        return true
+    }
 
     companion object {
         /** New lines' colours, in order: the chart colours of palette C's first four hues. */
         val COLORS = listOf("#0E9F6E", "#1E7FD8", "#8A4FC7", "#E0457B")
+
+        /** R65: a line's name. */
+        const val NAME_MAX = 24
+        private val WS = Regex("\\s+")
     }
 }

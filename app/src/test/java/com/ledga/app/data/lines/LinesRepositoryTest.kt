@@ -13,6 +13,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.test.assertFalse
 
 @RunWith(RobolectricTestRunner::class)
 class LinesRepositoryTest {
@@ -88,5 +89,15 @@ class LinesRepositoryTest {
         val id = assertNotNull(repo.lineFor(3))
         repo.rename(id, "  Work  ")
         assertEquals("Work", db.linesDao().all().single().displayName)
+    }
+
+    @Test
+    fun `a rename is trimmed and cut to 24, and a blank one is refused (R65)`() = runTest {
+        sims.add(Sim(3, "Safaricom", "0712000001"))
+        val id = assertNotNull(repo.lineFor(3))
+        assertFalse(repo.rename(id, "   "))
+        assertEquals("Safaricom", db.linesDao().all().single().displayName)
+        assertTrue(repo.rename(id, "  Household   spending line that is long  "))
+        assertEquals("Household spending line", db.linesDao().all().single().displayName)
     }
 }
