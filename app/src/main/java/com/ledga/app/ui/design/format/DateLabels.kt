@@ -4,6 +4,7 @@ import com.ledga.core.model.FlowKind
 import com.ledga.core.time.Nairobi
 import java.time.Instant
 import java.time.LocalDate
+import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
@@ -13,6 +14,9 @@ object DateLabels {
     private val DAY_YEAR = DateTimeFormatter.ofPattern("EEE, d MMM yyyy", Locale.ENGLISH)
     private val CLOCK = DateTimeFormatter.ofPattern("h:mm a", Locale.ENGLISH)
     private val DATE = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.ENGLISH)
+    private val DATE_TIME = DateTimeFormatter.ofPattern("EEE d MMM yyyy, h:mm a", Locale.ENGLISH)
+    private val DAY_MONTH = DateTimeFormatter.ofPattern("d MMM", Locale.ENGLISH)
+    private val MONTH_YEAR = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.ENGLISH)
 
     fun nairobiDate(instant: Instant): LocalDate = instant.atZone(Nairobi.ZONE).toLocalDate()
 
@@ -28,6 +32,15 @@ object DateLabels {
 
     /** "7:12 PM", Nairobi time. */
     fun clock(instant: Instant): String = CLOCK.format(instant.atZone(Nairobi.ZONE))
+
+    /** The transaction sheet's date (mockup `txsheet`): "Mon 5 Oct 2026, 2:15 PM", Nairobi time. */
+    fun dateTime(instant: Instant): String = DATE_TIME.format(instant.atZone(Nairobi.ZONE))
+
+    /** "2 Nov": a Fuliza due date, and People's "last paid" within the current year. */
+    fun dayMonth(day: LocalDate): String = DAY_MONTH.format(day)
+
+    /** "September 2026": Spending's month stepper and filters. */
+    fun monthYear(month: YearMonth): String = MONTH_YEAR.format(month)
 
     /** TalkBack's day: "today", "yesterday", "Fri, 2 Oct", "Thu, 2 Oct 2025". */
     fun spokenDay(day: LocalDate, today: LocalDate): String = when (day) {

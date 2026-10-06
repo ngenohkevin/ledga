@@ -24,6 +24,16 @@ object AmountFormat {
         }
     }
 
+    /** The transaction sheet's amount (mockup `txsheet`): [MINUS] then "Ksh 1,000.00" out, "+Ksh 5,000.00" in, "Ksh 0.00". */
+    fun signedKsh(cents: Long, inflow: Boolean): String {
+        val body = "$CURRENCY ${plain(cents, Decimals.ALWAYS)}"
+        return when {
+            cents == 0L -> body
+            inflow -> "+$body"
+            else -> "$MINUS$body"
+        }
+    }
+
     /** Chart labels in whole shillings, half-up: "950", "2.5k", "12k", "1.2M". Negative values get [MINUS]. */
     fun compact(cents: Long): String {
         val sign = if (cents < 0) MINUS.toString() else ""
