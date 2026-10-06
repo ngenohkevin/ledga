@@ -1,5 +1,6 @@
 package com.ledga.app.data.room.dao
 
+import kotlinx.coroutines.flow.Flow
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
@@ -9,6 +10,13 @@ import com.ledga.app.data.room.RuleRow
 interface RulesDao {
     @Query("SELECT * FROM rules ORDER BY id")
     suspend fun all(): List<RuleRow>
+
+    /** Tracker detail's "Matched by" (R49): the enabled rules filing into [categoryKey], the person's first and newest first. */
+    @Query(
+        "SELECT * FROM rules WHERE action = 'SET_CATEGORY' AND categoryKey = :categoryKey AND enabled = 1 " +
+            "ORDER BY CASE origin WHEN 'USER' THEN 0 ELSE 1 END, createdAt DESC, id",
+    )
+    fun observeForCategory(categoryKey: String): Flow<List<RuleRow>>
 
     @Insert
     suspend fun insert(row: RuleRow): Long

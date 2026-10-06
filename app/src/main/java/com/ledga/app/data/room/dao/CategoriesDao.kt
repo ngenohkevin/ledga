@@ -13,6 +13,13 @@ interface CategoriesDao {
     @Query("SELECT * FROM categories ORDER BY sortOrder, `key`")
     fun observeAll(): Flow<List<CategoryRow>>
 
+    /** The tracked categories, in picker order (spec §10.4 Trackers). */
+    @Query("SELECT * FROM categories WHERE tracked = 1 AND archived = 0 ORDER BY sortOrder, `key`")
+    fun observeTracked(): Flow<List<CategoryRow>>
+
+    @Query("SELECT * FROM categories WHERE `key` = :key")
+    fun observe(key: String): Flow<CategoryRow?>
+
     @Query("SELECT * FROM categories ORDER BY sortOrder, `key`")
     suspend fun all(): List<CategoryRow>
 

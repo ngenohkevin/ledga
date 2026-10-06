@@ -1,5 +1,6 @@
 package com.ledga.app.di
 
+import com.ledga.app.data.trackers.Trackers
 import com.ledga.app.data.lines.SelectedLine
 import android.content.ContentResolver
 import android.content.Context
@@ -53,6 +54,11 @@ object DataModule {
     @Provides
     @Singleton
     fun ledger(db: LedgaDatabase): LedgerQueries = LedgerQueries(db)
+
+    /** The one tracker reader (R52): Home's strip, the Trackers tab and Tracker detail. */
+    @Provides
+    @Singleton
+    fun trackers(db: LedgaDatabase, ledger: LedgerQueries): Trackers = Trackers(db, ledger)
 
     /** Every change a person makes to a transaction (spec §7.4). */
     @Provides

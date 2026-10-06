@@ -30,6 +30,12 @@ data class MonthTotal(val month: String, val cents: Long, val count: Int)
 /** A period's spent (including fees), its fees on their own, and money in. */
 data class PeriodTotals(val spentCents: Long, val feeCents: Long, val inCents: Long)
 
+/** Spent in one category in one Nairobi month ([month] reads "2026-09"): the trackers (R52). */
+data class CategoryMonthTotal(val categoryKey: String, val month: String, val cents: Long, val count: Int)
+
+/** One payment that counts in a category: when, what it counted (amount and fees) and who was paid. */
+data class CategorySpend(val code: String, val categoryKey: String, val occurredAt: Instant, val cents: Long, val name: String?)
+
 /** Spent in one period: [period] reads like `Period.key`: "2026-09-28" (a week, by its Monday) or "2026" (a year). */
 data class PeriodSum(val period: String, val cents: Long, val count: Int)
 
@@ -125,6 +131,24 @@ interface LedgerDao {
             "GROUP BY period",
     )
     fun spentByYear(from: Instant, to: Instant?, lineId: Long?): Flow<List<PeriodSum>>
+
+    /** Trackers (R52): spent per category per Nairobi month, fees included, like `spentByCategory`. */
+    @Query(
+        "SELECT categoryKey, strftime('%Y-%m', (occurredAt + " + NAIROBI_OFFSET_MS + ") / 1000, 'unixepoch') AS month, " +
+            "SUM(spendCents + feeCents) AS cents, SUM(spendCents + feeCents > 0) AS count FROM ledger " +
+            "WHERE categoryKey IN (:keys) AND occurredAt >= :from AND (:to IS NULL OR occurredAt < :to) " +
+            "AND (:lineId IS NULL OR lineId = :lineId) GROUP BY categoryKey, month",
+    )
+    fun spentByCategoryMonth(keys: List<String>, from: Instant, to: Instant?, lineId: Long?): Flow<List<CategoryMonthTotal>>
+
+    /** A category's newest payments that counted: "usually by the Nth", the last payment, who was paid. */
+    @Query(
+        "SELECT l.code AS code, l.categoryKey AS categoryKey, l.occurredAt AS occurredAt, l.spendCents + l.feeCents AS cents, " +
+            "t.counterpartyName AS name FROM ledger l JOIN transactions t ON t.code = l.code " +
+            "WHERE l.categoryKey = :categoryKey AND l.spendCents + l.feeCents > 0 AND (:lineId IS NULL OR l.lineId = :lineId) " +
+            "ORDER BY l.occurredAt DESC, l.code DESC LIMIT :limit",
+    )
+    fun latestSpends(categoryKey: String, lineId: Long?, limit: Int): Flow<List<CategorySpend>>
 
     @Query(
         "SELECT COALESCE(SUM(spendCents + feeCents), 0) AS spentCents, COALESCE(SUM(feeCents), 0) AS feeCents, " +

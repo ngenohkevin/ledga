@@ -1,5 +1,7 @@
 package com.ledga.app.data.derive
 
+import com.ledga.app.data.room.dao.CategorySpend
+import com.ledga.app.data.room.dao.CategoryMonthTotal
 import com.ledga.core.time.PeriodType
 import com.ledga.app.data.room.dao.PeriodSum
 import com.ledga.app.data.room.FulizaReading
@@ -80,6 +82,14 @@ class LedgerQueries(private val db: LedgaDatabase) {
         }
         return rows.map { list -> list.associateBy { it.period } }
     }
+
+    /** Spent per category per Nairobi month (the trackers, R52). */
+    fun spentByCategoryMonth(keys: List<String>, range: InstantRange, lineId: Long? = null): Flow<List<CategoryMonthTotal>> =
+        db.ledgerDao().spentByCategoryMonth(keys, range.start, range.endExclusive, lineId)
+
+    /** A category's newest [limit] payments that counted. */
+    fun latestSpends(categoryKey: String, lineId: Long?, limit: Int): Flow<List<CategorySpend>> =
+        db.ledgerDao().latestSpends(categoryKey, lineId, limit)
 
     /** [TransactionFilter] as the shared SQL filter's arguments (`TX_FILTER`). */
     private class Args(f: TransactionFilter) {
