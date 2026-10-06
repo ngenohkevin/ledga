@@ -6,6 +6,7 @@ plugins {
     id("com.google.devtools.ksp")
     id("com.google.dagger.hilt.android")
     id("androidx.room")
+    id("io.github.takahirom.roborazzi")
 }
 
 android {
@@ -148,6 +149,13 @@ dependencies {
     testImplementation("org.robolectric:robolectric:4.16")
     testImplementation("androidx.test:core-ktx:1.6.1")
     testImplementation("androidx.work:work-testing:2.11.1")
+
+    // v2 design system tests (Phase 3): Compose UI tests + Roborazzi screenshots on Robolectric
+    testImplementation(composeBom)
+    testImplementation("androidx.compose.ui:ui-test-junit4")
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
+    testImplementation("io.github.takahirom.roborazzi:roborazzi:1.60.0")
+    testImplementation("io.github.takahirom.roborazzi:roborazzi-compose:1.60.0")
 
     // Testing
     testImplementation("junit:junit:4.13.2")
