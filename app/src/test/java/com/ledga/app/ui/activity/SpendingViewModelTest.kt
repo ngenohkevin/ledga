@@ -41,7 +41,8 @@ class SpendingViewModelTest {
 
     private val vms = TestViewModels()
 
-    private fun vm(live: LiveClock = LiveClock(clock) { awaitCancellation() }, line: SelectedLine = selectedLine(db)) = vms.track(SpendingViewModel(LedgerQueries(db), db, live, line))
+    private fun vm(live: LiveClock = LiveClock(clock) { awaitCancellation() }, line: SelectedLine = selectedLine(db), links: ActivityLinks = ActivityLinks()) =
+        vms.track(SpendingViewModel(LedgerQueries(db), db, live, line, links))
 
     @After fun close() {
         vms.stopAll()
@@ -84,6 +85,20 @@ class SpendingViewModelTest {
         assertTrue(sep.canGoForward)
         vm.next()
         assertEquals(YearMonth.of(2026, 10), vm.ui.first { it.month == YearMonth.of(2026, 10) }.month)
+    }
+
+    @Test
+    fun `Home's spending card opens Spending at the current month, wherever the person stepped to (R57)`() = runTest {
+        ingest(august, septemberEarly, october)
+        val links = ActivityLinks()
+        val vm = vm(links = links)
+        vm.ui.first { it.loaded }
+        vm.previous()
+        vm.ui.first { it.month == YearMonth.of(2026, 9) }
+        links.open(ActivityLink.Spending)
+        // A later change shows what the hop left behind, without waiting on a month that may never come.
+        vm.setByGroup(true)
+        assertEquals(YearMonth.of(2026, 10), vm.ui.first { it.byGroup }.month)
     }
 
     @Test

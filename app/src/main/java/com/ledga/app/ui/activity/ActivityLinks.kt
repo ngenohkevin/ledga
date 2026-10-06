@@ -3,6 +3,7 @@ package com.ledga.app.ui.activity
 import com.ledga.app.data.derive.TransactionFilter
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.update
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -25,7 +26,13 @@ class ActivityLinks @Inject constructor() {
     private val pending = MutableStateFlow<ActivityLink?>(null)
     val requests: StateFlow<ActivityLink?> = pending
 
+    private val spendingOpens = MutableStateFlow(0)
+
+    /** Counts Spending hops: Spending's own ViewModel returns to the current month on each (R57). */
+    val spendingHops: StateFlow<Int> = spendingOpens
+
     fun open(link: ActivityLink) {
+        if (link == ActivityLink.Spending) spendingOpens.update { it + 1 }
         pending.value = link
     }
 

@@ -74,7 +74,8 @@ Everything lives in `com.ledga.app.ui.design`. Until Phase 4 uses it, R8 strips 
 - **Links into Activity (R61).** A screen that opens Activity calls `ActivityLinks.open(…)` and then switches tabs.
   `ActivityViewModel` applies each request once: `ActivityLink.Transactions(filter, focusSearch)` or `ActivityLink.Spending`.
   A search request focuses the field a frame later and is then consumed (`TransactionsActions.onSearchFocused`), so
-  coming back to the pane doesn't take the focus again.
+  coming back to the pane doesn't take the focus again. Each Spending request also counts in `ActivityLinks.spendingHops`,
+  and `SpendingViewModel` returns to the current month on each one (R57), however far back the person stepped before.
 - **Home (4c).** `HomeRoute` owns the permission requests (4a M3: the first tap asks Android; once Android won't ask
   again, the next tap opens Settings), the sheets (`HomeSheets`: payment, picker, Fuliza; Hide closes the Fuliza sheet
   too) and Undo. `HomeContent` is stateless.

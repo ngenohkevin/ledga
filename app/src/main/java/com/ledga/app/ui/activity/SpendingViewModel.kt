@@ -35,6 +35,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import java.time.LocalDate
@@ -89,10 +90,16 @@ class SpendingViewModel @Inject constructor(
     private val db: LedgaDatabase,
     private val live: LiveClock,
     private val line: SelectedLine,
+    private val links: ActivityLinks,
 ) : ViewModel() {
     /** The month the person stepped to; null follows the current month, so the view moves on when a month ends. */
     private val chosen = MutableStateFlow<YearMonth?>(null)
     private val byGroup = MutableStateFlow(false)
+
+    init {
+        // R57: Home's spending card opens Spending at the current month, however far back the person stepped before.
+        viewModelScope.launch { links.spendingHops.drop(1).collect { chosen.value = null } }
+    }
 
     private data class Selection(
         val today: LocalDate,
