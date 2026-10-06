@@ -61,4 +61,16 @@ class InterimHomeViewModelTest {
         work.legacyImportFailed.value = true
         vm.state.first { it.legacyImportFailed }
     }
+
+    @Test
+    fun `granting SMS in Android's settings starts the import when the user comes back, once`() = runTest {
+        granted = false
+        val vm = vm()
+        vm.state.first { !it.smsGranted }
+        granted = true
+        vm.refreshAccess() // back from Settings
+        vm.refreshAccess() // and again on the next resume
+        vm.state.first { it.smsGranted }
+        assertEquals(listOf("importInbox"), work.calls)
+    }
 }

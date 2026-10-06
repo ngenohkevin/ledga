@@ -143,15 +143,17 @@ class InterimHomeViewModel @Inject constructor(
         InterimHomeState(granted, span.count, span.firstAt, span.lastAt, spent.cents, history, importFailed)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), InterimHomeState())
 
-    /** On resume: the user may have granted or revoked access in Settings meanwhile. */
+    /**
+     * On resume: the user may have granted or revoked access in Settings meanwhile. Access that has just arrived,
+     * from the dialog or from Settings, imports the whole inbox (once: the job is unique).
+     */
     fun refreshAccess() {
-        smsGranted.value = sms.granted()
+        val now = sms.granted()
+        if (now && !smsGranted.value) work.importInbox()
+        smsGranted.value = now
     }
 
-    fun onSmsGranted() {
-        refreshAccess()
-        work.importInbox()
-    }
+    fun onSmsGranted() = refreshAccess()
 }
 
 /** Home's tab: the ViewModel, the SMS permission request, and a refresh when the user comes back from Settings. */
