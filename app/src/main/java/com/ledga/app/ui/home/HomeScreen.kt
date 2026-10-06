@@ -35,14 +35,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.core.app.ActivityCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ledga.app.ui.app.SmsPermissions
-import com.ledga.app.ui.app.findActivity
 import com.ledga.app.ui.app.openAppSettings
 import com.ledga.app.ui.app.openNotificationSettings
+import com.ledga.app.ui.app.showsRationale
 import com.ledga.app.ui.design.components.Banner
 import com.ledga.app.ui.design.components.BannerTone
 import com.ledga.app.ui.design.components.EmptyState
@@ -235,6 +234,3 @@ fun HomeRoute(nav: HomeNav, vm: HomeViewModel = hiltViewModel()) {
     CategoryPickerHost(sheets.picker, onDismiss = { sheets = sheets.copy(picker = null) })
 }
 
-/** Whether Android would still explain [permission]: false after a refusal for good (and before the very first ask). */
-private fun Context.showsRationale(permission: String): Boolean =
-    findActivity()?.let { ActivityCompat.shouldShowRequestPermissionRationale(it, permission) } ?: true

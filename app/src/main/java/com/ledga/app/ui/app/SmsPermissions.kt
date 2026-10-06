@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.ContextWrapper
 import android.content.Intent
 import android.net.Uri
+import androidx.core.app.ActivityCompat
 
 object SmsPermissions {
     /** SMS to read and receive M-Pesa messages. Phone state only names lines and resolves single-SIM messages (R33). */
@@ -35,3 +36,7 @@ fun Context.openNotificationSettings() {
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
     )
 }
+
+/** Whether Android would still explain [permission]: false after a refusal for good (and before the very first ask). */
+fun Context.showsRationale(permission: String): Boolean =
+    findActivity()?.let { ActivityCompat.shouldShowRequestPermissionRationale(it, permission) } ?: true

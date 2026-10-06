@@ -61,4 +61,22 @@ class SettingsStoreTest {
         assertNull(store.current().displayName)
         assertNull(store.current().selectedLineId)
     }
+
+    @Test
+    fun `notification settings save, and out-of-range values are ignored (R75)`() = runTest {
+        val store = SettingsStore(FakePrefsStore())
+        store.setNotifyDaily(false)
+        store.setNotifyWeekly(false)
+        store.setNotifyLarge(true)
+        store.setNotifyFuliza(false)
+        store.setDailySummaryMinute(0)
+        store.setLargeThreshold(250_000)
+        store.setDailySummaryMinute(24 * 60)
+        store.setLargeThreshold(9_999)
+        store.setLargeThreshold(100_000_001)
+        val s = store.current()
+        assertEquals(listOf(false, false, true, false), listOf(s.notifyDaily, s.notifyWeekly, s.notifyLarge, s.notifyFuliza))
+        assertEquals(0, s.dailySummaryMinute)
+        assertEquals(250_000L, s.largeThresholdCents)
+    }
 }

@@ -41,6 +41,20 @@ class SettingsStore @Inject constructor(private val store: DataStore<Preferences
         if (id == null) it.remove(SettingsKeys.SELECTED_LINE) else it[SettingsKeys.SELECTED_LINE] = id
     }
 
+    suspend fun setNotifyDaily(on: Boolean) = edit { it[SettingsKeys.NOTIFY_DAILY] = on }
+
+    /** Minutes after midnight, Nairobi (spec §11). A value outside one day is ignored. */
+    suspend fun setDailySummaryMinute(minute: Int) = edit { if (minute in 0 until 24 * 60) it[SettingsKeys.DAILY_MINUTE] = minute }
+
+    suspend fun setNotifyWeekly(on: Boolean) = edit { it[SettingsKeys.NOTIFY_WEEKLY] = on }
+
+    suspend fun setNotifyLarge(on: Boolean) = edit { it[SettingsKeys.NOTIFY_LARGE] = on }
+
+    /** R75: Ksh 100 to Ksh 1,000,000; anything else is ignored. */
+    suspend fun setLargeThreshold(cents: Long) = edit { if (cents in LARGE_MIN_CENTS..LARGE_MAX_CENTS) it[SettingsKeys.LARGE_CENTS] = cents }
+
+    suspend fun setNotifyFuliza(on: Boolean) = edit { it[SettingsKeys.NOTIFY_FULIZA] = on }
+
     /** Never moves backwards, so a scan of older messages can't hide newer ones from the next catch-up. */
     suspend fun advanceWatermark(millis: Long) = edit {
         it[SettingsKeys.SMS_WATERMARK] = maxOf(it[SettingsKeys.SMS_WATERMARK] ?: 0L, millis)
@@ -57,6 +71,10 @@ class SettingsStore @Inject constructor(private val store: DataStore<Preferences
 
     companion object {
         const val FILE_NAME = "ledga_settings"
+
+        /** R75: the large-payment threshold's range, in cents. */
+        const val LARGE_MIN_CENTS = 10_000L
+        const val LARGE_MAX_CENTS = 100_000_000L
 
         fun read(p: Preferences): Settings {
             val d = Settings()
