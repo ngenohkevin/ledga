@@ -33,6 +33,15 @@ class RuleEngineTest {
     }
 
     @Test
+    fun `county water companies are Water, a refill shop is not`() {
+        val e = RuleEngine(system, groupOf)
+        assertEquals(Categories.WATER, e.categoryFor(cp("ELDOWAS"), FlowKind.SPEND))
+        assertEquals(Categories.WATER, e.categoryFor(cp("SAMPLE WATER AND SANITATION COMPANY"), FlowKind.SPEND))
+        assertEquals(Categories.WATER, e.categoryFor(cp("SAMPLE WATER & SANITATION CO"), FlowKind.SPEND))
+        assertNull(e.categoryFor(cp("SAMPLE WATER REFILL"), FlowKind.SPEND), "a refill shop is not the water bill")
+    }
+
+    @Test
     fun `rules never recategorise money flowing the other way`() {
         val e = RuleEngine(system + user(100, RuleField.NAME_CONTAINS, "JANE TESTER", Categories.RENT), groupOf)
         assertEquals(Categories.RENT, e.categoryFor(cp("JANE TESTER"), FlowKind.SPEND))

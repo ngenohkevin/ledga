@@ -21,5 +21,7 @@ object SystemRules {
             rules(Categories.AIRTIME_DATA, "DATA BUNDLES", "SAFARICOM DATA", "AIRTIME", "SAFARICOM OFFERS") +
             rules(Categories.INTERNET, "ZUKU", "FAIBA", "STARLINK", "SAFARICOM HOME", "JAMII TELECOMMUNICATIONS") +
             rules(Categories.TV, "DSTV", "GOTV", "SHOWMAX", "NETFLIX", "STARTIMES") +
-            rules(Categories.LOANS_CREDIT, "HUSTLER FUND", "TALA", "BRANCH MICROFINANCE", "BRANCH INTERNATIONAL", "ZENKA")
+            rules(Categories.LOANS_CREDIT, "HUSTLER FUND", "TALA", "BRANCH MICROFINANCE", "BRANCH INTERNATIONAL", "ZENKA") +
+            // Added after Phase 1 (owner, 2026-10-06): county water companies. Appended, so earlier seed ids stay put.
+            rules(Categories.WATER, "ELDOWAS", "WATER AND SANITATION", "WATER & SANITATION")
 }
