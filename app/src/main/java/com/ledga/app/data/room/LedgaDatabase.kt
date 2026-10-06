@@ -19,8 +19,9 @@ import com.ledga.app.data.room.migration.LegacyMigrations
 import com.ledga.app.data.room.migration.MIGRATION_5_6
 
 /**
- * Ledga v2's database (schema 6), the same file v1 used. NOT opened at runtime until the Phase 4 switch-over:
- * two Room instances on one file would corrupt it. Never fallbackToDestructiveMigration.
+ * Ledga v2's database (schema 6), the same file v1 used. One instance (the Hilt singleton): two Room instances on one
+ * file would corrupt it. Never fallbackToDestructiveMigration, and never let a corrupt file be deleted
+ * ([KeepCorruptOpenHelperFactory]): it may be the user's only copy of their history.
  */
 @Database(
     entities = [SmsRow::class, TxRow::class, OverrideRow::class, RuleRow::class, CategoryRow::class, LineRow::class, AlertRow::class, MetaRow::class],
@@ -48,6 +49,7 @@ abstract class LedgaDatabase : RoomDatabase() {
 
         fun builder(context: Context, name: String = FILE_NAME): RoomDatabase.Builder<LedgaDatabase> =
             Room.databaseBuilder(context, LedgaDatabase::class.java, name)
+                .openHelperFactory(KeepCorruptOpenHelperFactory)
                 .addMigrations(*MIGRATIONS)
                 .addCallback(SeedOnCreate)
 

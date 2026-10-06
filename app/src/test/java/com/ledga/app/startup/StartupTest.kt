@@ -107,4 +107,20 @@ class StartupTest {
         assertEquals(emptyList(), work.calls)
         db.close()
     }
+
+    @Test
+    fun `a corrupt v1 database is never wiped - startup shows recovery and both copies survive`() = runTest {
+        val name = "corrupt.db"
+        val file = context.getDatabasePath(name).apply { parentFile!!.mkdirs() }
+        val garbage = ByteArray(8192) { (it % 251).toByte() }
+        file.writeBytes(garbage)
+        val snapshot = PreV6Snapshot(context, name)
+        assertTrue(snapshot.takeIfNeeded())
+        val db = LedgaDatabase.builder(context, name).build()
+        val state = startup(db, snapshot).run()
+        assertIs<StartupState.Failed>(state)
+        assertTrue(garbage.contentEquals(file.readBytes()), "Room must not delete or replace a database it finds corrupt")
+        assertTrue(snapshot.exists(), "the pre-v6 copy is the user's history: never delete it here")
+        db.close()
+    }
 }
