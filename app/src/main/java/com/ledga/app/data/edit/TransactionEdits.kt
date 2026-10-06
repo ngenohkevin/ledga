@@ -299,7 +299,7 @@ class TransactionEdits(private val db: LedgaDatabase, private val deriver: Deriv
 
         /** "+ Add rule"'s name field (R48). */
         const val RULE_NAME_MAX = 40
-        const val NEW_CATEGORY_ICON = "fluent_label"
+        const val NEW_CATEGORY_ICON = CategoryLooks.DEFAULT_ICON
 
         /** The would-be rule in a simulation: USER ties go newest-first, then highest id, as the inserted rule will. */
         private const val NEW_ID = Long.MAX_VALUE

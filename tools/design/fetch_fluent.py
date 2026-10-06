@@ -40,6 +40,13 @@ CHROME = {
     "mobile_phone_with_arrow": "Mobile phone with arrow", "party_popper": "Party popper", "rocket": "Rocket",
     "sparkles": "Sparkles", "warning": "Warning",
 }
+# What a category of the person's own can take (R68): everyday things no built-in category uses.
+USER_CHOICE = {
+    "pill": "Pill", "dog_face": "Dog face", "baby_bottle": "Baby bottle", "airplane": "Airplane",
+    "books": "Books", "hot_beverage": "Hot beverage", "scissors": "Scissors", "seedling": "Seedling",
+    "church": "Church", "hammer_and_wrench": "Hammer and wrench", "soccer_ball": "Soccer ball", "ticket": "Ticket",
+    "motorcycle": "Motorcycle", "broom": "Broom", "lipstick": "Lipstick", "laptop": "Laptop",
+}
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 RES = ROOT / "app/src/main/res/drawable-nodpi"
@@ -53,8 +60,8 @@ def fetch(url: str) -> bytes:
 
 
 def main() -> None:
-    icons = {**CATEGORY, **CHROME}
-    if len(icons) != len(CATEGORY) + len(CHROME):
+    icons = {**CATEGORY, **CHROME, **USER_CHOICE}
+    if len(icons) != len(CATEGORY) + len(CHROME) + len(USER_CHOICE):
         sys.exit("a key is listed twice")
     RES.mkdir(parents=True, exist_ok=True)
     for old in RES.glob("fluent_*.webp"):

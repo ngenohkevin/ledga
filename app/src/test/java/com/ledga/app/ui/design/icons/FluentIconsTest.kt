@@ -1,5 +1,6 @@
 package com.ledga.app.ui.design.icons
 
+import com.ledga.app.data.edit.CategoryLooks
 import com.ledga.app.testing.WebpInfo
 import com.ledga.core.model.Categories
 import org.junit.Test
@@ -28,7 +29,7 @@ class FluentIconsTest {
     fun `every vendored file is in the lookup and nothing else is`() {
         val files = dir.listFiles { f -> f.name.startsWith("fluent_") }!!.map { it.nameWithoutExtension }.toSet()
         assertEquals(FluentIcons.byKey.keys, files)
-        assertEquals(44, files.size)
+        assertEquals(60, files.size)
     }
 
     @Test
@@ -57,5 +58,17 @@ class FluentIconsTest {
     @Test
     fun `the MIT licence ships with the app`() {
         assertTrue(File("src/main/assets/licenses/fluentui-emoji-MIT.txt").readText().contains("MIT License"))
+    }
+
+    @Test
+    fun `every icon a category of your own can take is vendored, and none belongs to a built-in category (R68)`() {
+        val builtIn = Categories.SEED.map { it.icon3d }.toSet()
+        assertEquals(17, CategoryLooks.ICONS.size)
+        assertEquals(CategoryLooks.DEFAULT_ICON, CategoryLooks.ICONS.first())
+        CategoryLooks.ICONS.forEach { key ->
+            assertTrue(key in FluentIcons.byKey, key)
+            assertTrue(key !in builtIn, "$key belongs to a built-in category")
+        }
+        assertEquals(CategoryLooks.ICONS.size, CategoryLooks.ICONS.toSet().size)
     }
 }

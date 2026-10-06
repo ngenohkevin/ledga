@@ -8,6 +8,8 @@ Each script vendors one asset set into the app. Each is pinned to an exact upstr
 | `fetch_phosphor.py` | `@phosphor-icons/core` 2.1.1 | `ui/design/icons/Ph.kt`, `assets/licenses/phosphor-MIT.txt` |
 | `fetch_fluent.py` | `microsoft/fluentui-emoji` @ `1ffb34c` | `res/drawable-nodpi/fluent_*.webp` (96 px lossless), `ui/design/icons/FluentIcons.kt`, `assets/licenses/fluentui-emoji-MIT.txt` |
 
+`fetch_fluent.py` groups: `CATEGORY` (one per built-in category), `CHROME` (onboarding, You, empty states), `USER_CHOICE` (what a category of your own can take, R68; listed again in `data/edit/CategoryLooks.kt`).
+
 To add an icon:
 1. Add its name to the script's list and run the script.
 2. Update the expected list in `PhosphorTest` or the count in `FluentIconsTest`.
