@@ -88,4 +88,19 @@ class InboxScannerTest {
         scanner.scan(ScanMode.FULL)
         assertFalse(settings.current().fullRescanOwed)
     }
+
+    @Test
+    fun `a SIM whose id changed keeps one line, even when a later scan meets its old id`() = runTest {
+        sims.add(Sim(3, "Safaricom", "0712000001"))
+        inbox = listOf(sms(Sms.SEND, "2026-03-21T10:30:30Z", sub = 3))
+        scanner.scan(ScanMode.FULL)
+        sims.clear()
+        sims.add(Sim(7, "Safaricom", "0712000001")) // the same SIM, re-provisioned
+        lines.syncActive()
+        inbox = inbox + sms(Sms.KPLC, "2026-03-21T12:00:30Z", sub = 3) // an older message, still under the old id
+        scanner.scan(ScanMode.FULL)
+        val only = db.linesDao().all().single()
+        assertEquals(7, only.subscriptionId)
+        assertEquals(only.id, db.transactionsDao().get("TJK4AB12FA")?.lineId)
+    }
 }

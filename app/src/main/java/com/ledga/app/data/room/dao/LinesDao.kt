@@ -19,6 +19,13 @@ interface LinesDao {
     @Query("SELECT * FROM lines WHERE subscriptionId = :subscriptionId")
     suspend fun bySubscription(subscriptionId: Int): LineRow?
 
+    /** The line this subscription id's past messages are filed under: a SIM whose id has since changed keeps its line. */
+    @Query(
+        "SELECT lineId FROM sms WHERE subscriptionId = :subscriptionId AND lineId IS NOT NULL " +
+            "GROUP BY lineId ORDER BY COUNT(*) DESC LIMIT 1",
+    )
+    suspend fun lineOfPastMessages(subscriptionId: Int): Long?
+
     /** -1 when another caller created the same subscription first (the caller re-reads). */
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insert(row: LineRow): Long

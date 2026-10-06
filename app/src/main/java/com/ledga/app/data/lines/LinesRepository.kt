@@ -30,6 +30,8 @@ class LinesRepository(
     suspend fun lineFor(subscriptionId: Int?): Long? {
         val sub = subscriptionId?.takeIf { it >= 0 } ?: return null
         dao.bySubscription(sub)?.let { return it.id }
+        // An id a re-linked SIM used to have: its older messages still carry it, and they belong to the same line.
+        dao.lineOfPastMessages(sub)?.let { return it }
         val sim = sims.find(sub)
         val all = dao.all()
         // A SIM that moved slot gets a new subscription id but is the same line, with the same history.
