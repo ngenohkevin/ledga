@@ -20,6 +20,8 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
+import com.ledga.app.ui.rules.ShownPreview
+import com.ledga.app.ui.rules.AddRuleContent
 
 /** Spec §15.2: Tracker detail (mockup Electricity tracker) light/dark × 1.0/1.3, editing, the add-rule sheet, landscape. Synthetic values. */
 @RunWith(RobolectricTestRunner::class)

@@ -86,6 +86,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import com.ledga.app.ui.design.components.TxRow as TransactionRow
 import com.ledga.app.ui.app.RoundButton
+import com.ledga.app.ui.rules.AddRuleSheet
+import com.ledga.app.ui.rules.RenameSheet
 
 /** What Tracker detail's taps do. Every default does nothing, for screenshots and tests. */
 data class TrackerDetailActions(
@@ -276,48 +278,6 @@ private fun Payments(ui: TrackerDetailUi, actions: TrackerDetailActions) {
     }
 }
 
-/** "+ Add rule" (R48): a name, an optional account, and what Save will do, counted before it does it. */
-@Composable
-fun AddRuleContent(
-    categoryName: String,
-    name: String,
-    account: String,
-    preview: ShownPreview?,
-    onName: (String) -> Unit,
-    onAccount: (String) -> Unit,
-    onSave: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val c = LedgaTheme.colors
-    // R48: the count shown is for exactly this text, or it says it's counting and Save waits.
-    val shown = preview?.takeIf { it.isFor(name, account) }
-    val counting = shown == null && name.isNotBlank()
-    Column(modifier.fillMaxWidth().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(Spacing.m)) {
-        Text("Payments whose name has these words go to $categoryName, now and from now on.", style = LedgaType.body, color = c.muted)
-        OutlinedTextField(name, onName, Modifier.fillMaxWidth(), label = { Text("Name has") }, placeholder = { Text("KPLC") }, singleLine = true)
-        OutlinedTextField(account, onAccount, Modifier.fillMaxWidth(), label = { Text("Account (optional)") }, singleLine = true)
-        Text(if (counting) TrackerText.COUNTING else TrackerText.rulePreview(shown?.preview, name, categoryName), style = LedgaType.caption, color = c.muted)
-        PrimaryPill("Save rule", onSave, Modifier.fillMaxWidth(), enabled = shown?.preview != null)
-    }
-}
-
-/** R51: rename a category everywhere. */
-@Composable
-fun RenameContent(name: String, refused: Boolean, onName: (String) -> Unit, onSave: () -> Unit, modifier: Modifier = Modifier) {
-    Column(modifier.fillMaxWidth().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(Spacing.m)) {
-        OutlinedTextField(
-            name,
-            { onName(it.take(TransactionEdits.CATEGORY_NAME_MAX)) },
-            Modifier.fillMaxWidth(),
-            label = { Text("Name") },
-            singleLine = true,
-            isError = refused,
-            supportingText = if (refused) ({ Text("That name is blank or already used in this group.") }) else null,
-        )
-        PrimaryPill("Save", onSave, Modifier.fillMaxWidth())
-    }
-}
-
 /** Tracker detail (route): the sheets over it, and Undo after removing a rule (R49) or hiding a payment. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -363,39 +323,13 @@ fun TrackerDetailRoute(onBack: () -> Unit, onSeeAll: () -> Unit, vm: TrackerDeta
         SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter).windowInsetsPadding(WindowInsets.navigationBars).padding(Spacing.l))
     }
     if (adding) {
-        var name by rememberSaveable { mutableStateOf("") }
-        var account by rememberSaveable { mutableStateOf("") }
-        LaunchedEffect(name, account) {
-            delay(PREVIEW_SETTLE_MS)
-            vm.previewRule(name, account)
-        }
         val close = {
             adding = false
             vm.clearPreview()
         }
-        LedgaModalSheet(onDismiss = close, title = "Add a rule") {
-            AddRuleContent(
-                ui.category?.name.orEmpty(), name, account, preview,
-                onName = { name = it.take(TransactionEdits.RULE_NAME_MAX) },
-                onAccount = { account = it },
-                onSave = { vm.addRule(name, account, close) },
-            )
-        }
+        AddRuleSheet(ui.category?.name.orEmpty(), preview, onCount = vm::previewRule, onSave = { n, a -> vm.addRule(n, a, close) }, onClose = close)
     }
-    if (renaming) {
-        var name by rememberSaveable { mutableStateOf(ui.category?.name.orEmpty()) }
-        var refused by rememberSaveable { mutableStateOf(false) }
-        LedgaModalSheet(onDismiss = { renaming = false }, title = "Rename") {
-            RenameContent(
-                name, refused,
-                onName = {
-                    name = it
-                    refused = false
-                },
-                onSave = { vm.rename(name) { ok -> if (ok) renaming = false else refused = true } },
-            )
-        }
-    }
+    if (renaming) RenameSheet(ui.category?.name.orEmpty(), onSave = { name, done -> vm.rename(name, done) }, onClose = { renaming = false })
     TransactionSheetHost(
         code = sheets.payment,
         onDismiss = { sheets = sheets.copy(payment = null) },
@@ -408,5 +342,3 @@ fun TrackerDetailRoute(onBack: () -> Unit, onSeeAll: () -> Unit, vm: TrackerDeta
     CategoryPickerHost(sheets.picker, onDismiss = { sheets = sheets.copy(picker = null) })
 }
 
-/** The add-rule count waits for typing to settle, as Activity's search does. */
-private const val PREVIEW_SETTLE_MS = 250L

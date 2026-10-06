@@ -54,6 +54,10 @@ interface TransactionsDao {
     @Query("SELECT COUNT(*) FROM transactions")
     suspend fun count(): Int
 
+    /** A category's screen (R72's archive question): its payments that show. */
+    @Query("SELECT COUNT(*) FROM transactions WHERE categoryKey = :categoryKey AND isHidden = 0")
+    fun observeCountInCategory(categoryKey: String): Flow<Int>
+
     /** How much history there is (the interim Home now, You's profile counts in 4d). */
     @Query("SELECT COUNT(*) AS count, MIN(occurredAt) AS firstAt, MAX(occurredAt) AS lastAt FROM transactions WHERE isHidden = 0")
     fun observeSpan(): Flow<TxSpan>
