@@ -24,6 +24,9 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -52,7 +55,6 @@ import com.ledga.app.ui.design.theme.LedgaTheme
 import com.ledga.app.ui.design.tokens.ChartTones
 import com.ledga.app.ui.design.tokens.Radii
 import com.ledga.app.ui.design.type.LedgaType
-import kotlin.math.roundToInt
 
 /**
  * The full column chart (spec §10.6, refinement R17), used for:
@@ -91,6 +93,9 @@ fun ColumnChart(
     val gap = 6.dp
     val selected = selectedIndex?.takeIf { it in bars.indices }
     val avg = average?.takeIf { it > 0L }
+    // Where the tooltip landed: a gridline value it would cover is left out rather than half hidden.
+    var tipBox by remember { mutableStateOf<Rect?>(null) }
+    val shownTip = if (selected != null && tooltip != null) tipBox else null
 
     Column(modifier.fillMaxWidth().semantics { contentDescription = summary }) {
         Box(Modifier.fillMaxWidth().height(height)) {
@@ -137,8 +142,11 @@ fun ColumnChart(
                         ChartMath.gridLines(top).forEach { v ->
                             val label = measurer.measure(AmountFormat.compact(v), LedgaType.overline.copy(color = c.muted))
                             val at = Offset(size.width - label.size.width - 2.dp.toPx(), (yOf(v) - label.size.height - 1.dp.toPx()).coerceAtLeast(0f))
-                            drawRect(c.surface, Offset(at.x - 2.dp.toPx(), at.y), Size(label.size.width + 4.dp.toPx(), label.size.height.toFloat()))
-                            drawText(label, topLeft = at)
+                            val plate = Rect(Offset(at.x - 2.dp.toPx(), at.y), Size(label.size.width + 4.dp.toPx(), label.size.height.toFloat()))
+                            if (shownTip?.overlaps(plate) != true) {
+                                drawRect(c.surface, plate.topLeft, plate.size)
+                                drawText(label, topLeft = at)
+                            }
                         }
                     }
                     if (avg != null) {
@@ -150,7 +158,7 @@ fun ColumnChart(
                 }
             }
             if (selected != null && tooltip != null) {
-                TooltipAt(selected, bars.size, ChartMath.fraction(bars[selected].total, top), headroom, gap) { tooltip(selected) }
+                TooltipAt(selected, bars.map { ChartMath.fraction(it.total, top) }, headroom, gap, onPlaced = { tipBox = it }) { tooltip(selected) }
             }
         }
         // One shared size for every label: full names while they fit (down to 8 sp), else first letters ("J F M A …").
@@ -203,20 +211,18 @@ private fun DrawScope.drawBar(bar: Bar, top: Long, fills: List<Color>, strong: L
     }
 }
 
-/** Places [content] centred above bar [index], clamped inside the chart's width and below its top edge. */
+/** Places [content] where [ChartMath.tooltipPosition] says, over bar [index] of bars standing at [fractions]. */
 @Composable
-private fun TooltipAt(index: Int, count: Int, fraction: Float, headroom: Dp, gap: Dp, content: @Composable () -> Unit) {
+private fun TooltipAt(index: Int, fractions: List<Float>, headroom: Dp, gap: Dp, onPlaced: (Rect) -> Unit, content: @Composable () -> Unit) {
     Layout(content = content, modifier = Modifier.fillMaxSize()) { measurables, constraints ->
         val tip = measurables.first().measure(Constraints())
         layout(constraints.maxWidth, constraints.maxHeight) {
-            val gapPx = gap.toPx()
-            val barWidth = (constraints.maxWidth - gapPx * (count - 1)) / count
-            val centre = index * (barWidth + gapPx) + barWidth / 2
-            val plot = constraints.maxHeight - headroom.toPx()
-            val barTop = constraints.maxHeight - fraction * plot
-            val x = (centre - tip.width / 2f).roundToInt().coerceIn(0, maxOf(0, constraints.maxWidth - tip.width))
-            val y = (barTop - tip.height - 4.dp.toPx()).roundToInt().coerceAtLeast(0)
+            val (x, y) = ChartMath.tooltipPosition(
+                index, fractions, constraints.maxWidth.toFloat(), constraints.maxHeight.toFloat(), headroom.toPx(), gap.toPx(),
+                tip.width, tip.height, 4.dp.toPx(),
+            )
             tip.place(x, y)
+            onPlaced(Rect(x.toFloat(), y.toFloat(), (x + tip.width).toFloat(), (y + tip.height).toFloat()))
         }
     }
 }

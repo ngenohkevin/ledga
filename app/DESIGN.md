@@ -31,6 +31,7 @@ Everything lives in `com.ledga.app.ui.design`. Until Phase 4 uses it, R8 strips 
   - `ShareBar`: Where it went.
   - Bar colours meet WCAG 1.4.11 on the card in both themes (R27, owner decision 2026-10-06): pass a category's or `chartPrimary`'s colour as it is; the charts draw `ChartTones.soft` (≥ 3:1) for unselected bars and `ChartTones.strong` (≥ 4.5:1) for the selected/current bar, legends and share fills. `ColumnChart(dimUnselected = true)` dims every bar but the selected one; without it every bar is strong. Never draw a data bar in `barTrack` or a hand-mixed tint.
   - 12-month charts keep single-letter month labels on phones (owner ruling 2026-10-06); the tooltip and TalkBack carry the full month.
+  - A tooltip sits above the tallest bar it spans (`ChartMath.tooltipPosition`), so a short running month never hides last month's bar, and a gridline value it would cover is left out rather than half hidden. The AVG label and gridline values keep their card-coloured plates where they cross a bar.
   - Every `ColumnChart` gets a `summary`, and every `Bar` a `speech`. `SparkBars` has no summary of its own: the tracker tile carries the description.
   - `ColumnChart` fits about 13 bars on a phone, because the gap between bars is a fixed 6 dp. Tracker detail's "All" range must be bucketed by quarter or year in `:core` before it is charted.
   - Period labels fall back to first letters when full labels don't fit, which only reads well for month names. Pass short labels for anything else.

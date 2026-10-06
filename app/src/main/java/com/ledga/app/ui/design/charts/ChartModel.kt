@@ -1,6 +1,7 @@
 package com.ledga.app.ui.design.charts
 
 import androidx.compose.runtime.Immutable
+import kotlin.math.roundToInt
 
 /**
  * One column, with:
@@ -41,5 +42,25 @@ object ChartMath {
     fun gridLines(max: Long): List<Long> {
         val step = gridStep(max)
         return if (step <= 0L) emptyList() else (1..3).map { it * step }.filter { it <= max }
+    }
+
+    /**
+     * The top-left of bar [index]'s tooltip in a chart [width] × [height] whose bars ([fractions] of the plot) stand
+     * [gap] apart under [headroom]: centred over the bar, inside the chart, and [lift] above the tallest bar it spans, so
+     * it never hides a neighbour (a running month at Ksh 0 would otherwise sit it on last month's bar).
+     */
+    fun tooltipPosition(index: Int, fractions: List<Float>, width: Float, height: Float, headroom: Float, gap: Float, tipWidth: Int, tipHeight: Int, lift: Float): Pair<Int, Int> {
+        val count = fractions.size
+        val barWidth = (width - gap * (count - 1)) / count
+        val centre = index * (barWidth + gap) + barWidth / 2
+        val x = (centre - tipWidth / 2f).roundToInt().coerceIn(0, maxOf(0, width.toInt() - tipWidth))
+        val spanned = fractions.indices.filter { i ->
+            val left = i * (barWidth + gap)
+            left < x + tipWidth && left + barWidth > x
+        }
+        val highest = (spanned + index).maxOf { fractions[it] }
+        val barTop = height - highest * (height - headroom)
+        val y = (barTop - tipHeight - lift).roundToInt().coerceAtLeast(0)
+        return x to y
     }
 }
