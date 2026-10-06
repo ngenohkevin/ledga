@@ -1,5 +1,6 @@
 package com.ledga.app.ui.design.format
 
+import com.ledga.core.model.FlowKind
 import com.ledga.core.time.Nairobi
 import java.time.Instant
 import java.time.LocalDate
@@ -31,9 +32,21 @@ object DateLabels {
         else -> dayText(day, today)
     }
 
-    /** Spec §10.5: "Ksh 1,200 spent at Naivas, yesterday 7:12 PM" / "Ksh 5,000 received from Jane Doe, today 11:02 AM". */
-    fun txSpeech(cents: Long, inflow: Boolean, counterparty: String, at: Instant, today: LocalDate): String {
-        val verb = if (inflow) "received from" else "spent at"
+    /**
+     * Spec §10.5: "Ksh 1,200 spent at Naivas, yesterday 7:12 PM". The verb follows the transaction's [flow]: only
+     * SPEND is "spent" (spec §5.3), so a savings deposit is "moved to savings at M-Shwari", not spending.
+     */
+    fun txSpeech(cents: Long, flow: FlowKind, counterparty: String, at: Instant, today: LocalDate): String {
+        val verb = when (flow) {
+            FlowKind.SPEND -> "spent at"
+            FlowKind.INCOME -> "received from"
+            FlowKind.SAVINGS_OUT -> "moved to savings at"
+            FlowKind.SAVINGS_IN -> "taken from savings at"
+            FlowKind.OWN_OUT -> "moved to your account at"
+            FlowKind.OWN_IN -> "moved from your account at"
+            FlowKind.LOAN_REPAY -> "repaid to"
+            FlowKind.REVERSAL_IN -> "reversed from"
+        }
         val day = spokenDay(nairobiDate(at), today)
         return "${AmountFormat.CURRENCY} ${AmountFormat.plain(cents)} $verb $counterparty, $day ${clock(at)}"
     }
