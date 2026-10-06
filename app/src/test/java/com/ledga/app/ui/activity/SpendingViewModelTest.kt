@@ -10,8 +10,14 @@ import com.ledga.app.testing.MainDispatcherRule
 import com.ledga.app.testing.MutableClock
 import com.ledga.app.testing.Sms
 import com.ledga.app.testing.TestDb
+import com.ledga.app.testing.TestViewModels
 import com.ledga.app.time.LiveClock
 import com.ledga.core.model.Categories
+import java.time.Instant
+import java.time.YearMonth
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.first
@@ -21,11 +27,6 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
-import java.time.Instant
-import java.time.YearMonth
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
 
 @RunWith(RobolectricTestRunner::class)
 class SpendingViewModelTest {
@@ -34,9 +35,14 @@ class SpendingViewModelTest {
     private val clock = MutableClock(Instant.parse("2026-10-06T06:00:00Z")) // Tue 6 Oct 2026, 09:00 in Nairobi
     private val deriver = Deriver(db, clock)
 
-    private fun vm(live: LiveClock = LiveClock(clock) { awaitCancellation() }) = SpendingViewModel(LedgerQueries(db), db, live)
+    private val vms = TestViewModels()
 
-    @After fun close() = db.close()
+    private fun vm(live: LiveClock = LiveClock(clock) { awaitCancellation() }) = vms.track(SpendingViewModel(LedgerQueries(db), db, live))
+
+    @After fun close() {
+        vms.stopAll()
+        db.close()
+    }
 
     private suspend fun ingest(vararg bodies: String) =
         SmsIngestor(db, deriver).ingestAll(bodies.map { RawSms("MPESA", it, clock.instant(), null, null, SmsSource.INBOX) })

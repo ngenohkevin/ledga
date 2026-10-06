@@ -9,10 +9,18 @@ import com.ledga.app.data.room.SmsSource
 import com.ledga.app.testing.MainDispatcherRule
 import com.ledga.app.testing.Sms
 import com.ledga.app.testing.TestDb
+import com.ledga.app.testing.TestViewModels
 import com.ledga.core.derive.RuleField
 import com.ledga.core.derive.RuleOrigin
 import com.ledga.core.model.Categories
 import com.ledga.core.model.CategoryGroup
+import java.time.Clock
+import java.time.Instant
+import java.time.ZoneOffset
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -21,13 +29,6 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
-import java.time.Clock
-import java.time.Instant
-import java.time.ZoneOffset
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertNull
-import kotlin.test.assertTrue
 
 @RunWith(RobolectricTestRunner::class)
 class CategoryPickerViewModelTest {
@@ -37,9 +38,14 @@ class CategoryPickerViewModelTest {
     private val deriver = Deriver(db, clock)
     private val edits = TransactionEdits(db, deriver, clock)
 
-    private fun vm() = CategoryPickerViewModel(db, edits, deriver)
+    private val vms = TestViewModels()
 
-    @After fun close() = db.close()
+    private fun vm() = vms.track(CategoryPickerViewModel(db, edits, deriver))
+
+    @After fun close() {
+        vms.stopAll()
+        db.close()
+    }
 
     private suspend fun ingest(vararg bodies: String) =
         SmsIngestor(db, deriver).ingestAll(bodies.map { RawSms("MPESA", it, clock.instant(), null, null, SmsSource.INBOX) })

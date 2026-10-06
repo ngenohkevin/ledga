@@ -11,7 +11,12 @@ import com.ledga.app.data.room.dao.PersonSummary
 import com.ledga.app.testing.MainDispatcherRule
 import com.ledga.app.testing.Sms
 import com.ledga.app.testing.TestDb
+import com.ledga.app.testing.TestViewModels
 import com.ledga.app.time.LiveClock
+import java.time.Clock
+import java.time.Instant
+import java.time.ZoneOffset
+import kotlin.test.assertEquals
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -20,10 +25,6 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
-import java.time.Clock
-import java.time.Instant
-import java.time.ZoneOffset
-import kotlin.test.assertEquals
 
 @RunWith(RobolectricTestRunner::class)
 class PeopleViewModelTest {
@@ -33,9 +34,14 @@ class PeopleViewModelTest {
     private val deriver = Deriver(db, clock)
     private val live = LiveClock(clock) { awaitCancellation() }
 
-    private fun vm() = PeopleViewModel(LedgerQueries(db), live)
+    private val vms = TestViewModels()
 
-    @After fun close() = db.close()
+    private fun vm() = vms.track(PeopleViewModel(LedgerQueries(db), live))
+
+    @After fun close() {
+        vms.stopAll()
+        db.close()
+    }
 
     private suspend fun ingest(vararg bodies: String) =
         SmsIngestor(db, deriver).ingestAll(bodies.map { RawSms("MPESA", it, clock.instant(), null, null, SmsSource.INBOX) })
@@ -84,7 +90,7 @@ class PeopleViewModelTest {
     fun `the person sheet totals both directions and pages their payments, newest first`() = runTest {
         ingest(Sms.SEND, Sms.send("TJK4AB12PA", "300.00", "23/3/26 at 9:00 AM"), Sms.receive("TJK4AB12PD", "JANE TESTER 0712345111", "900.00"))
         val jane = vm().ui.first { it.loaded }.rows.single()
-        val sheet = PersonSheetViewModel(LedgerQueries(db), db, live)
+        val sheet = vms.track(PersonSheetViewModel(LedgerQueries(db), db, live))
         sheet.open(jane)
         assertEquals(PersonSummary(80_000, 2, 90_000, 1), sheet.ui.first { it.person != null && it.summary.sentCount == 2 }.summary)
         assertEquals(listOf("TJK4AB12PD", "TJK4AB12PA", "TJK4AB12FB"), sheet.items.asSnapshot().map { it.code })
