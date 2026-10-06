@@ -7,7 +7,9 @@ import androidx.room.Upsert
 import com.ledga.app.data.room.FulizaReading
 import com.ledga.app.data.room.LineBalance
 import com.ledga.app.data.room.TxRow
+import com.ledga.app.data.room.TxSpan
 import com.ledga.core.model.FlowKind
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface TransactionsDao {
@@ -41,6 +43,10 @@ interface TransactionsDao {
 
     @Query("SELECT COUNT(*) FROM transactions")
     suspend fun count(): Int
+
+    /** How much history there is (the interim Home now, You's profile counts in 4d). */
+    @Query("SELECT COUNT(*) AS count, MIN(occurredAt) AS firstAt, MAX(occurredAt) AS lastAt FROM transactions WHERE isHidden = 0")
+    fun observeSpan(): Flow<TxSpan>
 
     /** The transactions list (§7.5): newest first, hidden excluded; [like] is an already-escaped LIKE pattern. */
     @Query(

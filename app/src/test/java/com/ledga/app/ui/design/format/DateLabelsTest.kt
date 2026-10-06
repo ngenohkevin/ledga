@@ -71,4 +71,10 @@ class DateLabelsTest {
         assertEquals("Ksh 1,000 reversed from X, yesterday 7:12 PM", said[FlowKind.REVERSAL_IN])
         assertEquals(1, said.values.count { "spent" in it })
     }
+
+    @Test
+    fun `a calendar date always carries its year`() {
+        assertEquals("12 Mar 2023", DateLabels.date(LocalDate.of(2023, 3, 12)))
+        assertEquals("2 Oct 2026", DateLabels.date(LocalDate.of(2026, 10, 2)))
+    }
 }

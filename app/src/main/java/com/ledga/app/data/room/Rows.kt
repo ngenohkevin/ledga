@@ -160,6 +160,9 @@ object MetaKeys {
 /** A line's latest stated wallet balance (query result, not a table). */
 data class LineBalance(val lineId: Long?, val balanceCents: Long)
 
+/** How much history there is: transaction count and the first/last times (non-hidden rows). */
+data class TxSpan(val count: Int, val firstAt: Instant?, val lastAt: Instant?)
+
 /** One transaction carrying a Fuliza fact (draw, repayment, limit or outstanding). */
 data class FulizaReading(
     val code: String,

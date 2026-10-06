@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <paths>
     <cache-path name="updates" path="updates/" />
+    <!-- Spec §8 step 1: the recovery screen shares the pre-v6 copy of the database. -->
+    <files-path name="pre-v6" path="pre-v6/" />
 </paths>

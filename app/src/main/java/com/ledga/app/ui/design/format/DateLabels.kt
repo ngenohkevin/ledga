@@ -12,6 +12,7 @@ object DateLabels {
     private val DAY = DateTimeFormatter.ofPattern("EEE, d MMM", Locale.ENGLISH)
     private val DAY_YEAR = DateTimeFormatter.ofPattern("EEE, d MMM yyyy", Locale.ENGLISH)
     private val CLOCK = DateTimeFormatter.ofPattern("h:mm a", Locale.ENGLISH)
+    private val DATE = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.ENGLISH)
 
     fun nairobiDate(instant: Instant): LocalDate = instant.atZone(Nairobi.ZONE).toLocalDate()
 
@@ -21,6 +22,9 @@ object DateLabels {
         today.minusDays(1) -> "YESTERDAY"
         else -> dayText(day, today).uppercase(Locale.ENGLISH)
     }
+
+    /** "12 Mar 2023": a calendar date that always shows its year (import ranges, history spans). */
+    fun date(day: LocalDate): String = DATE.format(day)
 
     /** "7:12 PM", Nairobi time. */
     fun clock(instant: Instant): String = CLOCK.format(instant.atZone(Nairobi.ZONE))
