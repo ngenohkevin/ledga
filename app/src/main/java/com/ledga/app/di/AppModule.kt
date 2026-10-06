@@ -14,6 +14,7 @@ import androidx.work.WorkManager
 import com.ledga.app.data.settings.SettingsStore
 import com.ledga.app.data.settings.V1SettingsMigration
 import com.ledga.app.startup.SmsAccess
+import com.ledga.app.time.LiveClock
 import com.ledga.app.ui.onboarding.NotificationAccess
 import dagger.Module
 import dagger.Provides
@@ -40,6 +41,11 @@ object AppModule {
     @Provides
     @Singleton
     fun clock(): Clock = Clock.systemUTC()
+
+    /** Spec §7.6 (R34): the one live-period clock; `MainActivity` pokes it on resume. */
+    @Provides
+    @Singleton
+    fun liveClock(clock: Clock): LiveClock = LiveClock(clock)
 
     @Provides
     @Singleton
