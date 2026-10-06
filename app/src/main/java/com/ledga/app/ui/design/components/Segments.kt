@@ -1,6 +1,13 @@
 package com.ledga.app.ui.design.components
 
 import androidx.compose.foundation.background
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.runtime.remember
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.heightIn
@@ -8,7 +15,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -32,31 +38,50 @@ import com.ledga.app.ui.design.type.LedgaType
 fun SegmentedControl(options: List<String>, selected: Int, onSelect: (Int) -> Unit, modifier: Modifier = Modifier) {
     val c = LedgaTheme.colors
     val pill = RoundedCornerShape(percent = 50)
-    Row(modifier.clip(pill).background(c.plate).padding(3.dp).selectableGroup()) {
-        options.forEachIndexed { index, label ->
-            val on = index == selected
-            val raised = if (on && !c.isDark) Modifier.shadow(1.dp, pill, ambientColor = c.shadow, spotColor = c.shadow) else Modifier
-            Box(
-                Modifier
-                    .weight(1f)
-                    .heightIn(min = 42.dp)
-                    .then(raised)
-                    .clip(pill)
-                    .background(if (on) c.surface else Color.Transparent)
-                    .selectable(selected = on, role = Role.Tab, onClick = { onSelect(index) })
-                    .padding(horizontal = Spacing.s),
-                contentAlignment = Alignment.Center,
-            ) {
-                // Shrinks to fit (down to 8 sp) at large font scales, then ellipsizes; never cuts a word in half.
-                Text(
-                    label,
-                    style = LedgaType.label,
-                    color = if (on) c.ink else c.muted,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    autoSize = TextAutoSize.StepBased(minFontSize = 8.sp, maxFontSize = LedgaType.label.fontSize, stepSize = 0.5.sp),
-                )
+    BoxWithConstraints(modifier) {
+        // One size for every label, the largest at which all fit (down to 8 sp), then ellipsis; never cut mid-word.
+        // Shrunk one by one, a longer word was drawn smaller than its neighbours.
+        val label = rememberSharedLabelStyle(options, maxWidth)
+        Row(Modifier.fillMaxWidth().clip(pill).background(c.plate).padding(SEGMENT_INSET).selectableGroup()) {
+            options.forEachIndexed { index, text ->
+                val on = index == selected
+                val raised = if (on && !c.isDark) Modifier.shadow(1.dp, pill, ambientColor = c.shadow, spotColor = c.shadow) else Modifier
+                Box(
+                    Modifier
+                        .weight(1f)
+                        .heightIn(min = 42.dp)
+                        .then(raised)
+                        .clip(pill)
+                        .background(if (on) c.surface else Color.Transparent)
+                        .selectable(selected = on, role = Role.Tab, onClick = { onSelect(index) })
+                        .padding(horizontal = Spacing.s),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(text, style = label, color = if (on) c.ink else c.muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
             }
         }
+    }
+}
+
+private val SEGMENT_INSET = 3.dp
+private const val MIN_SEGMENT_SP = 8f
+
+/** The largest shared label size at which every option fits its segment of a control [width] wide. */
+@Composable
+private fun rememberSharedLabelStyle(options: List<String>, width: Dp): TextStyle {
+    val measurer = rememberTextMeasurer()
+    val density = LocalDensity.current
+    return remember(options, width, density) {
+        val base = LedgaType.label
+        if (options.isEmpty()) return@remember base
+        val slot = with(density) { (width.toPx() - SEGMENT_INSET.toPx() * 2) / options.size - Spacing.s.toPx() * 2 }
+        var size = base.fontSize.value
+        while (size > MIN_SEGMENT_SP) {
+            val style = base.copy(fontSize = size.sp)
+            if (options.all { measurer.measure(it, style, maxLines = 1, softWrap = false, density = density).size.width <= slot }) return@remember style
+            size -= 0.5f
+        }
+        base.copy(fontSize = MIN_SEGMENT_SP.sp)
     }
 }

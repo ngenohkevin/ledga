@@ -135,6 +135,7 @@ Everything lives in `com.ledga.app.ui.design`. Until Phase 4 uses it, R8 strips 
 - Write state from a test inside `Snapshot.withMutableSnapshot { … }` when the clock is paused (`mainClock.autoAdvance = false`).
 - `LedgaModalSheet` exposes M3's experimental `SheetState`, so call sites `@OptIn(ExperimentalMaterial3Api::class)`.
 - Chart period labels share one size: full labels while they fit (down to 8 sp), else first letters. Pass full names ("SEP"); the chart decides.
+- `SegmentedControl` labels share one size too: the largest at which every option fits its segment (down to 8 sp), then ellipsis. Shrunk one by one, a longer word was drawn smaller than its neighbours.
 - Robolectric fakes `System.nanoTime`, so coroutine delays and timeouts (`withTimeoutOrNull`, also under `runBlocking`) never fire. For real time, use `Thread.sleep`.
 - A failing assertion inside `runBlocking`/`runTest` still waits for running children: a latch-parked child turns a RED into a hang. Release latches in `finally`, and give a deliberately parked coroutine its own thread (`TransactionEditsTest`).
 - A ViewModel callback that runs after a suspend edit (e.g. `addRule(…) { onDone }`) arrives after the UI state has already changed. Wait on a `CompletableDeferred` rather than reading a flag at once.

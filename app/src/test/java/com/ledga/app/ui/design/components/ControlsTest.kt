@@ -36,6 +36,11 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import androidx.compose.ui.text.TextMeasurer
+import androidx.compose.ui.text.font.createFontFamilyResolver
+import androidx.compose.ui.unit.LayoutDirection
+import androidx.test.core.app.ApplicationProvider
+import com.ledga.app.ui.design.type.LedgaType
 import org.robolectric.annotation.GraphicsMode
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -112,6 +117,28 @@ class ControlsTest {
             if (mustFit) assertTrue(fits && !label.isLineEllipsized(0), "clipped or ellipsized at $scale")
             else assertTrue(fits || label.isLineEllipsized(0), "cut mid-word at $scale")
         }
+    }
+
+    @Test
+    fun `segment labels share one size, so a longer word isn't drawn smaller than its neighbours`() {
+        contentSet = true
+        compose.setContent {
+            val base = LocalDensity.current
+            CompositionLocalProvider(LocalDensity provides Density(base.density, 1.3f)) {
+                LedgaTheme(Appearance.LIGHT, reducedMotion = true) {
+                    Box(Modifier.width(160.dp)) { SegmentedControl(listOf("Week", "Month", "Year"), 1, {}) }
+                }
+            }
+        }
+        // Each label's drawn width over its width at the full label size: one shared size gives one ratio.
+        val measurer = TextMeasurer(createFontFamilyResolver(ApplicationProvider.getApplicationContext()), Density(compose.density.density, 1.3f), LayoutDirection.Ltr)
+        val scales = listOf("Week", "Month", "Year").map { text ->
+            val results = mutableListOf<TextLayoutResult>()
+            compose.onNodeWithText(text, useUnmergedTree = true).performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(results) }
+            val drawn = results.single().let { it.getLineRight(0) - it.getLineLeft(0) }
+            drawn / measurer.measure(text, LedgaType.label).size.width
+        }
+        assertTrue(scales.max() - scales.min() < 0.02f, "labels drawn at different sizes: $scales")
     }
 
     private var scale by mutableStateOf(1f)
