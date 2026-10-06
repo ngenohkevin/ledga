@@ -107,8 +107,10 @@ fun ValueRow(
             }
         }
         Column(horizontalAlignment = Alignment.End) {
-            Text(value, style = LedgaType.amount, color = valueColor, maxLines = 1, softWrap = false)
-            if (detail != null) Text(detail, style = LedgaType.amountCaption, color = detailColor, maxLines = 1, softWrap = false)
+            Text(value, style = LedgaType.amount, color = valueColor, maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis)
+            if (detail != null) {
+                Text(detail, style = LedgaType.amountCaption, color = detailColor, maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis)
+            }
         }
     }
 }

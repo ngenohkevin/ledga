@@ -24,6 +24,7 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.ledga.app.ui.design.icons.Ph
 import com.ledga.app.ui.design.theme.LedgaTheme
@@ -51,7 +52,7 @@ fun ChoiceChip(text: String, selected: Boolean, onClick: () -> Unit, modifier: M
         horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
     ) {
         if (icon != null) Icon(icon, contentDescription = null, tint = fg, modifier = Modifier.size(14.dp))
-        Text(text, style = LedgaType.label, color = fg, maxLines = 1)
+        Text(text, style = LedgaType.label, color = fg, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 
@@ -72,7 +73,7 @@ fun InfoChip(text: String, modifier: Modifier = Modifier, tone: ChipTone = ChipT
         modifier.clip(Pill).background(container).padding(horizontal = 10.dp, vertical = 5.dp),
         style = LedgaType.label,
         color = content,
-        maxLines = 1,
+        maxLines = 1, overflow = TextOverflow.Ellipsis,
     )
 }
 
@@ -91,7 +92,7 @@ fun RuleChip(text: String, modifier: Modifier = Modifier, onRemove: (() -> Unit)
             .padding(start = 10.dp, end = if (onRemove == null) 10.dp else 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(text, style = LedgaType.label, color = c.ink2, maxLines = 1, modifier = Modifier.padding(vertical = 5.dp))
+        Text(text, style = LedgaType.label, color = c.ink2, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(vertical = 5.dp))
         if (onRemove != null) {
             Box(
                 Modifier
@@ -129,7 +130,7 @@ fun AddChip(text: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
         horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
     ) {
         Icon(Ph.PlusBold, contentDescription = null, tint = c.primary, modifier = Modifier.size(12.dp))
-        Text(text, style = LedgaType.label, color = c.primary, maxLines = 1)
+        Text(text, style = LedgaType.label, color = c.primary, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 
@@ -147,7 +148,7 @@ fun LineChip(text: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
     ) {
-        Text(text, style = LedgaType.label, color = c.ink2, maxLines = 1)
+        Text(text, style = LedgaType.label, color = c.ink2, maxLines = 1, overflow = TextOverflow.Ellipsis)
         Icon(Ph.CaretDownBold, contentDescription = null, tint = c.ink2, modifier = Modifier.size(12.dp))
     }
 }

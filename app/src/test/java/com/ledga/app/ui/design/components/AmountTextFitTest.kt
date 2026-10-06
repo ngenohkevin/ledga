@@ -1,6 +1,7 @@
 package com.ledga.app.ui.design.components
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
@@ -45,5 +46,30 @@ class AmountTextFitTest {
         val layout = results.single()
         assertEquals(1, layout.lineCount)
         assertTrue(layout.size.width >= ceil(layout.multiParagraph.intrinsics.maxIntrinsicWidth).toInt(), "balance clipped")
+    }
+    private fun layoutOfTag(tag: String): TextLayoutResult {
+        val results = mutableListOf<TextLayoutResult>()
+        compose.onNodeWithTag(tag, useUnmergedTree = true).performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(results) }
+        return results.single()
+    }
+
+    private fun TextLayoutResult.wholeOrEllipsized() =
+        isLineEllipsized(0) || size.width >= ceil(multiParagraph.intrinsics.maxIntrinsicWidth).toInt()
+
+    @Test
+    fun `money that cannot fit ends in an ellipsis, never a silently different number`() {
+        compose.setContent {
+            val base = LocalDensity.current
+            CompositionLocalProvider(LocalDensity provides Density(base.density, 2f)) {
+                LedgaTheme(Appearance.LIGHT, reducedMotion = true) {
+                    Column {
+                        Box(Modifier.width(120.dp)) { AmountText(999_999_999_999_99L, Modifier.testTag("huge")) }
+                        Box(Modifier.width(120.dp)) { InfoChip("Owed 1,250,000.00", Modifier.testTag("chip")) }
+                    }
+                }
+            }
+        }
+        assertTrue(layoutOfTag("huge").wholeOrEllipsized(), "balance clipped to a different number")
+        assertTrue(layoutOfTag("chip").wholeOrEllipsized(), "chip amount clipped to a different number")
     }
 }
