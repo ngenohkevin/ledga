@@ -1,5 +1,10 @@
 package com.ledga.app.ui.activity
 
+import com.ledga.core.model.TxKind
+import com.ledga.core.model.Categories
+import com.ledga.app.testing.txRow
+import com.ledga.app.testing.twoLines
+import com.ledga.app.testing.selectedLine
 import androidx.paging.testing.asSnapshot
 import com.ledga.app.data.derive.Deriver
 import com.ledga.app.data.derive.LedgerQueries
@@ -36,7 +41,7 @@ class PeopleViewModelTest {
 
     private val vms = TestViewModels()
 
-    private fun vm() = vms.track(PeopleViewModel(LedgerQueries(db), live))
+    private fun vm() = vms.track(PeopleViewModel(LedgerQueries(db), live, selectedLine(db)))
 
     @After fun close() {
         vms.stopAll()
@@ -90,9 +95,24 @@ class PeopleViewModelTest {
     fun `the person sheet totals both directions and pages their payments, newest first`() = runTest {
         ingest(Sms.SEND, Sms.send("TJK4AB12PA", "300.00", "23/3/26 at 9:00 AM"), Sms.receive("TJK4AB12PD", "JANE TESTER 0712345111", "900.00"))
         val jane = vm().ui.first { it.loaded }.rows.single()
-        val sheet = vms.track(PersonSheetViewModel(LedgerQueries(db), db, live))
+        val sheet = vms.track(PersonSheetViewModel(LedgerQueries(db), db, live, selectedLine(db)))
         sheet.open(jane)
         assertEquals(PersonSummary(80_000, 2, 90_000, 1), sheet.ui.first { it.person != null && it.summary.sentCount == 2 }.summary)
         assertEquals(listOf("TJK4AB12PD", "TJK4AB12PA", "TJK4AB12FB"), sheet.items.asSnapshot().map { it.code })
+    }
+
+    @Test
+    fun `with a line chosen, People and their totals count only that line`() = runTest {
+        twoLines(db)
+        fun send(code: String, cents: Long, line: Long) = txRow(
+            code = code, kind = TxKind.SEND, name = "JANE TESTER", phone = "0712345111", account = null,
+            categoryKey = Categories.SENT_TO_PEOPLE, amountCents = cents, lineId = line,
+        )
+        db.transactionsDao().upsertAll(listOf(send("TJK4AB12HC", 50_000, 1), send("TJK4AB12HD", 70_000, 2)))
+        val line = selectedLine(db)
+        val vm = vms.track(PeopleViewModel(LedgerQueries(db), live, line))
+        assertEquals(120_000, vm.ui.first { it.loaded && it.rows.isNotEmpty() }.rows.single().totalCents)
+        line.select(2)
+        assertEquals(70_000, vm.ui.first { it.line.lineId == 2L }.rows.single().totalCents)
     }
 }

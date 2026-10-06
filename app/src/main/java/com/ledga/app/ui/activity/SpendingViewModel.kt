@@ -1,5 +1,8 @@
 package com.ledga.app.ui.activity
 
+import kotlinx.coroutines.launch
+import com.ledga.app.data.lines.SelectedLine
+import com.ledga.app.data.lines.LineChoice
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ledga.app.data.derive.DateFilter
@@ -71,6 +74,7 @@ data class SpendingUi(
     val bars: List<Bar> = emptyList(),
     val byGroup: Boolean = false,
     val shares: List<ShareRow> = emptyList(),
+    val line: LineChoice = LineChoice(),
 ) {
     val isCurrent: Boolean get() = month != null && month == current
     val canGoBack: Boolean get() = month != null && earliest != null && month > earliest
@@ -84,18 +88,26 @@ class SpendingViewModel @Inject constructor(
     private val ledger: LedgerQueries,
     private val db: LedgaDatabase,
     private val live: LiveClock,
+    private val line: SelectedLine,
 ) : ViewModel() {
     /** The month the person stepped to; null follows the current month, so the view moves on when a month ends. */
     private val chosen = MutableStateFlow<YearMonth?>(null)
     private val byGroup = MutableStateFlow(false)
 
-    private data class Selection(val today: LocalDate, val current: YearMonth, val earliest: YearMonth, val month: YearMonth, val byGroup: Boolean)
+    private data class Selection(
+        val today: LocalDate,
+        val current: YearMonth,
+        val earliest: YearMonth,
+        val month: YearMonth,
+        val byGroup: Boolean,
+        val line: LineChoice,
+    )
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    val ui: StateFlow<SpendingUi> = combine(live.today, chosen, byGroup, db.transactionsDao().observeSpan()) { today, picked, group, span ->
+    val ui: StateFlow<SpendingUi> = combine(live.today, chosen, byGroup, db.transactionsDao().observeSpan(), line.choice) { today, picked, group, span, choice ->
         val current = YearMonth.from(today)
         val earliest = span.firstAt?.let { YearMonth.from(Periods.dateOf(it)) }?.coerceAtMost(current) ?: current
-        Selection(today, current, earliest, (picked ?: current).coerceIn(earliest, current), group)
+        Selection(today, current, earliest, (picked ?: current).coerceIn(earliest, current), group, choice)
     }
         .distinctUntilChanged()
         .flatMapLatest(::load)
@@ -125,11 +137,16 @@ class SpendingViewModel @Inject constructor(
         byGroup.value = on
     }
 
+    /** R47: the line chip on Spending changes the one choice every summary follows. */
+    fun selectLine(id: Long?) {
+        viewModelScope.launch { line.select(id) }
+    }
+
     /** "Tap → filtered transactions" (spec §10.4): that category or group, in the selected month. */
     fun transactionsFor(row: ShareRow): TransactionFilter {
-        val m = ui.value.month ?: return TransactionFilter(categoryKeys = row.categoryKeys)
+        val m = ui.value.month ?: return TransactionFilter(categoryKeys = row.categoryKeys, lineId = ui.value.line.lineId)
         val range = Periods.liveRange(Period(PeriodType.MONTH, m.atDay(1)), live.now())
-        return TransactionFilter(categoryKeys = row.categoryKeys, dates = DateFilter(DateLabels.monthYear(m), range))
+        return TransactionFilter(categoryKeys = row.categoryKeys, dates = DateFilter(DateLabels.monthYear(m), range), lineId = ui.value.line.lineId)
     }
 
     private fun load(s: Selection): Flow<SpendingUi> {
@@ -142,11 +159,12 @@ class SpendingViewModel @Inject constructor(
         val previousName = s.month.minusMonths(1).month.getDisplayName(TextStyle.SHORT, Locale.ENGLISH)
         val months = window(s)
         val chartFrom = months.first().atDay(1).atStartOfDay(Nairobi.ZONE).toInstant()
+        val lineId = s.line.lineId
         return combine(
-            ledger.totals(range),
-            ledger.spent(compare),
-            ledger.spentByMonth(InstantRange(chartFrom, null)),
-            ledger.spentByCategory(range),
+            ledger.totals(range, lineId),
+            ledger.spent(compare, lineId),
+            ledger.spentByMonth(InstantRange(chartFrom, null), lineId),
+            ledger.spentByCategory(range, lineId),
             db.categoriesDao().observeAll(),
         ) { totals, before, monthly, byCategory, categories ->
             SpendingUi(
@@ -161,6 +179,7 @@ class SpendingViewModel @Inject constructor(
                 bars = bars(months, monthly, s.current),
                 byGroup = s.byGroup,
                 shares = shares(byCategory, categories, s.byGroup),
+                line = s.line,
             )
         }
     }

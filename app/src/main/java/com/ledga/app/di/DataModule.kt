@@ -1,5 +1,6 @@
 package com.ledga.app.di
 
+import com.ledga.app.data.lines.SelectedLine
 import android.content.ContentResolver
 import android.content.Context
 import androidx.work.WorkManager
@@ -71,6 +72,11 @@ object DataModule {
     @Provides
     @Singleton
     fun lines(db: LedgaDatabase, sims: SimDirectory, clock: Clock): LinesRepository = LinesRepository(db.linesDao(), sims, clock)
+
+    /** R47: the one line choice every summary follows. */
+    @Provides
+    @Singleton
+    fun selectedLine(lines: LinesRepository, settings: SettingsStore): SelectedLine = SelectedLine(lines, settings)
 
     @Provides
     @Singleton

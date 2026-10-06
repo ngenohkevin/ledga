@@ -1,5 +1,9 @@
 package com.ledga.app.ui.activity
 
+import kotlinx.coroutines.launch
+import com.ledga.app.data.room.dao.PersonTotal
+import com.ledga.app.data.lines.SelectedLine
+import com.ledga.app.data.lines.LineChoice
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ledga.app.data.derive.LedgerQueries
@@ -32,27 +36,30 @@ data class PeopleUi(
     val maxCents: Long = 0,
     val rows: List<PersonRowUi> = emptyList(),
     val today: LocalDate? = null,
+    val line: LineChoice = LineChoice(),
 )
 
 @HiltViewModel
-class PeopleViewModel @Inject constructor(private val ledger: LedgerQueries, live: LiveClock) : ViewModel() {
+class PeopleViewModel @Inject constructor(private val ledger: LedgerQueries, live: LiveClock, private val line: SelectedLine) : ViewModel() {
     private val direction = MutableStateFlow(PeopleDirection.SENT)
     private val query = MutableStateFlow("")
     private val minCents = MutableStateFlow(0L)
 
+    private data class Loaded(val direction: PeopleDirection, val line: LineChoice, val people: List<PersonTotal>)
+
     @OptIn(ExperimentalCoroutinesApi::class)
     val ui: StateFlow<PeopleUi> = combine(
-        direction.flatMapLatest { d -> ledger.people(d).map { d to it } },
+        combine(direction, line.choice) { d, ch -> d to ch }.flatMapLatest { (d, ch) -> ledger.people(d, ch.lineId).map { Loaded(d, ch, it) } },
         query,
         minCents,
         live.today,
-    ) { (d, people), q, min, today ->
-        val all = people.map {
+    ) { loaded, q, min, today ->
+        val all = loaded.people.map {
             PersonRowUi(it.counterpartyKey, it.name?.let(NameFormat::display) ?: it.phone ?: "Unknown", it.phone, it.count, it.totalCents, it.lastAt)
         }
         val max = all.maxOfOrNull { it.totalCents } ?: 0L
         val floor = min.coerceIn(0L, max)
-        PeopleUi(true, d, q, floor, max, all.filter { it.totalCents >= floor && it.matches(q) }, today)
+        PeopleUi(true, loaded.direction, q, floor, max, all.filter { it.totalCents >= floor && it.matches(q) }, today, loaded.line)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), PeopleUi())
 
     /** Each direction has its own totals, so its own minimum: switching starts from "any total". */
@@ -67,6 +74,11 @@ class PeopleViewModel @Inject constructor(private val ledger: LedgerQueries, liv
 
     fun setMinimum(cents: Long) {
         minCents.value = cents.coerceAtLeast(0)
+    }
+
+    /** R47: the line chip on People changes the one choice every summary follows. */
+    fun selectLine(id: Long?) {
+        viewModelScope.launch { line.select(id) }
     }
 }
 

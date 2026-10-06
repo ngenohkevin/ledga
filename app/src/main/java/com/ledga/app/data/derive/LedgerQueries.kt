@@ -41,11 +41,11 @@ class LedgerQueries(private val db: LedgaDatabase) {
         db.ledgerDao().dayTotals(includeHidden, lineId, like, flow, anyCategory, categories, from, to, minCents, counterpartyKey)
     }.map { rows -> rows.associateBy { LocalDate.ofEpochDay(it.day) } }
 
-    /** People (R42): everyone you sent to, or received from, biggest total first. */
-    fun people(direction: PeopleDirection): Flow<List<PersonTotal>> =
-        db.ledgerDao().people(direction.flow.name, direction.kinds.map { it.name })
+    /** People (R42): everyone you sent to, or received from, biggest total first; on one line (R47) or all. */
+    fun people(direction: PeopleDirection, lineId: Long? = null): Flow<List<PersonTotal>> =
+        db.ledgerDao().people(direction.flow.name, direction.kinds.map { it.name }, lineId)
 
-    fun personSummary(counterpartyKey: String): Flow<PersonSummary> = db.ledgerDao().personSummary(counterpartyKey)
+    fun personSummary(counterpartyKey: String, lineId: Long? = null): Flow<PersonSummary> = db.ledgerDao().personSummary(counterpartyKey, lineId)
 
     /** Spending's chart: spent per Nairobi month, keyed "2026-09" like `Period.key` (R45). */
     fun spentByMonth(range: InstantRange, lineId: Long? = null): Flow<Map<String, MonthTotal>> =

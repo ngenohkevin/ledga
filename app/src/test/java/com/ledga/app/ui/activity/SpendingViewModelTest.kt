@@ -1,5 +1,9 @@
 package com.ledga.app.ui.activity
 
+import com.ledga.app.testing.txRow
+import com.ledga.app.testing.twoLines
+import com.ledga.app.testing.selectedLine
+import com.ledga.app.data.lines.SelectedLine
 import com.ledga.app.data.derive.Deriver
 import com.ledga.app.data.derive.LedgerQueries
 import com.ledga.app.data.ingest.RawSms
@@ -37,7 +41,7 @@ class SpendingViewModelTest {
 
     private val vms = TestViewModels()
 
-    private fun vm(live: LiveClock = LiveClock(clock) { awaitCancellation() }) = vms.track(SpendingViewModel(LedgerQueries(db), db, live))
+    private fun vm(live: LiveClock = LiveClock(clock) { awaitCancellation() }, line: SelectedLine = selectedLine(db)) = vms.track(SpendingViewModel(LedgerQueries(db), db, live, line))
 
     @After fun close() {
         vms.stopAll()
@@ -120,5 +124,22 @@ class SpendingViewModelTest {
         assertEquals(YearMonth.of(2026, 10), vm.ui.first { it.loaded }.month)
         ticks.send(Unit) // midnight
         assertEquals(YearMonth.of(2026, 11), vm.ui.first { it.month == YearMonth.of(2026, 11) }.month)
+    }
+
+    @Test
+    fun `with a line chosen, Spending counts only that line and its tap filters Transactions to it`() = runTest {
+        twoLines(db)
+        db.transactionsDao().upsertAll(
+            listOf(
+                txRow(code = "TJK4AB12HA", lineId = 1, amountCents = 100_000, at = Instant.parse("2026-10-02T07:00:00Z")),
+                txRow(code = "TJK4AB12HB", lineId = 2, amountCents = 250_000, at = Instant.parse("2026-10-03T07:00:00Z")),
+            ),
+        )
+        val line = selectedLine(db)
+        val vm = vm(line = line)
+        vm.ui.first { it.loaded && it.totals.spentCents == 350_000L }
+        line.select(2)
+        val business = vm.ui.first { it.line.lineId == 2L && it.totals.spentCents == 250_000L }
+        assertEquals(2L, vm.transactionsFor(business.shares.single()).lineId)
     }
 }

@@ -157,6 +157,7 @@ fun ActivityTab(vm: ActivityViewModel = hiltViewModel()) {
                             onSelect = spending::select,
                             onByGroup = spending::setByGroup,
                             onShare = { vm.showTransactions(spending.transactionsFor(it)) },
+                            onLine = spending::selectLine,
                         ),
                     )
                 }
@@ -170,6 +171,7 @@ fun ActivityTab(vm: ActivityViewModel = hiltViewModel()) {
                             onQuery = people::setQuery,
                             onMinimum = people::setMinimum,
                             onOpen = { sheets = sheets.copy(person = it.key) },
+                            onLine = people::selectLine,
                         ),
                     )
                     PersonSheetHost(

@@ -84,16 +84,17 @@ interface LedgerDao {
             "COUNT(*) AS count, SUM(l.spendCents + l.inCents) AS totalCents, MAX(l.occurredAt) AS lastAt " +
             "FROM ledger l JOIN transactions t ON t.code = l.code " +
             "WHERE t.counterpartyKey IS NOT NULL AND t.isReversed = 0 AND l.flow = :flow AND l.kind IN (:kinds) " +
+            "AND (:lineId IS NULL OR l.lineId = :lineId) " +
             "GROUP BY t.counterpartyKey ORDER BY totalCents DESC, t.counterpartyKey",
     )
-    fun people(flow: String, kinds: List<String>): Flow<List<PersonTotal>>
+    fun people(flow: String, kinds: List<String>, lineId: Long?): Flow<List<PersonTotal>>
 
     @Query(
         "SELECT COALESCE(SUM(spendCents), 0) AS sentCents, COALESCE(SUM(spendCents > 0), 0) AS sentCount, " +
             "COALESCE(SUM(inCents), 0) AS receivedCents, COALESCE(SUM(inCents > 0), 0) AS receivedCount " +
-            "FROM ledger WHERE counterpartyKey = :counterpartyKey",
+            "FROM ledger WHERE counterpartyKey = :counterpartyKey AND (:lineId IS NULL OR lineId = :lineId)",
     )
-    fun personSummary(counterpartyKey: String): Flow<PersonSummary>
+    fun personSummary(counterpartyKey: String, lineId: Long?): Flow<PersonSummary>
 
     /** Spending's chart (R45): spent per Nairobi month. */
     @Query(

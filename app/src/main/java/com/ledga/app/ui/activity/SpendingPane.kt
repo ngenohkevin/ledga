@@ -1,5 +1,6 @@
 package com.ledga.app.ui.activity
 
+import com.ledga.app.ui.lines.LinePicker
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -60,6 +61,7 @@ data class SpendingActions(
     val onSelect: (Int) -> Unit = {},
     val onByGroup: (Boolean) -> Unit = {},
     val onShare: (ShareRow) -> Unit = {},
+    val onLine: (Long?) -> Unit = {},
 )
 
 /**
@@ -81,6 +83,7 @@ fun SpendingPane(ui: SpendingUi, actions: SpendingActions, modifier: Modifier = 
         modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = Spacing.screen).padding(bottom = Spacing.xxl),
         verticalArrangement = Arrangement.spacedBy(Spacing.l),
     ) {
+        LinePicker(ui.line, actions.onLine)
         MonthStepper(month, ui.canGoBack, ui.canGoForward, actions)
         LedgaCard(Modifier.fillMaxWidth()) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {

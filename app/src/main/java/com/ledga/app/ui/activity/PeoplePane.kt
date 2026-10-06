@@ -1,5 +1,6 @@
 package com.ledga.app.ui.activity
 
+import com.ledga.app.ui.lines.LinePicker
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -40,6 +41,7 @@ data class PeopleActions(
     val onQuery: (String) -> Unit = {},
     val onMinimum: (Long) -> Unit = {},
     val onOpen: (PersonRowUi) -> Unit = {},
+    val onLine: (Long?) -> Unit = {},
 )
 
 /**
@@ -54,6 +56,7 @@ fun PeoplePane(ui: PeopleUi, actions: PeopleActions, modifier: Modifier = Modifi
     val received = ui.direction == PeopleDirection.RECEIVED
     val narrowed = ui.query.isNotBlank() || ui.minCents > 0
     LazyColumn(modifier.fillMaxSize(), contentPadding = PaddingValues(start = Spacing.screen, end = Spacing.screen, bottom = Spacing.xxl)) {
+        if (ui.line.showChip) item(key = "line") { LinePicker(ui.line, actions.onLine, Modifier.padding(bottom = Spacing.s)) }
         item(key = "direction") {
             SegmentedControl(listOf("Sent to", "Received from"), ui.direction.ordinal, { actions.onDirection(PeopleDirection.entries[it]) }, Modifier.fillMaxWidth())
         }

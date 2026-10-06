@@ -1,5 +1,6 @@
 package com.ledga.app.ui.activity
 
+import com.ledga.app.data.lines.SelectedLine
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -74,27 +75,34 @@ data class PersonSheetUi(
 )
 
 @HiltViewModel
-class PersonSheetViewModel @Inject constructor(private val ledger: LedgerQueries, db: LedgaDatabase, live: LiveClock) : ViewModel() {
+class PersonSheetViewModel @Inject constructor(
+    private val ledger: LedgerQueries,
+    db: LedgaDatabase,
+    live: LiveClock,
+    line: SelectedLine,
+) : ViewModel() {
     private val person = MutableStateFlow<PersonRowUi?>(null)
+    private val lineId = line.choice.map { it.lineId }.distinctUntilChanged()
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    val ui: StateFlow<PersonSheetUi> = person.flatMapLatest { p ->
+    val ui: StateFlow<PersonSheetUi> = combine(person, lineId) { p, id -> p to id }.flatMapLatest { (p, id) ->
         if (p == null) {
             flowOf(PersonSheetUi())
         } else {
-            combine(ledger.personSummary(p.key), db.categoriesDao().observeAll(), live.today) { s, cats, today ->
+            combine(ledger.personSummary(p.key, id), db.categoriesDao().observeAll(), live.today) { s, cats, today ->
                 PersonSheetUi(p, s, cats.associateBy { it.key }, today)
             }
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), PersonSheetUi())
 
-    /** Every payment with this person, newest first, through the list's own filter (`counterpartyKey`). */
+    /** Every payment with this person on the chosen line (R47), newest first, through the list's own filter. */
     @OptIn(ExperimentalCoroutinesApi::class)
-    val items: Flow<PagingData<TxRow>> = person.filterNotNull().map { it.key }.distinctUntilChanged().flatMapLatest { key ->
-        Pager(PagingConfig(pageSize = ActivityViewModel.PAGE, enablePlaceholders = false)) {
-            ledger.transactions(TransactionFilter(counterpartyKey = key))
-        }.flow
-    }.cachedIn(viewModelScope)
+    val items: Flow<PagingData<TxRow>> =
+        combine(person.filterNotNull().map { it.key }.distinctUntilChanged(), lineId) { key, id -> key to id }.flatMapLatest { (key, id) ->
+            Pager(PagingConfig(pageSize = ActivityViewModel.PAGE, enablePlaceholders = false)) {
+                ledger.transactions(TransactionFilter(counterpartyKey = key, lineId = id))
+            }.flow
+        }.cachedIn(viewModelScope)
 
     fun open(p: PersonRowUi) {
         person.value = p
