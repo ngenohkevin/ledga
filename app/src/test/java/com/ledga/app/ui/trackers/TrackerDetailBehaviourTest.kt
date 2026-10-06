@@ -7,6 +7,12 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsNotEnabled
+import com.ledga.app.data.edit.RulePreview
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -91,5 +97,21 @@ class TrackerDetailBehaviourTest {
         val remove = compose.onNodeWithContentDescription("Remove rule $long").fetchSemanticsNode()
         assertTrue(remove.size.width > 0 && remove.boundsInRoot.right <= remove.layoutInfo.coordinates.findRootCoordinates().size.width, "the × is pushed out of the chip")
         compose.onNodeWithContentDescription("Remove rule $long").assertIsDisplayed()
+    }
+
+    @Test
+    fun `Save waits while the text typed is still being counted (R48)`() {
+        var saves = 0
+        var name by mutableStateOf("sample wate")
+        compose.setContent {
+            LedgaTheme(Appearance.LIGHT, reducedMotion = true) {
+                AddRuleContent("Water", name, "", ShownPreview("sample wate", "", RulePreview(1, 1, 0)), onName = {}, onAccount = {}, onSave = { saves++ })
+            }
+        }
+        compose.onNodeWithText("Save rule").assertIsEnabled()
+        name = "sample water"
+        compose.onNodeWithText("Counting${Char(0x2026)}").assertIsDisplayed()
+        compose.onNodeWithText("Save rule").assertIsNotEnabled().performClick()
+        assertEquals(0, saves, "the count on screen was for other text")
     }
 }

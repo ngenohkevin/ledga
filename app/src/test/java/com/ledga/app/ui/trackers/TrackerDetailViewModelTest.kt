@@ -24,6 +24,7 @@ import com.ledga.app.testing.txRow
 import com.ledga.app.time.LiveClock
 import com.ledga.app.ui.activity.ActivityLink
 import com.ledga.app.ui.activity.ActivityLinks
+import com.ledga.core.derive.RuleOrigin
 import com.ledga.core.model.Categories
 import java.time.Instant
 import kotlin.test.assertEquals
@@ -107,7 +108,7 @@ class TrackerDetailViewModelTest {
         val vm = vm(Categories.WATER)
         vm.ui.first { it.loaded }
         vm.previewRule("sample water", "")
-        assertEquals(RulePreview(1, 1, 0), vm.preview.first { it != null })
+        assertEquals(RulePreview(1, 1, 0), vm.preview.first { it?.name == "sample water" }?.preview)
         val added = CompletableDeferred<Unit>()
         vm.addRule("sample water", "") { added.complete(Unit) }
         added.await() // the callback comes after the edit has finished, on Room's thread
@@ -120,6 +121,24 @@ class TrackerDetailViewModelTest {
         vm.ui.first { ui -> ui.rules.none { it.label == "Name has Sample Water" } }
         vm.restoreRule(undo)
         vm.ui.first { ui -> ui.rules.any { it.label == "Name has Sample Water" } }
+    }
+
+    @Test
+    fun `Save does nothing until the count on screen is for the text typed (R48)`() = runTest {
+        ingest(Sms.paybill("TJK4AB12UH", "SAMPLE WATER CO", "ACC 501", "1,250.00"))
+        val vm = vm(Categories.WATER)
+        vm.ui.first { it.loaded }
+        vm.previewRule("sample wate", "")
+        vm.preview.first { it?.name == "sample wate" }
+        // One more letter, and Save before that text was counted: the person never saw what it would move.
+        vm.addRule("sample water", "") {}
+        // Then a rule saved the right way. Edits run one at a time, so an early Save would have finished first.
+        vm.previewRule("sample water co", "")
+        vm.preview.first { it?.name == "sample water co" }
+        val added = CompletableDeferred<Unit>()
+        vm.addRule("sample water co", "") { added.complete(Unit) }
+        added.await()
+        assertEquals(listOf("SAMPLE WATER CO"), db.rulesDao().all().filter { it.origin == RuleOrigin.USER }.map { it.pattern })
     }
 
     @Test

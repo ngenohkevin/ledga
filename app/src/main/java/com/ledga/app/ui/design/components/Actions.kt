@@ -16,6 +16,7 @@ import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -30,10 +31,10 @@ import com.ledga.app.ui.design.tokens.Sizes
 import com.ledga.app.ui.design.tokens.Spacing
 import com.ledga.app.ui.design.type.LedgaType
 
-/** Green action pill (spec §10.1 "green actions"). */
+/** Green action pill (spec §10.1 "green actions"); [enabled] false fades it and ignores taps until it can act. */
 @Composable
-fun PrimaryPill(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, icon: ImageVector? = null) =
-    Pill(text, onClick, modifier, icon, LedgaTheme.colors.primary, LedgaTheme.colors.onPrimary)
+fun PrimaryPill(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, icon: ImageVector? = null, enabled: Boolean = true) =
+    Pill(text, onClick, modifier, icon, LedgaTheme.colors.primary, LedgaTheme.colors.onPrimary, enabled)
 
 /** Secondary action pill on primarySoft. */
 @Composable
@@ -61,13 +62,14 @@ fun OutlinePill(text: String, onClick: () -> Unit, modifier: Modifier = Modifier
 }
 
 @Composable
-private fun Pill(text: String, onClick: () -> Unit, modifier: Modifier, icon: ImageVector?, container: Color, content: Color) {
+private fun Pill(text: String, onClick: () -> Unit, modifier: Modifier, icon: ImageVector?, container: Color, content: Color, enabled: Boolean = true) {
     Row(
         modifier
             .minimumInteractiveComponentSize()
+            .alpha(if (enabled) 1f else DISABLED_ALPHA)
             .clip(RoundedCornerShape(percent = 50))
             .background(container)
-            .clickable(role = Role.Button, onClick = onClick)
+            .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
             .padding(horizontal = Spacing.l, vertical = 10.dp),
         horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically,
@@ -137,3 +139,6 @@ fun SectionHeader(title: String, modifier: Modifier = Modifier, actionLabel: Str
         if (actionLabel != null && onAction != null) LinkButton(actionLabel, onAction)
     }
 }
+
+/** Material's faded look for an action that can't act yet. */
+private const val DISABLED_ALPHA = 0.38f

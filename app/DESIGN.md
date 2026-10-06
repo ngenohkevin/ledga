@@ -94,6 +94,10 @@ Everything lives in `com.ledga.app.ui.design`. Until Phase 4 uses it, R8 strips 
     vertically. Its "All" range uses `Bucketing.allTime` (years after 12 months, R54).
   - "Matched by" chips sit on a `LedgaCard`: a chip's plate barely shows on the canvas. `RuleChip`'s label ellipsizes
     before its ×, so a long rule stays removable at large text.
+  - The add-rule sheet shows a count only for exactly the text typed (`ShownPreview`, recounted with `mapLatest`). Until
+    then it says "Counting…" and Save rule is disabled (`PrimaryPill(enabled = false)`), and
+    `TrackerDetailViewModel.addRule` refuses other text: the rule clears hand-filed choices that removing it won't
+    bring back (R48).
 - **Fuliza sheet (4c).** Its rows show the date as the subtitle and the draw ("Fuliza Ksh 463") under the amount, where
   it never gives way (`FulizaSheetBehaviourTest`).
 - **Shared sheets keep their state (R62).** Hosts pass a saveable session id (`rememberSaveable(code) { Random.nextLong() }`);

@@ -98,6 +98,9 @@ object TrackerText {
     }
 
     /** "+ Add rule"'s line under the fields (R48): what Save will do, before it does it. */
+    /** While the text typed is being counted (R48). */
+    val COUNTING = "Counting${Char(0x2026)}"
+
     fun rulePreview(preview: RulePreview?, name: String, categoryName: String): String {
         fun payments(n: Int) = "$n ${if (n == 1) "payment" else "payments"}"
         return when {

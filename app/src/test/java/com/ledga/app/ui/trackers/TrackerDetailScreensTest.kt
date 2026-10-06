@@ -66,7 +66,7 @@ class TrackerDetailScreensTest {
     @Test
     fun addRule() = snapScreen("add_rule") {
         SheetScaffold("Add a rule") {
-            AddRuleContent("Electricity", "sample power", "", RulePreview(3, 2, 1), onName = {}, onAccount = {}, onSave = {})
+            AddRuleContent("Electricity", "sample power", "", ShownPreview("sample power", "", RulePreview(3, 2, 1)), onName = {}, onAccount = {}, onSave = {})
         }
     }
 

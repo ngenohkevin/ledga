@@ -29,6 +29,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -73,6 +74,11 @@ data class TrackerDetailUi(
     val today: LocalDate? = null,
 )
 
+/** A rule count (R48) and the text it was worked out for; null [preview] for a name too short to use. */
+data class ShownPreview(val name: String, val account: String, val preview: RulePreview?) {
+    fun isFor(name: String, account: String) = this.name == name && this.account == account
+}
+
 @HiltViewModel
 class TrackerDetailViewModel @Inject constructor(
     handle: SavedStateHandle,
@@ -90,10 +96,16 @@ class TrackerDetailViewModel @Inject constructor(
     /** The bar the person tapped; null selects the running one. */
     private val chosen = MutableStateFlow<Int?>(null)
     private val editing = MutableStateFlow(false)
-    private val _preview = MutableStateFlow<RulePreview?>(null)
+    private val ruleText = MutableStateFlow<Pair<String, String>?>(null)
 
-    /** What "+ Add rule" would do with the text typed so far (R48). */
-    val preview: StateFlow<RulePreview?> = _preview
+    /**
+     * What "+ Add rule" would do (R48), with the text it was counted for. A newer text cancels an older count, so a
+     * slow count for a shorter name can never land last.
+     */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val preview: StateFlow<ShownPreview?> = ruleText
+        .mapLatest { text -> text?.let { (name, account) -> ShownPreview(name, account, edits.rulePreview(categoryKey, name, account.ifBlank { null })) } }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val ui: StateFlow<TrackerDetailUi> = combine(live.today, line.choice) { today, choice -> today to choice }
@@ -131,16 +143,21 @@ class TrackerDetailViewModel @Inject constructor(
         viewModelScope.launch { edits.restoreRule(removed) }
     }
 
-    /** R48: recounts what "+ Add rule" would do; null for a pattern too short to use. */
+    /** R48: recounts what "+ Add rule" would do with this text. */
     fun previewRule(name: String, account: String) {
-        viewModelScope.launch { _preview.value = edits.rulePreview(categoryKey, name, account.ifBlank { null }) }
+        ruleText.value = name to account
     }
 
     fun clearPreview() {
-        _preview.value = null
+        ruleText.value = null
     }
 
+    /**
+     * R48: saves only what the person saw counted. Text typed since, or still being counted, does nothing: the rule
+     * clears hand-filed choices, and removing it later doesn't bring them back.
+     */
     fun addRule(name: String, account: String, onDone: () -> Unit) {
+        if (preview.value?.isFor(name, account) != true || preview.value?.preview == null) return
         viewModelScope.launch { if (edits.addRule(categoryKey, name, account.ifBlank { null })) onDone() }
     }
 

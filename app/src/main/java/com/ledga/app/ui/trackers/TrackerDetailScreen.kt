@@ -52,7 +52,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.ledga.app.data.edit.RulePreview
 import com.ledga.app.data.edit.TransactionEdits
 import com.ledga.app.data.room.CategoryRow
 import com.ledga.app.ui.design.charts.ChartTooltip
@@ -291,19 +290,22 @@ fun AddRuleContent(
     categoryName: String,
     name: String,
     account: String,
-    preview: RulePreview?,
+    preview: ShownPreview?,
     onName: (String) -> Unit,
     onAccount: (String) -> Unit,
     onSave: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val c = LedgaTheme.colors
+    // R48: the count shown is for exactly this text, or it says it's counting and Save waits.
+    val shown = preview?.takeIf { it.isFor(name, account) }
+    val counting = shown == null && name.isNotBlank()
     Column(modifier.fillMaxWidth().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(Spacing.m)) {
         Text("Payments whose name has these words go to $categoryName, now and from now on.", style = LedgaType.body, color = c.muted)
         OutlinedTextField(name, onName, Modifier.fillMaxWidth(), label = { Text("Name has") }, placeholder = { Text("KPLC") }, singleLine = true)
         OutlinedTextField(account, onAccount, Modifier.fillMaxWidth(), label = { Text("Account (optional)") }, singleLine = true)
-        Text(TrackerText.rulePreview(preview, name, categoryName), style = LedgaType.caption, color = c.muted)
-        PrimaryPill("Save rule", onSave, Modifier.fillMaxWidth())
+        Text(if (counting) TrackerText.COUNTING else TrackerText.rulePreview(shown?.preview, name, categoryName), style = LedgaType.caption, color = c.muted)
+        PrimaryPill("Save rule", onSave, Modifier.fillMaxWidth(), enabled = shown?.preview != null)
     }
 }
 
@@ -384,7 +386,7 @@ fun TrackerDetailRoute(onBack: () -> Unit, onSeeAll: () -> Unit, vm: TrackerDeta
                 ui.category?.name.orEmpty(), name, account, preview,
                 onName = { name = it.take(TransactionEdits.RULE_NAME_MAX) },
                 onAccount = { account = it },
-                onSave = { if (preview != null) vm.addRule(name, account, close) },
+                onSave = { vm.addRule(name, account, close) },
             )
         }
     }
