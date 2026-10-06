@@ -43,6 +43,13 @@ interface SmsDao {
     @Query("SELECT COUNT(*) FROM sms WHERE status = :status")
     suspend fun countByStatus(status: SmsStatus): Int
 
+    /** R78: Messages Ledga couldn't read, newest first. */
+    @Query("SELECT * FROM sms WHERE status = 'UNREADABLE' ORDER BY receivedAt DESC, id DESC")
+    fun observeUnreadable(): Flow<List<SmsRow>>
+
+    @Query("SELECT COUNT(*) FROM sms WHERE status = 'UNREADABLE'")
+    fun observeUnreadableCount(): Flow<Int>
+
     /** Every SMS merged into one transaction, oldest first (the sheet's "Original SMS", spec §10.4). */
     @Query("SELECT body FROM sms WHERE code = :code AND status = 'PARSED' ORDER BY receivedAt, id")
     fun bodiesFor(code: String): Flow<List<String>>
