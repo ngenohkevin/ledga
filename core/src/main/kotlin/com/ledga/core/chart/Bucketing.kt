@@ -2,10 +2,12 @@ package com.ledga.core.chart
 
 import com.ledga.core.money.Money
 import com.ledga.core.time.Period
+import com.ledga.core.time.PeriodType
 import com.ledga.core.time.Periods
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.time.Instant
+import java.time.LocalDate
 
 data class AmountPoint(val at: Instant, val amount: Money)
 
@@ -39,6 +41,29 @@ object Bucketing {
         val days = paymentTimes.sortedDescending().take(6).map { Periods.dateOf(it).dayOfMonth }.sorted()
         return if (days.isEmpty()) null else days[(days.size - 1) / 2]
     }
+
+    /**
+     * Whether "usually by the Nth" means anything (R52): each of the last [months] completed MONTH buckets had a
+     * payment. A car service or any irregular cost has no usual day.
+     */
+    fun isMonthly(buckets: List<Bucket>, now: Instant, months: Int = 3): Boolean {
+        val completed = buckets.filter { it.period.type == PeriodType.MONTH && it.period.endInstant <= now }
+        return completed.size >= months && completed.takeLast(months).all { it.count > 0 }
+    }
+
+    /** MONTH buckets added up into YEAR buckets, oldest first. */
+    fun byYear(months: List<Bucket>): List<Bucket> {
+        require(months.all { it.period.type == PeriodType.MONTH }) { "byYear adds up months" }
+        return months.groupBy { it.period.start.year }.toSortedMap().map { (year, list) ->
+            Bucket(Period(PeriodType.YEAR, LocalDate.of(year, 1, 1)), Money(list.sumOf { it.total.cents }), list.sumOf { it.count })
+        }
+    }
+
+    /**
+     * Tracker detail's "All" (R54): one bar per month for up to [maxMonths] months of history, else one per year.
+     * `ColumnChart` fits about 13 bars, and a year's label reads whole where a quarter's would not.
+     */
+    fun allTime(months: List<Bucket>, maxMonths: Int = 12): List<Bucket> = if (months.size <= maxMonths) months else byYear(months)
 
     fun deltaPercent(current: Money, previous: Money): Int? {
         if (previous.isZero) return null

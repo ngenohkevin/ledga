@@ -95,4 +95,13 @@ class PeriodsTest {
         assertFalse(at("2026-01-02T00:00:00Z") in r)
         assertFailsWith<IllegalArgumentException> { InstantRange(at("2026-01-02T00:00:00Z"), at("2026-01-01T00:00:00Z")) }
     }
+
+    @Test
+    fun `since lists every period from the one holding the first instant to the current one`() {
+        val now = Instant.parse("2026-10-05T07:00:00Z")
+        // 20 Sep 21:30 UTC is Monday 21 Sep 00:30 in Nairobi.
+        val weeks = Periods.since(PeriodType.WEEK, Instant.parse("2026-09-20T21:30:00Z"), now)
+        assertEquals(listOf("2026-09-21", "2026-09-28", "2026-10-05"), weeks.map { it.key })
+        assertEquals(listOf("2026-10"), Periods.since(PeriodType.MONTH, Instant.parse("2027-01-01T00:00:00Z"), now).map { it.key }, "a future instant is the current period")
+    }
 }

@@ -7,7 +7,9 @@ import java.time.Instant
 import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class BucketingTest {
     private fun ksh(s: String) = Money.parse(s)!!
@@ -77,5 +79,32 @@ class BucketingTest {
         assertEquals(-1, Bucketing.deltaPercent(ksh("995"), ksh("1000")))
         assertEquals(-100, Bucketing.deltaPercent(Money.ZERO, ksh("1000")))
         assertNull(Bucketing.deltaPercent(ksh("500"), Money.ZERO))
+    }
+
+    @Test
+    fun `a bill counts as monthly only when each of the last three completed months had a payment`() {
+        val months = Periods.lastN(PeriodType.MONTH, now, 5) // June to October 2026, October running
+        fun b(vararg counts: Int) = months.mapIndexed { i, p -> Bucket(p, Money(counts[i] * 100L), counts[i]) }
+        assertTrue(Bucketing.isMonthly(b(0, 1, 1, 1, 0), now))
+        assertFalse(Bucketing.isMonthly(b(1, 1, 0, 1, 1), now), "August had none")
+        assertFalse(Bucketing.isMonthly(b(0, 0, 0, 1, 1).takeLast(2), now), "fewer than three completed months")
+    }
+
+    @Test
+    fun `months add up into years, oldest first`() {
+        val months = Periods.since(PeriodType.MONTH, at("2024-11-10T09:00:00Z"), now) // November 2024 to October 2026
+        val years = Bucketing.byYear(months.map { Bucket(it, ksh("100"), 1) })
+        assertEquals(listOf("2024", "2025", "2026"), years.map { it.period.key })
+        assertEquals(listOf(ksh("200"), ksh("1200"), ksh("1000")), years.map { it.total })
+        assertEquals(listOf(2, 12, 10), years.map { it.count })
+    }
+
+    @Test
+    fun `all time is month by month for up to a year of history, then year by year`() {
+        val twelve = Periods.since(PeriodType.MONTH, at("2025-11-01T09:00:00Z"), now).map { Bucket(it, Money.ZERO, 0) }
+        assertEquals(12, Bucketing.allTime(twelve).size)
+        assertEquals(PeriodType.MONTH, Bucketing.allTime(twelve).first().period.type)
+        val thirteen = Periods.since(PeriodType.MONTH, at("2025-10-01T09:00:00Z"), now).map { Bucket(it, Money.ZERO, 0) }
+        assertEquals(listOf("2025", "2026"), Bucketing.allTime(thirteen).map { it.period.key })
     }
 }

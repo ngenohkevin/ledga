@@ -86,6 +86,13 @@ object Periods {
         return generateSequence(current(type, now)) { it.previous() }.take(n).toList().reversed()
     }
 
+    /** Every [type] period from the one holding [from] to the current one, oldest first (a [from] after [now] is the current one). */
+    fun since(type: PeriodType, from: Instant, now: Instant): List<Period> {
+        val current = current(type, now)
+        val first = of(type, minOf(from, now))
+        return generateSequence(first) { it.next() }.takeWhile { it.start <= current.start }.toList()
+    }
+
     /**
      * The previous period from its start for as long as the current one has run (same elapsed time, not whole
      * days), clamped to the previous period's end. Never empty: at the first instant of a period it is 1 ms.
