@@ -21,7 +21,10 @@ import com.ledga.core.model.CategoryGroup
 import com.ledga.core.model.FlowKind
 import com.ledga.core.model.TxKind
 import com.ledga.core.parse.Counterparty
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.time.Clock
+import java.util.Locale
 
 /** Where a category or own-account change applies (spec §7.4, R35–R37). */
 enum class ApplyTo { THIS_ONE, ALL_FROM_NAME, THIS_ACCOUNT }
@@ -33,22 +36,38 @@ enum class ApplyTo { THIS_ONE, ALL_FROM_NAME, THIS_ACCOUNT }
 data class ApplyCounts(val fromName: Int, val forAccount: Int?)
 
 /**
+ * What "+ Add rule" would do (R48): [matches] payments end up in the category, [moving] of them aren't there now, and
+ * [handFiled] of those the person had filed somewhere else themselves (their choice is cleared, as "all" says).
+ */
+data class RulePreview(val matches: Int, val moving: Int, val handFiled: Int)
+
+/** A rule taken off a tracker (R49): what Undo needs to put it back. */
+data class RemovedRule(val row: RuleRow)
+
+/**
  * Every change a person makes to a transaction (spec §7.4, `app/DATA.md`): category, note, own account, hidden, line,
- * and new categories. It merges with the existing override, writes USER rules where "apply to all" asks for one,
- * clears the overrides a rule must win over, then re-derives (`Deriver.saveOverride`) or re-classifies
+ * and categories and rules themselves. It merges with the existing override, writes USER rules where "apply to all"
+ * asks for one, clears the overrides a rule must win over, then re-derives (`Deriver.saveOverride`) or re-classifies
  * (`Deriver.reclassifyAll`). The counts it reports are simulated with `:core`'s own `Derivation.reclassify` under the
  * would-be rules, so a switch's number is the number that changes. It never touches the `sms` table.
+ *
+ * Writes run one at a time (R63): two quick edits could otherwise interleave a reclassify with a rule write and leave a
+ * row disagreeing with its override until the next one. Counting functions don't lock.
  */
 class TransactionEdits(private val db: LedgaDatabase, private val deriver: Deriver, private val clock: Clock) {
+    private val writes = Mutex()
 
-    suspend fun setNote(code: String, note: String?) =
+    private suspend fun <T> serial(block: suspend () -> T): T = writes.withLock { block() }
+
+    suspend fun setNote(code: String, note: String?) = serial {
         deriver.saveOverride(override(code).copy(note = note?.replace(WS, " ")?.trim()?.take(NOTE_MAX)?.ifEmpty { null }))
+    }
 
     /** Hidden payments leave lists and totals; their SMS stay (spec §10.4). */
-    suspend fun setHidden(code: String, hidden: Boolean) = deriver.saveOverride(override(code).copy(hidden = hidden))
+    suspend fun setHidden(code: String, hidden: Boolean) = serial { deriver.saveOverride(override(code).copy(hidden = hidden)) }
 
     /** Moves a payment to another line (spec §9.2, R46); null goes back to the line its SMS arrived on. */
-    suspend fun setLine(code: String, lineId: Long?) = deriver.saveOverride(override(code).copy(lineId = lineId))
+    suspend fun setLine(code: String, lineId: Long?) = serial { deriver.saveOverride(override(code).copy(lineId = lineId)) }
 
     suspend fun categoryCounts(code: String, categoryKey: String): ApplyCounts {
         val tx = db.transactionsDao().get(code) ?: return ApplyCounts(0, null)
@@ -64,7 +83,9 @@ class TransactionEdits(private val db: LedgaDatabase, private val deriver: Deriv
      * [ApplyTo.THIS_ONE]: an override for this code. Otherwise (R36): a USER rule replacing any like it, the person's own
      * category choices cleared on every payment it will label, and this payment set even where a rule can't reach it.
      */
-    suspend fun setCategory(code: String, categoryKey: String, applyTo: ApplyTo) {
+    suspend fun setCategory(code: String, categoryKey: String, applyTo: ApplyTo) = serial { setCategoryNow(code, categoryKey, applyTo) }
+
+    private suspend fun setCategoryNow(code: String, categoryKey: String, applyTo: ApplyTo) {
         val tx = db.transactionsDao().get(code) ?: return
         val name = tx.counterpartyName
         val account = accountOf(tx)
@@ -79,11 +100,7 @@ class TransactionEdits(private val db: LedgaDatabase, private val deriver: Deriv
             return
         }
         val gainers = gainers(rule, name, categoryKey)
-        db.withTransaction {
-            db.rulesDao().deleteUser(rule.field.name, rule.pattern, rule.action.name)
-            db.rulesDao().insert(rule.toRow())
-            gainers.chunked(Deriver.CHUNK).forEach { db.overridesDao().clearCategory(it, clock.instant()) }
-        }
+        writeRule(rule, gainers)
         // A rule can't label every payment (an own-account move keeps "Own accounts"); the tapped one still takes it.
         if (code !in gainers) deriver.saveOverride(override(code).copy(categoryKey = categoryKey))
         deriver.reclassifyAll()
@@ -101,7 +118,9 @@ class TransactionEdits(private val db: LedgaDatabase, private val deriver: Deriv
      * [allFromName] false: an override for this code. True (R37): the name's USER own-account rule on, or off with an
      * exception on any of its payments a broader rule of the person's still marks own.
      */
-    suspend fun setOwnAccount(code: String, own: Boolean, allFromName: Boolean) {
+    suspend fun setOwnAccount(code: String, own: Boolean, allFromName: Boolean) = serial { setOwnAccountNow(code, own, allFromName) }
+
+    private suspend fun setOwnAccountNow(code: String, own: Boolean, allFromName: Boolean) {
         val tx = db.transactionsDao().get(code) ?: return
         val name = tx.counterpartyName
         if (!allFromName || name == null) {
@@ -126,11 +145,12 @@ class TransactionEdits(private val db: LedgaDatabase, private val deriver: Deriv
     }
 
     /** A new category in [group] (R43), or the existing one with that name there. Returns its key. */
-    suspend fun createCategory(name: String, group: CategoryGroup): String {
+    suspend fun createCategory(name: String, group: CategoryGroup): String = serial {
         val clean = name.replace(WS, " ").trim().take(CATEGORY_NAME_MAX)
         require(clean.isNotEmpty()) { "a category needs a name" }
         val all = db.categoriesDao().all()
-        all.firstOrNull { it.groupKey == group && !it.archived && it.name.equals(clean, ignoreCase = true) }?.let { return it.key }
+        val existing = all.firstOrNull { it.groupKey == group && !it.archived && it.name.equals(clean, ignoreCase = true) }
+        if (existing != null) return@serial existing.key
         val base = "user_" + clean.lowercase().replace(NON_KEY, "_").trim('_').ifEmpty { "category" }
         val key = generateSequence(1) { it + 1 }.map { if (it == 1) base else "${base}_$it" }.first { k -> all.none { it.key == k } }
         db.categoriesDao().insertIgnore(
@@ -139,7 +159,79 @@ class TransactionEdits(private val db: LedgaDatabase, private val deriver: Deriv
                 tracked = false, sortOrder = (all.maxOfOrNull { it.sortOrder } ?: 0) + 1, origin = CategoryOrigin.USER, archived = false,
             ),
         )
-        return key
+        key
+    }
+
+    /** R50: track a category, or stop. Tracking changes no transaction, so nothing re-classifies. */
+    suspend fun setTracked(categoryKey: String, tracked: Boolean) = serial { db.categoriesDao().setTracked(categoryKey, tracked) }
+
+    /** R51: renames a category everywhere. False for a blank name, an unknown key, or a name another category in its group has. */
+    suspend fun renameCategory(categoryKey: String, name: String): Boolean = serial {
+        val clean = name.replace(WS, " ").trim().take(CATEGORY_NAME_MAX)
+        val all = db.categoriesDao().all()
+        val category = all.firstOrNull { it.key == categoryKey }
+        val taken = category != null &&
+            all.any { it.key != categoryKey && it.groupKey == category.groupKey && !it.archived && it.name.equals(clean, ignoreCase = true) }
+        if (clean.isEmpty() || category == null || taken) return@serial false
+        db.categoriesDao().rename(categoryKey, clean)
+        true
+    }
+
+    /** What "+ Add rule" would do (R48); null when [name] has fewer than two letters or digits. */
+    suspend fun rulePreview(categoryKey: String, name: String, account: String?): RulePreview? {
+        val (rule, pattern) = trackerRule(categoryKey, name, account) ?: return null
+        val rows = gainerRows(rule, pattern, categoryKey)
+        val moving = rows.filter { it.categoryKey != categoryKey }
+        val overrides = overridesFor(moving.map { it.code })
+        return RulePreview(rows.size, moving.size, moving.count { overrides[it.code]?.categoryKey != null })
+    }
+
+    /**
+     * Tracker detail's "+ Add rule" (R48, owner 2026-10-06): like "Apply to all" (R36). A USER rule replacing any like
+     * it, and the person's own category choices cleared on every payment it will label. False for an unusable pattern.
+     */
+    suspend fun addRule(categoryKey: String, name: String, account: String?): Boolean = serial {
+        val (rule, pattern) = trackerRule(categoryKey, name, account) ?: return@serial false
+        writeRule(rule, gainers(rule, pattern, categoryKey))
+        deriver.reclassifyAll()
+        true
+    }
+
+    /** R49: the person's own rule is deleted; a built-in one is switched off (spec §7.1). Null for an unknown id. */
+    suspend fun removeRule(id: Long): RemovedRule? = serial {
+        val row = db.rulesDao().get(id) ?: return@serial null
+        if (row.origin == RuleOrigin.USER) db.rulesDao().delete(id) else db.rulesDao().setEnabled(id, false)
+        deriver.reclassifyAll()
+        RemovedRule(row)
+    }
+
+    /** Undo for [removeRule]: the person's rule returns as it was (its time keeps its order); a built-in one is switched back on. */
+    suspend fun restoreRule(removed: RemovedRule) = serial {
+        val row = removed.row
+        if (row.origin == RuleOrigin.USER) db.rulesDao().insert(row.copy(id = 0)) else db.rulesDao().setEnabled(row.id, true)
+        deriver.reclassifyAll()
+    }
+
+    /** Writes [rule] in place of any USER rule like it and clears [gainers]' own category choices, in one transaction. */
+    private suspend fun writeRule(rule: Rule, gainers: List<String>) {
+        db.withTransaction {
+            db.rulesDao().deleteUser(rule.field.name, rule.pattern, rule.action.name)
+            db.rulesDao().insert(rule.toRow())
+            gainers.chunked(Deriver.CHUNK).forEach { db.overridesDao().clearCategory(it, clock.instant()) }
+        }
+    }
+
+    /** A tracker rule (R48) and the name its LIKE pre-filter uses; null when the name has fewer than two letters or digits. */
+    private fun trackerRule(categoryKey: String, name: String, account: String?): Pair<Rule, String>? {
+        val pattern = name.replace(WS, " ").trim().take(RULE_NAME_MAX).uppercase(Locale.ROOT)
+        if (pattern.count(Char::isLetterOrDigit) < 2) return null
+        val acc = account?.replace(WS, " ")?.trim()?.takeIf { it.any(Char::isLetterOrDigit) }
+        val rule = if (acc == null) {
+            categoryRule(RuleField.NAME_CONTAINS, pattern, categoryKey)
+        } else {
+            categoryRule(RuleField.NAME_AND_ACCOUNT, RuleEngine.nameAndAccount(pattern, acc), categoryKey)
+        }
+        return rule to pattern
     }
 
     /** The rule "all from <name>" makes for own accounts (R37). */
@@ -154,15 +246,17 @@ class TransactionEdits(private val db: LedgaDatabase, private val deriver: Deriv
     }
 
     /** Payments that would carry [categoryKey] once [rule] replaces any USER rule like it and their own choices are cleared. */
-    private suspend fun gainers(rule: Rule, name: String, categoryKey: String): List<String> {
+    private suspend fun gainerRows(rule: Rule, name: String, categoryKey: String): List<TxRow> {
         val groups = groups()
         val engine = RuleEngine(db.rulesDao().all().map { it.toCore() }.filterNot { same(it, rule) } + rule, groups::get)
         val matched = named(name).filter { engine.matches(rule, it.counterparty()) }
         val overrides = overridesFor(matched.map { it.code })
         return matched.filter { t ->
             Derivation.reclassify(t.toDerived(), overrides[t.code]?.copy(categoryKey = null), engine).categoryKey == categoryKey
-        }.map { it.code }
+        }
     }
+
+    private suspend fun gainers(rule: Rule, name: String, categoryKey: String): List<String> = gainerRows(rule, name, categoryKey).map { it.code }
 
     private suspend fun override(code: String): Override = db.overridesDao().get(code)?.toCore() ?: Override(code)
 
@@ -193,6 +287,9 @@ class TransactionEdits(private val db: LedgaDatabase, private val deriver: Deriv
     companion object {
         const val NOTE_MAX = 200
         const val CATEGORY_NAME_MAX = 30
+
+        /** "+ Add rule"'s name field (R48). */
+        const val RULE_NAME_MAX = 40
         const val NEW_CATEGORY_ICON = "fluent_label"
 
         /** The would-be rule in a simulation: USER ties go newest-first, then highest id, as the inserted rule will. */

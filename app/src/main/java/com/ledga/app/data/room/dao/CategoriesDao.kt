@@ -23,6 +23,14 @@ interface CategoriesDao {
     @Query("SELECT * FROM categories ORDER BY sortOrder, `key`")
     suspend fun all(): List<CategoryRow>
 
+    /** Trackers (R50): tracking changes no transaction. */
+    @Query("UPDATE categories SET tracked = :tracked WHERE `key` = :key")
+    suspend fun setTracked(key: String, tracked: Boolean)
+
+    /** R51: the name shows everywhere; the key stays. */
+    @Query("UPDATE categories SET name = :name WHERE `key` = :key")
+    suspend fun rename(key: String, name: String)
+
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertIgnore(row: CategoryRow): Long
 }

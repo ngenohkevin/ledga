@@ -1,5 +1,13 @@
 package com.ledga.app.data.edit
 
+import kotlinx.coroutines.asCoroutineDispatcher
+import java.util.concurrent.Executors
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.async
+import java.time.ZoneId
+import java.util.concurrent.CountDownLatch
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
 import androidx.paging.PagingSource
 import com.ledga.app.data.derive.Deriver
 import com.ledga.app.data.derive.LedgerQueries
@@ -212,5 +220,121 @@ class TransactionEditsTest {
         assertEquals(FlowKind.INCOME, tx("TJK4AB12LA").flow)
         assertEquals(FlowKind.OWN_IN, tx("TJK4AB12LB").flow, "another name keeps its own-account state")
         assertEquals(listOf("EXAMPLE"), userRules().map { it.pattern }, "the person's own rule stays")
+    }
+
+    private val water501 = Sms.paybill("TJK4AB12WA", "SAMPLE WATER CO", "ACC 501", "1,250.00")
+    private val water502 = Sms.paybill("TJK4AB12WB", "SAMPLE WATER CO", "ACC 502", "1,375.00", "23/3/26 at 9:00 AM")
+    private val water501Again = Sms.paybill("TJK4AB12WC", "SAMPLE WATER CO", "ACC 501", "1,125.00", "24/3/26 at 9:00 AM")
+
+    @Test
+    fun `tracking a category changes no payment`() = runTest {
+        ingest(academy1024)
+        val before = db.transactionsDao().all()
+        edits.setTracked(Categories.SCHOOL, true)
+        edits.setTracked(Categories.ELECTRICITY, false)
+        val categories = db.categoriesDao().all().associateBy { it.key }
+        assertTrue(categories.getValue(Categories.SCHOOL).tracked)
+        assertFalse(categories.getValue(Categories.ELECTRICITY).tracked)
+        assertEquals(before, db.transactionsDao().all())
+    }
+
+    @Test
+    fun `a rename shows everywhere and refuses a blank or taken name`() = runTest {
+        assertTrue(edits.renameCategory(Categories.ELECTRICITY, "  Power   tokens "))
+        assertEquals("Power tokens", db.categoriesDao().all().first { it.key == Categories.ELECTRICITY }.name)
+        assertFalse(edits.renameCategory(Categories.ELECTRICITY, "   "))
+        assertFalse(edits.renameCategory(Categories.ELECTRICITY, "water"), "Water is already in Bills & utilities")
+        assertTrue(edits.renameCategory(Categories.FUEL, "Water"), "another group may use the name")
+        assertFalse(edits.renameCategory("no_such_category", "Anything"))
+    }
+
+    @Test
+    fun `the add-rule preview counts what moves and the hand-filed ones among them, and saving moves exactly those`() = runTest {
+        ingest(water501, water502, water501Again)
+        edits.setCategory("TJK4AB12WB", Categories.RENT, ApplyTo.THIS_ONE) // filed by hand
+        assertEquals(RulePreview(matches = 3, moving = 3, handFiled = 1), edits.rulePreview(Categories.WATER, "sample water", null))
+        assertNull(edits.rulePreview(Categories.WATER, "s", null), "one letter would match almost anything")
+        assertEquals(RulePreview(0, 0, 0), edits.rulePreview(Categories.WATER, "NOBODY YET", null), "a rule for future payments")
+        assertTrue(edits.addRule(Categories.WATER, "sample water", null))
+        assertEquals(List(3) { Categories.WATER }, listOf("TJK4AB12WA", "TJK4AB12WB", "TJK4AB12WC").map { tx(it).categoryKey })
+        assertNull(db.overridesDao().get("TJK4AB12WB")?.categoryKey, "the hand-filed choice was cleared, as the preview said")
+        val rule = userRules().single()
+        assertEquals(RuleField.NAME_CONTAINS, rule.field)
+        assertEquals("SAMPLE WATER", rule.pattern, "stored like M-Pesa's names")
+        assertEquals(RulePreview(3, 0, 0), edits.rulePreview(Categories.WATER, "SAMPLE WATER", null), "nothing left to move")
+        assertFalse(edits.addRule(Categories.WATER, " x ", null))
+    }
+
+    @Test
+    fun `an account narrows the new rule to that business's account`() = runTest {
+        ingest(water501, water502, water501Again)
+        assertEquals(RulePreview(2, 2, 0), edits.rulePreview(Categories.WATER, "SAMPLE WATER CO", "ACC 501"))
+        edits.addRule(Categories.WATER, "SAMPLE WATER CO", "ACC 501")
+        assertEquals(Categories.WATER, tx("TJK4AB12WC").categoryKey)
+        assertEquals(Categories.OTHER, tx("TJK4AB12WB").categoryKey, "another account at the same business")
+        assertEquals(RuleField.NAME_AND_ACCOUNT, userRules().single().field)
+    }
+
+    @Test
+    fun `removing a rule deletes the person's own and switches a built-in one off, and Undo puts each back`() = runTest {
+        ingest(Sms.KPLC, water501)
+        assertEquals(Categories.ELECTRICITY, tx("TJK4AB12FA").categoryKey)
+        val kplc = db.rulesDao().all().first { it.origin == RuleOrigin.SYSTEM && it.pattern == "KPLC" }
+        val off = edits.removeRule(kplc.id)!!
+        assertFalse(db.rulesDao().get(kplc.id)!!.enabled, "switched off, not deleted (spec §7.1)")
+        assertEquals(Categories.OTHER, tx("TJK4AB12FA").categoryKey)
+        edits.restoreRule(off)
+        assertTrue(db.rulesDao().get(kplc.id)!!.enabled)
+        assertEquals(Categories.ELECTRICITY, tx("TJK4AB12FA").categoryKey)
+
+        edits.addRule(Categories.WATER, "SAMPLE WATER", null)
+        val removed = edits.removeRule(userRules().single().id)!!
+        assertTrue(userRules().isEmpty())
+        assertEquals(Categories.OTHER, tx("TJK4AB12WA").categoryKey)
+        edits.restoreRule(removed)
+        assertEquals("SAMPLE WATER", userRules().single().pattern)
+        assertEquals(Categories.WATER, tx("TJK4AB12WA").categoryKey)
+        assertNull(edits.removeRule(Long.MAX_VALUE))
+    }
+
+    @Test
+    fun `a second edit waits until the first has finished`() = runBlocking {
+        // Real threads: Robolectric fakes System.nanoTime, so coroutine timeouts never fire here; Thread.sleep is real.
+        ingest(academy1024, academy2048)
+        val inside = CountDownLatch(1)
+        val release = CountDownLatch(1)
+        // The first time an edit reads the clock (building its rule), it pauses there, holding whatever the edit holds.
+        val pausing = object : Clock() {
+            @Volatile var first = true
+            override fun instant(): Instant {
+                if (first) {
+                    first = false
+                    inside.countDown()
+                    release.await()
+                }
+                return clock.instant()
+            }
+            override fun getZone(): ZoneId = ZoneOffset.UTC
+            override fun withZone(zone: ZoneId): Clock = this
+        }
+        val slow = TransactionEdits(db, deriver, pausing)
+        // The paused edit gets a thread of its own, so it can't starve the pool the second edit and Room run on.
+        val own = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
+        try {
+            val first = launch(own) { slow.setCategory("TJK4AB12JA", Categories.SCHOOL, ApplyTo.ALL_FROM_NAME) }
+            inside.await()
+            val second = async(Dispatchers.IO) { slow.setNote("TJK4AB12JB", "later") }
+            Thread.sleep(1_000)
+            val finishedEarly = second.isCompleted
+            release.countDown()
+            assertFalse(finishedEarly, "the note waits while the category edit is half done (R63)")
+            first.join()
+            second.await()
+            assertEquals("later", tx("TJK4AB12JB").note)
+            assertEquals(Categories.SCHOOL, tx("TJK4AB12JB").categoryKey)
+        } finally {
+            release.countDown() // a failed assertion must not leave the first edit parked
+            own.close()
+        }
     }
 }

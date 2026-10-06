@@ -21,6 +21,16 @@ interface RulesDao {
     @Insert
     suspend fun insert(row: RuleRow): Long
 
+    @Query("SELECT * FROM rules WHERE id = :id")
+    suspend fun get(id: Long): RuleRow?
+
+    @Query("DELETE FROM rules WHERE id = :id")
+    suspend fun delete(id: Long)
+
+    /** Built-in rules are switched off, never deleted (spec §7.1). */
+    @Query("UPDATE rules SET enabled = :enabled WHERE id = :id")
+    suspend fun setEnabled(id: Long, enabled: Boolean)
+
     /** Removes USER rules like a new one (same field, the pattern ignoring case, same action): one per name and choice. */
     @Query("DELETE FROM rules WHERE origin = 'USER' AND field = :field AND pattern = :pattern COLLATE NOCASE AND action = :action")
     suspend fun deleteUser(field: String, pattern: String, action: String): Int
