@@ -10,6 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -23,6 +24,7 @@ import com.ledga.app.data.settings.Settings
 import com.ledga.app.data.settings.TextSize
 import com.ledga.app.startup.StartupState
 import com.ledga.app.ui.design.theme.LedgaTheme
+import com.ledga.app.ui.onboarding.OnboardingRoute as OnboardingScreenRoute
 import java.io.File
 
 /** The whole app: theme and text size from settings, then startup's verdict (spec §8, §10.4). */
@@ -64,13 +66,17 @@ fun LedgaRootContent(
     }
 }
 
-/** The app once started (spec §10.4): four tabs. Task 9 puts onboarding in front until it's done. */
+/** The app once started (spec §10.4): onboarding until it's done, then four tabs. */
 @Composable
 fun LedgaNavHost(onboarded: Boolean) {
     val nav = rememberNavController()
     val entry by nav.currentBackStackEntryAsState()
+    val start: Any = remember { if (onboarded) HomeRoute else OnboardingRoute }
     ShellFrame(selected = Tab.of(entry?.destination), onSelect = { nav.openTab(it) }) {
-        NavHost(nav, startDestination = HomeRoute) {
+        NavHost(nav, startDestination = start) {
+            composable<OnboardingRoute> {
+                OnboardingScreenRoute(onDone = { nav.navigate(HomeRoute) { popUpTo<OnboardingRoute> { inclusive = true } } })
+            }
             composable<HomeRoute> { InterimHomeRoute() }
             composable<ActivityRoute> { ComingNext(Tab.ACTIVITY) }
             composable<TrackersRoute> { ComingNext(Tab.TRACKERS) }

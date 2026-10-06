@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.ContentResolver
 import android.content.Context
 import android.content.pm.PackageManager
+import android.os.Build
 import androidx.core.content.ContextCompat
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
@@ -13,6 +14,7 @@ import androidx.work.WorkManager
 import com.ledga.app.data.settings.SettingsStore
 import com.ledga.app.data.settings.V1SettingsMigration
 import com.ledga.app.startup.SmsAccess
+import com.ledga.app.ui.onboarding.NotificationAccess
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -46,5 +48,11 @@ object AppModule {
     @Provides
     fun smsAccess(@ApplicationContext context: Context): SmsAccess = SmsAccess {
         ContextCompat.checkSelfPermission(context, Manifest.permission.READ_SMS) == PackageManager.PERMISSION_GRANTED
+    }
+
+    @Provides
+    fun notificationAccess(@ApplicationContext context: Context): NotificationAccess = NotificationAccess {
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
     }
 }
