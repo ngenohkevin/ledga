@@ -36,6 +36,10 @@ interface TransactionsDao {
     @Query("SELECT * FROM transactions WHERE code = :code")
     suspend fun get(code: String): TxRow?
 
+    /** One transaction, live: the sheet follows every edit. */
+    @Query("SELECT * FROM transactions WHERE code = :code")
+    fun observe(code: String): Flow<TxRow?>
+
     /** Candidates for a name rule: a LIKE pre-filter ([like] from `LedgerQueries.likePattern`); `RuleEngine.matches` decides. */
     @Query("SELECT * FROM transactions WHERE counterpartyName LIKE :like ESCAPE '\\'")
     suspend fun named(like: String): List<TxRow>

@@ -6,6 +6,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import com.ledga.app.data.room.SmsRow
 import com.ledga.app.data.room.SmsStatus
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface SmsDao {
@@ -41,4 +42,8 @@ interface SmsDao {
 
     @Query("SELECT COUNT(*) FROM sms WHERE status = :status")
     suspend fun countByStatus(status: SmsStatus): Int
+
+    /** Every SMS merged into one transaction, oldest first (the sheet's "Original SMS", spec §10.4). */
+    @Query("SELECT body FROM sms WHERE code = :code AND status = 'PARSED' ORDER BY receivedAt, id")
+    fun bodiesFor(code: String): Flow<List<String>>
 }
