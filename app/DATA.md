@@ -21,18 +21,25 @@
 ## Startup and capture (Phase 4a)
 
 1. `LedgaApp.onCreate` runs `PreV6Snapshot.takeIfNeeded()` before anything in the process can open the database. A file whose header already reads 6 is recognised in 100 bytes and never copied (R29).
-2. `Startup.run()`, called from `AppViewModel`, is the first opener of `LedgaDatabase`; opening runs `MIGRATION_5_6` on a v1 file.
-   - A failure becomes `StartupState.Failed`. The recovery screen shares `files/pre-v6/ledga.db` (FileProvider path `pre-v6/`) and offers Retry.
+2. `Startup.run()`, called from `AppViewModel`, opens `LedgaDatabase` (a cold start from the receiver or a worker may open it first; that is safe because the snapshot already ran in `Application.onCreate`). Opening runs `MIGRATION_5_6` on a v1 file.
+   - `LedgaDatabase.builder` uses `KeepCorruptOpenHelperFactory`: Room's default deletes a corrupt file; Ledga never does.
+   - A failure becomes `StartupState.Failed`. The recovery screen shares `files/pre-v6/ledga.db` with its `-wal`/`-shm` (FileProvider path `pre-v6/`), says the file holds M-Pesa messages, and offers Retry.
    - Otherwise:
-     - after the migration: `BackgroundWork.afterMigration()` queues `ledga-startup` (`LegacyImportWorker` → `InboxScanWorker(FULL)` → `RebuildWorker`) and cancels v1's periodic jobs (R31);
+     - after the migration: `BackgroundWork.afterMigration()` queues `ledga-startup` (`LegacyImportWorker` → `InboxScanWorker(FULL)` → `RebuildWorker`) and cancels v1's periodic jobs (R31). A `LegacyImportWorker` that gives up still succeeds (flagged), so the rescan and rebuild run; the staging tables stay, the next start re-queues it, and Home shows `BackgroundWork.legacyImportFailed`;
+     - while that chain still runs: nothing more (its own rescan and rebuild are coming);
      - after a version bump: `rebuild()`;
-     - once nothing is owed: it deletes the pre-v6 copy;
-     - when onboarded with SMS access: `LinesRepository.syncActive()` + `catchUp()`.
+     - once the migration's work is done: it deletes the pre-v6 copy — **only on proof** that this database received
+       the migration (meta `migratedFromV1`, written when Startup first sees the staging tables). A copy beside a
+       database without that marker routes to recovery instead: it may be the user's only copy;
+     - when onboarded with SMS access: `LinesRepository.syncActive()`, then the migration's full rescan if it never
+       completed (`Settings.fullRescanOwed`), else `catchUp()`.
 3. "Updating your history…" reads `BackgroundWork.history`, which covers `ledga-startup`, `ledga-rebuild` and `ledga-import`.
 
 - **Capture (from Phase 5, R26).** `SmsReceiver` and `InboxScanner` both resolve the line before `SmsIngestor`, so only existing line ids reach `sms.lineId`.
   - Inbox reads probe `sub_id`, then `sim_id`, then neither, and return nothing without READ_SMS.
   - A catch-up reads from `Settings.smsWatermarkMillis` minus 6 hours; the watermark never moves back.
+  - A SIM whose subscription id changed keeps its line: an old id resolves to the line its past messages are filed under (`LinesDao.lineOfPastMessages`) before any new line is made.
+  - Access granted later (dialog or Android Settings) imports the whole inbox when the user comes back.
 - **WorkManager names.**
   - `WorkManagerBackgroundWork` owns `ledga-startup`, `ledga-rebuild`, `ledga-catch-up` and `ledga-import`.
   - **Never reuse v1's names** (`daily_summary`, `weekly_summary`, `insight_generation`, `update_check`): `V1Leftovers` cancels them after the migration.
