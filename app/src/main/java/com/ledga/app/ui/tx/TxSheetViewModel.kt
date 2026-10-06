@@ -83,7 +83,7 @@ class TxSheetViewModel @Inject constructor(
      * Opens [code] for the host's [session] (a saveable id, R62). A rotation re-runs the host's effect with the same
      * session and changes nothing, so a pending own-account question survives; a new opening starts clean.
      */
-    fun open(code: String, session: Long = System.nanoTime()) {
+    fun open(code: String, session: Long) {
         if (this.session == session && this.code.value == code) return
         this.session = session
         pending.value = null

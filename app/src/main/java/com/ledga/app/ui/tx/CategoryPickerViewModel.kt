@@ -86,7 +86,7 @@ class CategoryPickerViewModel @Inject constructor(
     private var session: Long? = null
 
     /** Loads [code] afresh for a new [session] (a save may have changed it); the same session again (a rotation) keeps the choice (R62). */
-    fun open(code: String, session: Long = System.nanoTime()) {
+    fun open(code: String, session: Long) {
         if (this.session == session && this.code == code) return
         this.session = session
         this.code = code
@@ -101,7 +101,8 @@ class CategoryPickerViewModel @Inject constructor(
             _state.value = PickerState(
                 code = code,
                 loaded = true,
-                txName = tx.counterpartyName?.let(NameFormat::display),
+                // A Fuliza repayment names the service, not a payee: moving one moves only that one (owner, 2026-10-06).
+                txName = tx.counterpartyName?.takeUnless { tx.kind in FULIZA_REPAYMENTS }?.let(NameFormat::display),
                 account = tx.counterpartyAccount?.takeIf { tx.kind == TxKind.PAYBILL },
                 groups = groups,
                 selected = selected,
@@ -178,3 +179,5 @@ class CategoryPickerViewModel @Inject constructor(
         }
     }
 }
+
+private val FULIZA_REPAYMENTS = setOf(TxKind.FULIZA_REPAY_AUTO, TxKind.FULIZA_REPAY_MANUAL)

@@ -55,7 +55,7 @@ class TxSheetViewModelTest {
     fun `opening a payment shows it with its category, today and every SMS behind it`() = runTest {
         ingest(Sms.PURCHASE, Sms.COMPANION)
         val vm = vm()
-        vm.open("TJK4AB12EA")
+        vm.open("TJK4AB12EA", session = 101)
         val s = vm.state.first { it.tx != null && it.sms.size == 2 }
         assertEquals(Categories.OTHER, s.category?.key)
         assertEquals(LocalDate.parse("2026-06-10"), s.today)
@@ -66,7 +66,7 @@ class TxSheetViewModelTest {
     fun `a note saved from the sheet shows at once`() = runTest {
         ingest(Sms.SEND)
         val vm = vm()
-        vm.open("TJK4AB12FB")
+        vm.open("TJK4AB12FB", session = 102)
         vm.state.first { it.tx != null }
         vm.setNote("  lunch ")
         assertEquals("lunch", vm.state.first { it.tx?.note != null }.tx?.note)
@@ -76,7 +76,7 @@ class TxSheetViewModelTest {
     fun `my own account asks about all from the name when more than one would change, and changes one at once`() = runTest {
         ingest(Sms.BANK_APP, Sms.receive("TJK4AB12LA", "EXAMPLE BANK LIMITED- APP", "3,000.00"), Sms.SEND)
         val vm = vm()
-        vm.open("TJK4AB12FC")
+        vm.open("TJK4AB12FC", session = 103)
         vm.state.first { it.tx != null }
         vm.setOwnAccount(true)
         assertEquals(PendingOwn(own = true, count = 2, name = "Example Bank Limited"), vm.state.first { it.pendingOwn != null }.pendingOwn)
@@ -84,7 +84,7 @@ class TxSheetViewModelTest {
         assertNull(vm.state.first { it.isOwnAccount }.pendingOwn)
         assertEquals(FlowKind.OWN_IN, db.transactionsDao().get("TJK4AB12LA")?.flow, "the other transfer too")
 
-        vm.open("TJK4AB12FB")
+        vm.open("TJK4AB12FB", session = 104)
         vm.state.first { it.tx?.code == "TJK4AB12FB" }
         vm.setOwnAccount(true)
         assertNull(vm.state.first { it.tx?.code == "TJK4AB12FB" && it.isOwnAccount }.pendingOwn, "one payment from that name: no question")
@@ -94,7 +94,7 @@ class TxSheetViewModelTest {
     fun `a Fuliza repayment has no own-account switch`() = runTest {
         ingest(Sms.REPAY_FULL)
         val vm = vm()
-        vm.open("TJK4AB12FF")
+        vm.open("TJK4AB12FF", session = 105)
         assertFalse(vm.state.first { it.tx != null }.canBeOwnAccount)
     }
 
@@ -103,7 +103,7 @@ class TxSheetViewModelTest {
         ingest(Sms.send("TJK4AB12KA", "500.00"), Sms.send("TJK4AB12KB", "600.00", "22/3/26 at 1:30 PM"), Sms.send("TJK4AB12KC", "700.00", "23/3/26 at 1:30 PM"))
         edits.setOwnAccount("TJK4AB12KA", own = true, allFromName = false)
         val vm = vm()
-        vm.open("TJK4AB12KA")
+        vm.open("TJK4AB12KA", session = 106)
         vm.state.first { it.tx?.code == "TJK4AB12KA" && it.isOwnAccount }
         vm.setOwnAccount(false)
         val s = vm.state.first { it.tx?.code == "TJK4AB12KA" && !it.isOwnAccount }

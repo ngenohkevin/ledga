@@ -66,7 +66,7 @@ Everything lives in `com.ledga.app.ui.design`. Until Phase 4 uses it, R8 strips 
 - **Today** is `LiveClock.today` (R34). It emits at Nairobi midnight and on `MainActivity.onResume`. Never compute "the current month" once and keep it. Text that changes during a day reads `LiveClock.hours` (just past every Nairobi hour, and on resume): Home takes its date and its greeting from that one flow, so the greeting moves on while Home stays open.
 - **Landscape (owner ruling M5).** `ShellFrame` pads `WindowInsets.safeDrawing` horizontally, so tab screens never sit under a landscape cutout or a side navigation bar. Each screen family has one `snapScreenLandscape` golden (800×360 dp). In a pane shorter than 400 dp (a phone in landscape), Transactions' search and chips are the list's first item and scroll away with it (`ActivityLandscapeTest`); People's controls always scroll with its list.
 - **Sheet screenshots.** Robolectric doesn't capture `ModalBottomSheet`'s dialog window. Snap a sheet's stateless content inside `SheetScaffold` instead (`TransactionSheetScreensTest`).
-- **Category picker.** "Apply to all" defaults on (N > 1) only when the person picks a different category; Save with the payment's own category and "apply to all" off changes nothing. The grid shows four columns while a cell holds the longest seeded word at the current text size, else three (`CategoryPickerBehaviourTest`).
+- **Category picker.** A Fuliza repayment names the service, not a payee, so it offers no "Apply to all" (owner, 2026-10-06). "Apply to all" defaults on (N > 1) only when the person picks a different category; Save with the payment's own category and "apply to all" off changes nothing. The grid shows four columns while a cell holds the longest seeded word at the current text size, else three (`CategoryPickerBehaviourTest`).
 - **One line choice (R47).** `SelectedLine.choice` (a `LineChoice`) narrows Home, Activity › Spending and People (and the
   person sheet, which says "On <line>" because People's chip sits under it), Trackers and Tracker detail. Every one of them shows `LinePicker`, the chip plus switcher sheet, which
   draws nothing on a phone with fewer than two lines. Read `LineChoice.lineId`, never `selectedId`: the choice counts only
@@ -110,7 +110,7 @@ Everything lives in `com.ledga.app.ui.design`. Until Phase 4 uses it, R8 strips 
 - **Fuliza sheet (4c).** Its rows show the date as the subtitle and the draw ("Fuliza Ksh 463") under the amount, where
   it never gives way (`FulizaSheetBehaviourTest`). A row is read as one phrase, so the draw is in that phrase too.
 - **Shared sheets keep their state (R62).** Hosts pass a saveable session id (`rememberSaveable(code) { Random.nextLong() }`);
-  `open(code, session)` reloads only for a new session. `PickerState.code` stops a stale picker frame. `OpenSheets` lives
+  `open(code, session)` reloads only for a new session; the session has no default (a clock default can repeat under Robolectric). `PickerState.code` stops a stale picker frame. `OpenSheets` lives
   in `ui.tx`.
 
 ## Screenshot tests

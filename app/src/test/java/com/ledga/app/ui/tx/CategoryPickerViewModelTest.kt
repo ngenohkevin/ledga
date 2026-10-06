@@ -58,7 +58,7 @@ class CategoryPickerViewModelTest {
     fun `a payment out is offered only spending categories, grouped in order, with its own selected`() = runTest {
         ingest(Sms.KPLC)
         val vm = vm()
-        vm.open("TJK4AB12FA")
+        vm.open("TJK4AB12FA", session = 101)
         val s = vm.state.first { it.loaded }
         assertEquals(listOf(CategoryGroup.BILLS_UTILITIES, CategoryGroup.CAR, CategoryGroup.EVERYDAY, CategoryGroup.MONEY), s.groups.map { it.group })
         assertEquals(Categories.ELECTRICITY, s.selected)
@@ -69,7 +69,7 @@ class CategoryPickerViewModelTest {
     fun `money in is offered only money-in categories`() = runTest {
         ingest(Sms.receive("TJK4AB12HC", "SAMPLE EMPLOYER LTD", "20,000.00"))
         val vm = vm()
-        vm.open("TJK4AB12HC")
+        vm.open("TJK4AB12HC", session = 102)
         assertEquals(listOf(CategoryGroup.MONEY_IN), vm.state.first { it.loaded }.groups.map { it.group })
     }
 
@@ -78,7 +78,7 @@ class CategoryPickerViewModelTest {
         ingest(academy1024, academy2048, Sms.SEND, Sms.REPAY_FULL)
 
         val many = vm()
-        many.open("TJK4AB12JA")
+        many.open("TJK4AB12JA", session = 103)
         many.state.first { it.loaded }
         many.select(Categories.SCHOOL)
         val m = many.state.first { it.selected == Categories.SCHOOL && it.counts.fromName == 2 }
@@ -87,7 +87,7 @@ class CategoryPickerViewModelTest {
         assertEquals(2, m.applyCount)
 
         val one = vm()
-        one.open("TJK4AB12FB")
+        one.open("TJK4AB12FB", session = 104)
         one.state.first { it.loaded }
         one.select(Categories.HEALTH)
         val o = one.state.first { it.selected == Categories.HEALTH && it.counts.fromName == 1 }
@@ -95,15 +95,17 @@ class CategoryPickerViewModelTest {
         assertFalse(o.applyAll, "one payment: off by default")
 
         val none = vm()
-        none.open("TJK4AB12FF")
-        assertFalse(none.state.first { it.loaded }.showApplyAll, "a Fuliza repayment names no one")
+        none.open("TJK4AB12FF", session = 3)
+        // The settled state, not the first frame: the count used to bring "Apply to all" in a moment later (owner, 2026-10-06).
+        val settled = none.state.first { it.loaded && it.counts.fromName == 1 }
+        assertFalse(settled.showApplyAll, "a Fuliza repayment names no one: moving one moves only that one")
     }
 
     @Test
     fun `saving with apply to all off changes only this payment, and on writes the rule`() = runTest {
         ingest(academy1024, academy2048)
         val single = vm()
-        single.open("TJK4AB12JA")
+        single.open("TJK4AB12JA", session = 105)
         single.state.first { it.loaded }
         single.select(Categories.SCHOOL)
         single.state.first { it.selected == Categories.SCHOOL && it.counts.fromName == 2 }
@@ -116,7 +118,7 @@ class CategoryPickerViewModelTest {
         assertTrue(db.rulesDao().all().none { it.origin == RuleOrigin.USER })
 
         val all = vm()
-        all.open("TJK4AB12JB")
+        all.open("TJK4AB12JB", session = 106)
         all.state.first { it.loaded }
         all.select(Categories.HEALTH)
         all.state.first { it.selected == Categories.HEALTH && it.counts.fromName == 2 && it.applyAll }
@@ -132,7 +134,7 @@ class CategoryPickerViewModelTest {
     fun `only this account number counts that account's payments`() = runTest {
         ingest(academy1024, academy1024Again, academy2048)
         val vm = vm()
-        vm.open("TJK4AB12JA")
+        vm.open("TJK4AB12JA", session = 107)
         vm.state.first { it.loaded }
         vm.select(Categories.SCHOOL)
         val s = vm.state.first { it.selected == Categories.SCHOOL && it.counts.forAccount == 2 }
@@ -148,7 +150,7 @@ class CategoryPickerViewModelTest {
     fun `a new category appears in its group, selected`() = runTest {
         ingest(Sms.SEND)
         val vm = vm()
-        vm.open("TJK4AB12FB")
+        vm.open("TJK4AB12FB", session = 108)
         vm.state.first { it.loaded }
         vm.startNewCategory(CategoryGroup.EVERYDAY)
         vm.createCategory("Church")
@@ -161,7 +163,7 @@ class CategoryPickerViewModelTest {
     fun `search narrows the categories by name`() = runTest {
         ingest(Sms.KPLC)
         val vm = vm()
-        vm.open("TJK4AB12FA")
+        vm.open("TJK4AB12FA", session = 109)
         vm.state.first { it.loaded }
         vm.setQuery("wat")
         assertEquals(
@@ -179,7 +181,7 @@ class CategoryPickerViewModelTest {
         )
         edits.setCategory("TJK4AB12KB", Categories.RENT, ApplyTo.THIS_ONE)
         val vm = vm()
-        vm.open("TJK4AB12KA")
+        vm.open("TJK4AB12KA", session = 110)
         val s = vm.state.first { it.loaded && it.counts.fromName > 0 }
         assertEquals(Categories.SENT_TO_PEOPLE, s.selected)
         assertFalse(s.applyAll, "the current category: apply to all starts off")
