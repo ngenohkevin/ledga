@@ -28,7 +28,7 @@ android {
     defaultConfig {
         applicationId = "com.ledga.app"
         minSdk = 26
-        targetSdk = 34
+        targetSdk = 35
         versionCode = 21
         versionName = "1.6.0"
 
@@ -36,6 +36,11 @@ android {
     }
 
     buildTypes {
+        debug {
+            // R25: debug builds are their own app ("Ledga dev"), so testing never touches the real v1 install.
+            applicationIdSuffix = ".dev"
+            versionNameSuffix = "-dev"
+        }
         release {
             isMinifyEnabled = true
             isShrinkResources = true
@@ -90,9 +95,7 @@ dependencies {
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-tooling-preview")
-    implementation("androidx.compose.ui:ui-text-google-fonts")
     implementation("androidx.compose.material3:material3")
-    implementation("androidx.compose.material:material-icons-extended")
     debugImplementation("androidx.compose.ui:ui-tooling")
 
     // Activity & Lifecycle
@@ -122,15 +125,6 @@ dependencies {
     implementation("androidx.work:work-runtime-ktx:2.11.1")
     implementation("androidx.hilt:hilt-work:1.2.0")
     ksp("androidx.hilt:hilt-compiler:1.2.0")
-
-    // Vico Charts
-    implementation("com.patrykandpatrick.vico:compose-m3:2.1.3")
-
-    // Google Drive Backup
-    implementation("com.google.android.gms:play-services-auth:21.3.0")
-    implementation("com.google.api-client:google-api-client-android:2.7.2")
-    implementation("com.google.apis:google-api-services-drive:v3-rev20241206-2.0.0")
-    implementation("com.google.http-client:google-http-client-gson:1.45.3")
 
     // Splash Screen
     implementation("androidx.core:core-splashscreen:1.0.1")

@@ -1,168 +1,24 @@
 package com.ledga.app
 
-import android.Manifest
-import android.content.Context
-import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.unit.Density
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.ui.Modifier
-import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
-import androidx.navigation.compose.currentBackStackEntryAsState
-import androidx.navigation.compose.rememberNavController
-import androidx.core.content.ContextCompat
-import com.ledga.app.data.repository.AccountsRepository
-import com.ledga.app.data.repository.FontScale
-import com.ledga.app.data.repository.HistoricalBackfillRepository
-import com.ledga.app.data.repository.SettingsRepository
-import com.ledga.app.data.repository.SmsImporter
-import com.ledga.app.data.repository.TransactionRepository
-import com.ledga.app.ui.navigation.AppNavigation
-import com.ledga.app.ui.navigation.HomeRoute
-import com.ledga.app.ui.navigation.LedgaBottomNavBar
-import com.ledga.app.ui.navigation.OnboardingRoute
-import com.ledga.app.ui.theme.LedgaTheme
-import com.ledga.app.ui.theme.ThemeMode
+import com.ledga.app.ui.app.AppViewModel
+import com.ledga.app.ui.app.LedgaRoot
 import dagger.hilt.android.AndroidEntryPoint
-import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.launch
-import javax.inject.Inject
-
-@HiltViewModel
-class MainViewModel @Inject constructor(
-    settingsRepository: SettingsRepository,
-    accountsRepository: AccountsRepository,
-    backfillRepository: HistoricalBackfillRepository,
-    transactionRepository: TransactionRepository,
-    smsImporter: SmsImporter,
-    @ApplicationContext context: Context,
-) : ViewModel() {
-
-    val themeMode: StateFlow<ThemeMode> = settingsRepository.getThemeMode()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ThemeMode.SYSTEM)
-
-    val hasCompletedOnboarding: StateFlow<Boolean> = settingsRepository.hasCompletedOnboarding()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
-
-    val fontScale: StateFlow<FontScale> = settingsRepository.getFontScale()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), FontScale.SYSTEM)
-
-    init {
-        viewModelScope.launch(Dispatchers.IO) {
-            // Keep account↔SIM links fresh: slot moves and eSIM re-provisions
-            // change the subscription id, and phone numbers become readable
-            // once READ_PHONE_STATE is granted.
-            runCatching { accountsRepository.syncActiveSubscriptions() }
-
-            // One-time silent attribution of history imported before the
-            // importer recorded each SMS's SIM. Only touches rows that are
-            // still unassigned, so user attributions always survive.
-            val hasReadSms = ContextCompat.checkSelfPermission(
-                context, Manifest.permission.READ_SMS
-            ) == PackageManager.PERMISSION_GRANTED
-            val onboarded = settingsRepository.hasCompletedOnboarding().first()
-
-            // Catch-up sync: pick up any M-Pesa SMS the receiver missed
-            // (battery killers, force-stop) since the last run. Incremental
-            // and duplicate-safe, so it runs on every start.
-            if (hasReadSms && onboarded) {
-                runCatching { smsImporter.catchUp() }
-            }
-
-            if (hasReadSms && onboarded && !settingsRepository.isSimBackfillDone().first()) {
-                runCatching { backfillRepository.runAutoBackfill(onlyUnassigned = true) }
-                    .onSuccess { settingsRepository.setSimBackfillDone() }
-            }
-
-            // Retroactive parser fixups: when a parser bug fix lands (e.g. KCB
-            // withdrawals storing the savings-pocket balance as the wallet
-            // balance), stored rows are re-derived from their rawSms once.
-            // User-set fields (category, account, note) are preserved.
-            val fixup = settingsRepository.currentParserFixup
-            if (onboarded && settingsRepository.getParserFixupVersion().first() < fixup) {
-                runCatching { transactionRepository.reparseAllTransactions() }
-                    .onSuccess { settingsRepository.setParserFixupVersion(fixup) }
-            }
-        }
-    }
-}
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+    private val app: AppViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
-        installSplashScreen()
+        // The splash stays until the database is open and the appearance is known (no light flash in dark mode).
+        installSplashScreen().setKeepOnScreenCondition { !app.ready.value }
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        setContent {
-            val viewModel: MainViewModel = hiltViewModel()
-            val themeMode by viewModel.themeMode.collectAsState()
-            val hasCompletedOnboarding by viewModel.hasCompletedOnboarding.collectAsState()
-            val fontScale by viewModel.fontScale.collectAsState()
-
-            LedgaTheme(themeMode = themeMode) {
-                val density = LocalDensity.current
-                val scaledDensity = if (fontScale == FontScale.SYSTEM) density
-                else Density(density.density, fontScale.scale)
-
-                CompositionLocalProvider(LocalDensity provides scaledDensity) {
-                    val navController = rememberNavController()
-                    val navBackStackEntry by navController.currentBackStackEntryAsState()
-                    val currentRoute = navBackStackEntry?.destination?.route
-
-                    val startDestination: Any = if (hasCompletedOnboarding) HomeRoute else OnboardingRoute
-
-                    // Tabs are visible on tab roots only (Home / Activity / Insights / You).
-                    val showBottomBar = currentRoute != null &&
-                            (currentRoute.endsWith(".HomeRoute") ||
-                                    currentRoute.endsWith(".ActivityRoute") ||
-                                    currentRoute.endsWith(".InsightsRoute") ||
-                                    currentRoute.endsWith(".YouRoute"))
-
-                    // Box overlay — the PillTabBar is floating, so it sits ON TOP of
-                    // content rather than displacing it. Screens add 120dp bottom
-                    // padding themselves to clear the bar.
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(MaterialTheme.colorScheme.background),
-                    ) {
-                        AppNavigation(
-                            navController = navController,
-                            startDestination = startDestination,
-                            modifier = Modifier.fillMaxSize(),
-                        )
-                        if (showBottomBar) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize(),
-                                contentAlignment = Alignment.BottomCenter,
-                            ) {
-                                LedgaBottomNavBar(navController = navController)
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        setContent { LedgaRoot(app) }
     }
 }

@@ -1,6 +1,7 @@
 package com.ledga.app.work
 
 import android.content.Context
+import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.OneTimeWorkRequest
 import androidx.work.OneTimeWorkRequestBuilder
@@ -8,12 +9,15 @@ import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import com.ledga.app.data.capture.InboxScanner
 import com.ledga.app.data.capture.ScanMode
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedInject
 import kotlinx.coroutines.CancellationException
 
-/** One inbox scan (spec §9.1) as a job that survives leaving the screen; progress uses the rebuild's keys. Task 8 adds @HiltWorker. */
-class InboxScanWorker(
-    context: Context,
-    params: WorkerParameters,
+/** One inbox scan (spec §9.1) as a job that survives leaving the screen; progress uses the rebuild's keys. */
+@HiltWorker
+class InboxScanWorker @AssistedInject constructor(
+    @Assisted context: Context,
+    @Assisted params: WorkerParameters,
     private val scanner: InboxScanner,
 ) : CoroutineWorker(context, params) {
 

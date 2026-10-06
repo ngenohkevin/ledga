@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Palette C canvas (DarkColors.canvas). -->
+    <color name="ledga_canvas">#FF080B0A</color>
+</resources>

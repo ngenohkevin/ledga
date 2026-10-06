@@ -1,6 +1,7 @@
 package com.ledga.app.work
 
 import android.content.Context
+import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
@@ -8,15 +9,18 @@ import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import com.ledga.app.data.derive.Deriver
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedInject
 import kotlinx.coroutines.CancellationException
 
 /**
  * Full history rebuild (spec §7.2): after a parser/derivation version change, the migration, a restore,
- * or You -> Data. Progress feeds the "Updating your history…" banner. Task 8 adds @HiltWorker.
+ * or You -> Data. Progress feeds the "Updating your history…" banner.
  */
-class RebuildWorker(
-    context: Context,
-    params: WorkerParameters,
+@HiltWorker
+class RebuildWorker @AssistedInject constructor(
+    @Assisted context: Context,
+    @Assisted params: WorkerParameters,
     private val deriver: Deriver,
 ) : CoroutineWorker(context, params) {
 

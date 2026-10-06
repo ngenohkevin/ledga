@@ -1,31 +1,50 @@
 package com.ledga.app.di
 
+import android.Manifest
 import android.content.ContentResolver
 import android.content.Context
+import android.content.pm.PackageManager
+import androidx.core.content.ContextCompat
 import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.preferencesDataStore
+import androidx.datastore.preferences.preferencesDataStoreFile
+import androidx.work.WorkManager
+import com.ledga.app.data.settings.SettingsStore
+import com.ledga.app.data.settings.V1SettingsMigration
+import com.ledga.app.startup.SmsAccess
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import java.time.Clock
 import javax.inject.Singleton
-
-private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "ledga_settings")
 
 @Module
 @InstallIn(SingletonComponent::class)
 object AppModule {
+    /** v1's own settings file, read through the v2 keys (R15/R30). The only DataStore on it. */
+    @Provides
+    @Singleton
+    fun settingsDataStore(@ApplicationContext context: Context): DataStore<Preferences> =
+        PreferenceDataStoreFactory.create(migrations = listOf(V1SettingsMigration)) {
+            context.preferencesDataStoreFile(SettingsStore.FILE_NAME)
+        }
+
+    @Provides
+    fun contentResolver(@ApplicationContext context: Context): ContentResolver = context.contentResolver
 
     @Provides
     @Singleton
-    fun provideDataStore(@ApplicationContext context: Context): DataStore<Preferences> {
-        return context.dataStore
-    }
+    fun clock(): Clock = Clock.systemUTC()
 
     @Provides
-    fun provideContentResolver(@ApplicationContext context: Context): ContentResolver {
-        return context.contentResolver
+    @Singleton
+    fun workManager(@ApplicationContext context: Context): WorkManager = WorkManager.getInstance(context)
+
+    @Provides
+    fun smsAccess(@ApplicationContext context: Context): SmsAccess = SmsAccess {
+        ContextCompat.checkSelfPermission(context, Manifest.permission.READ_SMS) == PackageManager.PERMISSION_GRANTED
     }
 }

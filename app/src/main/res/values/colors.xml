@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Palette C canvas (LightColors.canvas): the window behind Compose, so the first frame matches the app. -->
+    <color name="ledga_canvas">#FFEFF2F1</color>
+</resources>

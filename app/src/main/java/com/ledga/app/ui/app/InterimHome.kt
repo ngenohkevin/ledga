@@ -1,5 +1,8 @@
 package com.ledga.app.ui.app
 
+import android.Manifest
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -12,8 +15,14 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.app.ActivityCompat
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.compose.LifecycleResumeEffect
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import com.ledga.app.data.derive.LedgerQueries
 import com.ledga.app.data.room.LedgaDatabase
@@ -33,6 +42,7 @@ import com.ledga.app.work.HistoryProgress
 import com.ledga.core.time.InstantRange
 import com.ledga.core.time.PeriodType
 import com.ledga.core.time.Periods
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -41,6 +51,7 @@ import kotlinx.coroutines.flow.stateIn
 import java.time.Clock
 import java.time.Instant
 import java.util.Locale
+import javax.inject.Inject
 
 data class InterimHomeState(
     val smsGranted: Boolean = true,
@@ -103,8 +114,8 @@ fun InterimHome(state: InterimHomeState, onAllowSms: () -> Unit, modifier: Modif
 /** "1,111". */
 internal fun grouped(n: Int): String = String.format(Locale.ENGLISH, "%,d", n)
 
-/** Task 8 makes this a @HiltViewModel (Hilt would check it against v1's graph before then). */
-class InterimHomeViewModel(
+@HiltViewModel
+class InterimHomeViewModel @Inject constructor(
     db: LedgaDatabase,
     ledger: LedgerQueries,
     private val work: BackgroundWork,
@@ -134,4 +145,27 @@ class InterimHomeViewModel(
         refreshAccess()
         work.importInbox()
     }
+}
+
+/** Home's tab: the ViewModel, the SMS permission request, and a refresh when the user comes back from Settings. */
+@Composable
+fun InterimHomeRoute(vm: InterimHomeViewModel = hiltViewModel()) {
+    val state by vm.state.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    val ask = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
+        if (result[Manifest.permission.READ_SMS] == true) {
+            vm.onSmsGranted()
+        } else {
+            val activity = context.findActivity()
+            // Denied for good: Android no longer shows the dialog, so the app's settings page is the only way left.
+            if (activity != null && !ActivityCompat.shouldShowRequestPermissionRationale(activity, Manifest.permission.READ_SMS)) {
+                context.openAppSettings()
+            }
+        }
+    }
+    LifecycleResumeEffect(Unit) {
+        vm.refreshAccess()
+        onPauseOrDispose { }
+    }
+    InterimHome(state, onAllowSms = { ask.launch(SmsPermissions.ALL) })
 }

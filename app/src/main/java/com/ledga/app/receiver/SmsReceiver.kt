@@ -5,101 +5,71 @@ import android.content.Context
 import android.content.Intent
 import android.provider.Telephony
 import android.telephony.SubscriptionManager
-import com.ledga.app.data.parser.MpesaSmsParser
-import com.ledga.app.data.parser.ParseResult
-import com.ledga.app.data.repository.AccountsRepository
-import com.ledga.app.data.repository.SettingsRepository
-import com.ledga.app.data.repository.TransactionRepository
-import com.ledga.app.worker.TransactionAlerts
+import android.util.Log
+import com.ledga.app.data.ingest.RawSms
+import com.ledga.app.data.ingest.SmsIngestor
+import com.ledga.app.data.lines.LinesRepository
+import com.ledga.app.data.room.SmsSource
+import com.ledga.core.parse.MpesaParser
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import java.time.Clock
 import javax.inject.Inject
 
+/** One message, or one part of one, as SMS_RECEIVED delivers it. */
+data class SmsPart(val sender: String, val body: String)
+
+object ReceivedSms {
+    /** Multi-part messages arrive as parts from one sender: join them in order. Only M-Pesa senders are kept (spec §14). */
+    fun join(parts: List<SmsPart>): List<SmsPart> =
+        parts.groupBy { it.sender }
+            .filterKeys(MpesaParser::isMpesaSender)
+            .map { (sender, group) -> SmsPart(sender, group.joinToString("") { it.body }) }
+
+    /** The SIM from SMS_RECEIVED's extras: the modern index, then the older "subscription" key; null when absent. */
+    fun subscriptionId(intent: Intent): Int? {
+        val modern = intent.getIntExtra(SubscriptionManager.EXTRA_SUBSCRIPTION_INDEX, -1)
+        if (modern >= 0) return modern
+        return intent.getIntExtra("subscription", -1).takeIf { it >= 0 }
+    }
+}
+
+/**
+ * Spec §9.1: SMS_RECEIVED at priority 999 (manifest). Joins multi-part messages, resolves the line and hands them to
+ * `SmsIngestor`, which dedupes against the inbox scans. Phase 5 adds alerts for new codes here.
+ */
 @AndroidEntryPoint
 class SmsReceiver : BroadcastReceiver() {
-
-    @Inject
-    lateinit var transactionRepository: TransactionRepository
-
-    @Inject
-    lateinit var transactionAlerts: TransactionAlerts
-
-    @Inject
-    lateinit var settingsRepository: SettingsRepository
-
-    @Inject
-    lateinit var accountsRepository: AccountsRepository
+    @Inject lateinit var ingestor: SmsIngestor
+    @Inject lateinit var lines: LinesRepository
+    @Inject lateinit var clock: Clock
 
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action != Telephony.Sms.Intents.SMS_RECEIVED_ACTION) return
-
-        val messages = Telephony.Sms.Intents.getMessagesFromIntent(intent)
-        val pendingResult = goAsync()
-
-        CoroutineScope(Dispatchers.IO).launch {
+        val parts = Telephony.Sms.Intents.getMessagesFromIntent(intent).orEmpty()
+            .map { SmsPart(it.displayOriginatingAddress.orEmpty(), it.displayMessageBody.orEmpty()) }
+        val messages = ReceivedSms.join(parts)
+        if (messages.isEmpty()) return
+        val subscription = ReceivedSms.subscriptionId(intent)
+        val pending = goAsync()
+        CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
             try {
-                // Group message parts by sender (multi-part SMS).
-                // SubscriptionId is per-message but identical across parts of the
-                // same SMS — keep the first valid one we see per sender.
-                val partsBySender = messages.groupBy { it.displayOriginatingAddress }
-
-                // Some OEMs ship the broadcast without the subscription extra;
-                // resolveSubscriptionId falls back to the sole active SIM.
-                val subscriptionId =
-                    accountsRepository.resolveSubscriptionId(subscriptionIdFromIntent(intent))
-
-                for ((sender, parts) in partsBySender) {
-                    if (!MpesaSmsParser.isMpesaMessage(sender ?: "")) continue
-
-                    val body = parts.joinToString("") { it.displayMessageBody }
-                    val account = accountsRepository.getOrCreateForSubscription(subscriptionId)
-
-                    when (val result = MpesaSmsParser.parse(body, System.currentTimeMillis())) {
-                        is ParseResult.Success -> {
-                            transactionRepository.insertTransaction(
-                                parsed = result.transaction,
-                                accountId = account?.id,
-                            )
-                            val largeTxnEnabled = settingsRepository.getLargeTransactionAlertEnabled().first()
-                            val largeTxnThreshold = settingsRepository.getLargeTransactionThreshold().first()
-                            val budgetEnabled = settingsRepository.getBudgetAlertsEnabled().first()
-                            transactionAlerts.checkAlerts(
-                                context = context,
-                                transaction = result.transaction,
-                                largeTransactionThreshold = largeTxnThreshold,
-                                largeTransactionEnabled = largeTxnEnabled,
-                                budgetAlertsEnabled = budgetEnabled
-                            )
-                        }
-                        is ParseResult.Failure -> {
-                            // Filtered (balance check etc) — quietly drop.
-                        }
-                    }
-                }
+                val lineId = lines.lineFor(lines.resolve(subscription))
+                val now = clock.instant()
+                ingestor.ingestAll(messages.map { RawSms(it.sender, it.body, now, subscription, lineId, SmsSource.RECEIVER) })
+            } catch (e: Exception) {
+                // Nothing is lost: the next start-up catch-up reads the same message from the inbox.
+                Log.w(TAG, "could not store an incoming M-Pesa SMS", e)
             } finally {
-                pendingResult.finish()
+                pending.finish()
             }
         }
     }
 
-    /**
-     * Reads the subscription id off the SMS_RECEIVED intent.
-     *
-     * Android writes the subscription as an extra with key "subscription"
-     * (older builds) or [SubscriptionManager.EXTRA_SUBSCRIPTION_INDEX]
-     * (modern). We check both so we work on the broad device population
-     * Ledga targets (SDK 26+).
-     */
-    private fun subscriptionIdFromIntent(intent: Intent): Int {
-        val invalid = SubscriptionManager.INVALID_SUBSCRIPTION_ID
-        val modern = intent.getIntExtra(
-            SubscriptionManager.EXTRA_SUBSCRIPTION_INDEX,
-            invalid
-        )
-        if (modern != invalid) return modern
-        return intent.getIntExtra("subscription", invalid)
+    private companion object {
+        const val TAG = "Ledga"
     }
 }
