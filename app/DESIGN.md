@@ -24,10 +24,7 @@ Everything lives in `com.ledga.app.ui.design`. Until Phase 4 uses it, R8 strips 
   - Day headers: `DateLabels.dayHeader(day, today)`.
   - TalkBack: `DateLabels.txSpeech(cents, row.flow, name, at, today)`, passed to `TxRow(speech = …)`. The verb follows the `FlowKind`: only SPEND is "spent".
 - Transaction rows: category in `subtitle`, time in `subtitleTail`. The tail never truncates and the subtitle ellipsizes before it, so keep the tail short (a time). For a Fuliza row the note replaces the category (spec §10.4): subtitle "Fuliza Ksh 300", tail "9:15 AM".
-- Paged day cards:
-  - the header item is `Modifier.cardSegment(Segment.Top)`;
-  - rows are `Middle`, with `dividerAbove = true` after the first;
-  - the last row is `Bottom`.
+- Paged day cards (R40): `PagingData<TxRow>.toActivityItems()` makes the items. The header item is `cardSegment(Segment.Top)`; rows are `Middle`, with `dividerAbove = true` after the first; the end cap is its own `Bottom` item, as tall as the corner (`Radii.card`, 24 dp: a shorter cap starts mid-arc and the edge steps in, `DayCardTest`) (`ActivityItem.End`, or `Day.closesPrevious`). Paging can't know a day's last row until the next page arrives, so no row is ever `Bottom`. `cardSegment` clips what an item draws after it (a ripple, a pressed colour) to the card's corners.
 - Charts (R17) only draw; `:core/chart` supplies buckets and averages.
   - `MiniBars` / `SparkBars`: Home and tracker tiles.
   - `ColumnChart`: Spending, the stacked Trackers chart, Tracker detail.
@@ -55,6 +52,21 @@ Everything lives in `com.ledga.app.ui.design`. Until Phase 4 uses it, R8 strips 
 - A one-question screen (onboarding) scrolls its content and pins its actions to the bottom, so they're reachable at 1.3× and with the keyboard open. Keep an outlined field's label short: a label that wraps at 1.3× runs into the border (`OnboardingLayoutTest`).
 - Pixel assertions on Robolectric: draw the window's root view into a `Bitmap` (`ChartContrastTest`); Compose's `captureToImage` uses PixelCopy and times out under software rendering.
 - Until 4b–4d land, `ComingNext` holds the Activity, Trackers and You tabs and `InterimHome` holds Home (R32). Development builds only.
+- **Activity (4b).** `ActivityTab` hosts three segments, each with its own ViewModel: Transactions in `ActivityViewModel`, `SpendingViewModel`, `PeopleViewModel`.
+  - Spending's "tap a category" calls `ActivityViewModel.showTransactions(filter)`.
+  - Flow chips are a single choice (`ChoiceChip(role = Role.RadioButton)` in a `selectableGroup`); line chips toggle (`Role.Checkbox`).
+- **Shared sheets (4b, for 4c and 4d).**
+  - `TransactionSheetHost(code, onDismiss, onHidden, onChangeCategory)` and `CategoryPickerHost(code, onDismiss)` own their ViewModels (`hiltViewModel(key = …)`): a screen holds only the open code, in `rememberSaveable`.
+  - After Hide, the screen offers Undo with its own `SnackbarHost`, as `ActivityTab` does. Every M3 sheet is its own dialog window above the screen, so Hide also closes any sheet under the transaction sheet (the person sheet) before the snackbar shows (`OpenSheets.afterHide`).
+  - The picker opens on top of the transaction sheet; the transaction sheet opens on top of the person sheet.
+- **What a transaction says** comes only from `TxText`: title, row subtitle (or the Fuliza note), leading icon or initials, chips, facts, TalkBack phrase and share text.
+  - Display names go through `NameFormat.display` (R44); stored names stay as M-Pesa wrote them.
+  - List rows never show the balance; the sheet's "Balance after" does.
+  - Share sends the payment itself (title, amount and category, date, code, a paybill's account, fees): never the balance, Fuliza borrowing, the line or a note.
+- **Today** is `LiveClock.today` (R34). It emits at Nairobi midnight and on `MainActivity.onResume`. Never compute "the current month" once and keep it.
+- **Landscape (owner ruling M5).** `ShellFrame` pads `WindowInsets.safeDrawing` horizontally, so tab screens never sit under a landscape cutout or a side navigation bar. Each screen family has one `snapScreenLandscape` golden (800×360 dp). In a pane shorter than 400 dp (a phone in landscape), Transactions' search and chips are the list's first item and scroll away with it (`ActivityLandscapeTest`); People's controls always scroll with its list.
+- **Sheet screenshots.** Robolectric doesn't capture `ModalBottomSheet`'s dialog window. Snap a sheet's stateless content inside `SheetScaffold` instead (`TransactionSheetScreensTest`).
+- **Category picker.** "Apply to all" defaults on (N > 1) only when the person picks a different category; Save with the payment's own category and "apply to all" off changes nothing. The grid shows four columns while a cell holds the longest seeded word at the current text size, else three (`CategoryPickerBehaviourTest`).
 
 ## Screenshot tests
 

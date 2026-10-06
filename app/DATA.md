@@ -47,6 +47,21 @@
 - **Settings.** `SettingsStore` reads v1's own DataStore file `ledga_settings` through v2 keys. `V1SettingsMigration` maps v1's values once and removes every v1 key (R15/R30). There is one DataStore per file, from `di/AppModule`.
 - **Debug builds** are `com.ledga.app.dev` ("Ledga dev", R25). On a phone they import the inbox through onboarding and never touch the real install.
 
+## Activity (Phase 4b)
+
+- **Reads.** `LedgerQueries.transactions(TransactionFilter)` and `dayTotals(filter)` share one SQL filter (`TX_FILTER` in `dao/TxFilterSql.kt`), so a day header always sums exactly the rows under it.
+  - The chips follow the spending definition (R38): Money out = SPEND, Money in = INCOME, Fuliza = any payment Fuliza touched. Transfers show under All.
+  - A header's Out is spent including fees; its In is money in.
+  - SQL day and month buckets add Nairobi's fixed +3 h (`NAIROBI_OFFSET_MS`, R45).
+  - People (R42) are sends (`SEND`, `GLOBAL_SEND`) and receipts (`RECEIVE`, `GLOBAL_RECEIVE`), reversed ones excluded, grouped by `counterpartyKey`.
+- **Writes.** `TransactionEdits` is the only writer of `overrides` and `rules` outside migration and import.
+  - It merges with the existing override. After a rule change it calls `Deriver.reclassifyAll()`; after a note, hidden flag or line change, `Deriver.saveOverride`. It never touches `sms`.
+  - **"Apply to all N from <name>"** (R36) writes a USER `NAME_CONTAINS` rule, replacing a USER rule with the same field and pattern, and clears the category of every override the rule will label. N is simulated with `Derivation.reclassify` under the would-be rules, so it is exactly what changes.
+  - **"Only this account number"** (R35) is a `NAME_AND_ACCOUNT` rule (pattern: name, U+001F, account). `ACCOUNT_EQUALS` remains for v1's imported paybill rules.
+  - **"My own account"** for all from a name (R37) is a USER `MARK_OWN_ACCOUNT` `NAME_CONTAINS` rule on the name. Its count is the payments that change (those that can be own-account and aren't already where the switch puts them); with one, the sheet changes it at once with an override. Turning it off for all deletes only that rule, clears the name's `ownAccount` overrides, and writes an `ownAccount = false` exception on any of its payments a broader rule of the person's (v1's imports bring some) still marks own: payments from other names never change.
+  - **New categories** (R43): key `user_<slug>[_n]`, origin USER, icon `fluent_label`, untracked; a duplicate name in the same group reuses that category.
+- **Live periods.** `LiveClock` (R34) is a Hilt singleton; `MainActivity.onResume` pokes it.
+
 ## Phase 5 acceptance step (from the 2026-10-05 Phase 1 review)
 
 The v1 export can't prove inbox-wide coverage: v1 never stored the messages its parser rejected. So after the first full inbox rescan **on the owner's phone**, record:
