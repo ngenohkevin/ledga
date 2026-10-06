@@ -92,6 +92,19 @@ class HomeViewModelTest {
     }
 
     @Test
+    fun `the greeting moves on with the hour while Home stays open`() = runTest {
+        clock.instant = Instant.parse("2026-03-25T08:59:30Z") // 11:59:30 in Nairobi
+        val ticks = Channel<Unit>()
+        val vm = vm(LiveClock(clock) { ticks.receive() })
+        assertEquals("Good morning", vm.ui.first { it.loaded }.greeting)
+        clock.instant = Instant.parse("2026-03-25T09:00:00.001Z")
+        ticks.send(Unit) // just past noon
+        // A later change shows the greeting the tick left, without waiting on one that may never come.
+        vm.setPeriod(PeriodType.WEEK)
+        assertEquals("Good afternoon", vm.ui.first { it.spending.type == PeriodType.WEEK }.greeting)
+    }
+
+    @Test
     fun `the chosen line narrows Home, and from-line shows only under All lines`() = runTest {
         twoLines(db)
         db.transactionsDao().upsertAll(

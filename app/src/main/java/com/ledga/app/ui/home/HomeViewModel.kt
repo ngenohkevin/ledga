@@ -35,6 +35,9 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.merge
+import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
@@ -106,6 +109,10 @@ class HomeViewModel @Inject constructor(
     /** When Home last came to the screen: the greeting's hour (R60). */
     private val resumedAt = MutableStateFlow(live.now())
 
+    /** One timer for Home: the date and the greeting both move on from it, so a greeting changes while Home stays open. */
+    private val hours = live.hours.shareIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), replay = 1)
+    private val today = hours.map { Periods.dateOf(it) }.distinctUntilChanged()
+
     private data class Frame(val today: LocalDate, val line: LineChoice, val type: PeriodType)
 
     private data class Content(
@@ -124,7 +131,7 @@ class HomeViewModel @Inject constructor(
 
     /** Re-read whenever the day, the line or the segment changes: the running period's start comes from the clock then. */
     @OptIn(ExperimentalCoroutinesApi::class)
-    private val content: Flow<Content> = combine(live.today, line.choice, period) { t, ch, p -> Frame(t, ch, p) }
+    private val content: Flow<Content> = combine(today, line.choice, period) { t, ch, p -> Frame(t, ch, p) }
         .distinctUntilChanged()
         .flatMapLatest { f ->
             val now = live.now()
@@ -145,7 +152,7 @@ class HomeViewModel @Inject constructor(
         combine(smsGranted, smsBlocked, notifyAsk, notifyBlocked) { a, b, c, d -> Access(a, b, c, d) },
         settings.settings,
         combine(work.history, work.legacyImportFailed, db.transactionsDao().observeSpan()) { h, failed, span -> Background(h, failed, span.count > 0) },
-        resumedAt,
+        merge(hours, resumedAt),
     ) { c, a, s, bg, at ->
         val choice = c.frame.line
         HomeUi(
