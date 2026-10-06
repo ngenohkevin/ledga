@@ -23,7 +23,7 @@ Everything lives in `com.ledga.app.ui.design`. Until Phase 4 uses it, R8 strips 
   - `today` is `DateLabels.nairobiDate(now)`, with `now` from the injected clock. Never `LocalDate.now()`: that uses the device zone and breaks the Nairobi guarantee around midnight.
   - Day headers: `DateLabels.dayHeader(day, today)`.
   - TalkBack: `DateLabels.txSpeech(cents, row.flow, name, at, today)`, passed to `TxRow(speech = …)`. The verb follows the `FlowKind`: only SPEND is "spent".
-- Transaction rows: category in `subtitle`, time in `subtitleTail`. The tail never truncates; the subtitle ellipsizes before it. In notes put money first ("Fuliza Ksh 300 · Groceries").
+- Transaction rows: category in `subtitle`, time in `subtitleTail`. The tail never truncates and the subtitle ellipsizes before it, so keep the tail short (a time). For a Fuliza row the note replaces the category (spec §10.4): subtitle "Fuliza Ksh 300", tail "9:15 AM".
 - Paged day cards:
   - the header item is `Modifier.cardSegment(Segment.Top)`;
   - rows are `Middle`, with `dividerAbove = true` after the first;

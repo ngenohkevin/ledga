@@ -48,7 +48,7 @@ private fun DaySpecimen() {
             speech = "s", modifier = Modifier.cardSegment(Segment.Middle, dividerAbove = true), subtitleTail = "11:02 AM",
         )
         TxRow(
-            Leading.Icon("fluent_shopping_cart"), "Naivas Supermarket Westlands", "Fuliza Ksh 300 · Groceries",
+            Leading.Icon("fluent_shopping_cart"), "Naivas Supermarket Westlands", "Fuliza Ksh 300",
             85_000, inflow = false, speech = "s", modifier = Modifier.cardSegment(Segment.Bottom, dividerAbove = true),
             subtitleTail = "9:15 AM",
         )

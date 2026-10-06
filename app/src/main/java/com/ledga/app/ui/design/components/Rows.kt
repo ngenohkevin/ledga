@@ -117,8 +117,8 @@ fun ValueRow(
 
 /**
  * A transaction row (spec §10.4): outflows in ink with a minus (U+2212), inflows in inflow green with a "+".
- * Pass the category as [subtitle] and the time as [subtitleTail], so the time stays whole at large font scales;
- * in notes put money first ("Fuliza Ksh 300 · Groceries").
+ * Pass the category (or a Fuliza note, "Fuliza Ksh 300") as [subtitle] and the time as [subtitleTail], so the
+ * time stays whole at large font scales. Keep the tail short: it never truncates.
  */
 @Composable
 fun TxRow(
