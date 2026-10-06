@@ -39,7 +39,7 @@ private fun ThemeSpecimen() {
     val swatches = listOf(
         "canvas" to c.canvas, "surface" to c.surface, "plate" to c.plate, "primary" to c.primary,
         "primarySoft" to c.primarySoft, "inflow" to c.inflow, "danger" to c.danger, "dangerSoft" to c.dangerSoft,
-        "warning" to c.warning, "warningSoft" to c.warningSoft, "barTrack" to c.barTrack, "barMuted" to c.barMuted,
+        "warning" to c.warning, "warningSoft" to c.warningSoft, "barTrack" to c.barTrack,
     )
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         swatches.chunked(4).forEach { row ->

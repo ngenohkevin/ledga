@@ -2,7 +2,6 @@ package com.ledga.app.ui.design.tokens
 
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.lerp
 import com.ledga.core.model.Categories
 
@@ -74,8 +73,6 @@ object CategoryPalette {
         }
     }
 
-    /** The colour at 40 % over [over], made opaque: un-selected bars in a single-series chart (tracker detail mockup). */
-    fun soft(color: Color, over: Color): Color = color.copy(alpha = 0.40f).compositeOver(over)
 
     internal fun lift(color: Color): Color = lerp(color, Color.White, 0.35f)
 

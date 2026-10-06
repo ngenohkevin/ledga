@@ -12,10 +12,13 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.ledga.app.ui.design.theme.LedgaTheme
+import com.ledga.app.ui.design.tokens.ChartTones
+import androidx.compose.runtime.remember
 
 /**
  * A small bar strip with no axes (spec §10.6): Home's 6-period spending bars and the tracker tiles' spark bars.
- * Bars use [normalColor]; [highlightIndex] uses [color]; [inProgressIndex] is hatched in [color]. Zero bars aren't drawn.
+ * Bars draw in [color]'s soft tone and the [highlightIndex] bar in its strong tone; the [inProgressIndex] bar is hatched in
+ * the strong tone. Every bar is at least 3:1 against the card (R27). Zero bars aren't drawn.
  */
 @Composable
 fun MiniBars(
@@ -24,7 +27,6 @@ fun MiniBars(
     highlightIndex: Int? = null,
     inProgressIndex: Int? = null,
     color: Color = LedgaTheme.colors.chartPrimary,
-    normalColor: Color = LedgaTheme.colors.barTrack,
     height: Dp = 64.dp,
     gap: Dp = 8.dp,
     cornerTop: Dp = 7.dp,
@@ -32,6 +34,9 @@ fun MiniBars(
     minBar: Dp = 3.dp,
     contentDescription: String? = null,
 ) {
+    val surface = LedgaTheme.colors.surface
+    val strong = remember(color, surface) { ChartTones.strong(color, surface) }
+    val soft = remember(color, surface) { ChartTones.soft(color, surface) }
     val max = ChartMath.scaleMax(values, null)
     Canvas(
         modifier
@@ -50,22 +55,21 @@ fun MiniBars(
             val left = i * (w + g)
             val rect = Rect(left, size.height - h, left + w, size.height)
             when (i) {
-                inProgressIndex -> hatchedBar(rect, cornerTop.toPx(), cornerBottom.toPx(), color)
-                highlightIndex -> drawPath(barPath(rect, cornerTop.toPx(), cornerBottom.toPx()), color)
-                else -> drawPath(barPath(rect, cornerTop.toPx(), cornerBottom.toPx()), normalColor)
+                inProgressIndex -> hatchedBar(rect, cornerTop.toPx(), cornerBottom.toPx(), strong)
+                highlightIndex -> drawPath(barPath(rect, cornerTop.toPx(), cornerBottom.toPx()), strong)
+                else -> drawPath(barPath(rect, cornerTop.toPx(), cornerBottom.toPx()), soft)
             }
         }
     }
 }
 
-/** A tracker tile's 6-month spark bars: muted bars, with the current month in the category colour. */
+/** A tracker tile's 6-month spark bars: soft bars, with the current month in the category's strong tone. */
 @Composable
 fun SparkBars(values: List<Long>, color: Color, modifier: Modifier = Modifier) = MiniBars(
     values = values,
     modifier = modifier,
     highlightIndex = values.lastIndex,
     color = color,
-    normalColor = LedgaTheme.colors.barMuted,
     height = 20.dp,
     gap = 3.dp,
     cornerTop = 2.dp,

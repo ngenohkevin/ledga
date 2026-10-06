@@ -49,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ledga.app.ui.design.format.AmountFormat
 import com.ledga.app.ui.design.theme.LedgaTheme
+import com.ledga.app.ui.design.tokens.ChartTones
 import com.ledga.app.ui.design.tokens.Radii
 import com.ledga.app.ui.design.type.LedgaType
 import kotlin.math.roundToInt
@@ -56,7 +57,7 @@ import kotlin.math.roundToInt
 /**
  * The full column chart (spec §10.6, refinement R17), used for:
  * - Spending's 8–12 months;
- * - a tracker's months, where [softColors] tint the unselected bars and [average] draws the dashed line;
+ * - a tracker's months, where [dimUnselected] draws every bar but the selected one in its soft tone and [average] draws the dashed line;
  * - the stacked Trackers chart, with one colour per segment.
  *
  * Bars are layout children, so each is a TalkBack node reading its [Bar.speech], and is tap-to-select when
@@ -71,7 +72,7 @@ fun ColumnChart(
     modifier: Modifier = Modifier,
     selectedIndex: Int? = null,
     onSelect: ((Int) -> Unit)? = null,
-    softColors: List<Color>? = null,
+    dimUnselected: Boolean = false,
     average: Long? = null,
     averageLabel: String = "AVG",
     showGrid: Boolean = false,
@@ -81,6 +82,9 @@ fun ColumnChart(
     val c = LedgaTheme.colors
     // A stacked Trackers chart with nothing tracked passes no colours: draw in chartPrimary rather than crash.
     val colors = colors.ifEmpty { listOf(c.chartPrimary) }
+    // R27 (owner decision 2026-10-06): bars meet WCAG 1.4.11 on the card. Strong = selected, current or undimmed.
+    val strong = remember(colors, c.surface) { colors.map { ChartTones.strong(it, c.surface) } }
+    val soft = remember(colors, c.surface) { colors.map { ChartTones.soft(it, c.surface) } }
     val measurer = rememberTextMeasurer()
     val top = ChartMath.scaleMax(bars.map { it.total }, average)
     val headroom = if (tooltip != null) 34.dp else 8.dp
@@ -120,7 +124,7 @@ fun ColumnChart(
                                 this.selected = isSelected
                             },
                     ) {
-                        drawBar(bar, top, if (isSelected || softColors == null) colors else softColors, colors)
+                        drawBar(bar, top, if (dimUnselected && !isSelected) soft else strong, strong)
                     }
                 }
             }
@@ -235,7 +239,7 @@ fun ChartLegend(items: List<Pair<String, Color>>, modifier: Modifier = Modifier)
     FlowRow(modifier, horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         items.forEach { (name, color) ->
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(Modifier.size(8.dp).clip(RoundedCornerShape(3.dp)).background(color))
+                Box(Modifier.size(8.dp).clip(RoundedCornerShape(3.dp)).background(ChartTones.strong(color, c.surface)))
                 Spacer(Modifier.width(5.dp))
                 Text(name, style = LedgaType.caption, color = c.muted)
             }

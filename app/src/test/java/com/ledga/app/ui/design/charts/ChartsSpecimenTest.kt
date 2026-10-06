@@ -118,7 +118,7 @@ private fun ColumnCharts() {
                 single, listOf(electricity), summary = "Electricity, 12 months",
                 modifier = Modifier.padding(top = Spacing.m),
                 selectedIndex = 10, onSelect = {},
-                softColors = listOf(CategoryPalette.soft(electricity, c.surface)),
+                dimUnselected = true,
                 average = 230_000L, showGrid = true,
                 tooltip = { ChartTooltip("Ksh 2,320 · Sep", "3 payments") },
             )

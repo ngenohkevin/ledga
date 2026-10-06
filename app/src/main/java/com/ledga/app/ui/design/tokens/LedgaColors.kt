@@ -37,7 +37,6 @@ data class LedgaColors(
     val warning: Color,
     val warningSoft: Color,
     val barTrack: Color,
-    val barMuted: Color,
     val navBar: Color,
     val shadow: Color,
 )
@@ -66,7 +65,6 @@ val LightColors = LedgaColors(
     warning = Color(0xFFA05F00), // R19: spec #B86E00 is 3.63:1 on warningSoft
     warningSoft = Color(0xFFFFF3DC),
     barTrack = Color(0xFFE3E9E6),
-    barMuted = Color(0xFFCFD8D4),
     navBar = Color(0xFFFFFFFF),
     shadow = Color(0x0A101814), // 4 %
 )
@@ -95,7 +93,6 @@ val DarkColors = LedgaColors(
     warning = Color(0xFFFFC24D),
     warningSoft = Color(0xFF2A2109),
     barTrack = Color(0xFF1D2724),
-    barMuted = Color(0xFF26332E),
     navBar = Color(0xFF0D1311),
     shadow = Color.Transparent,
 )

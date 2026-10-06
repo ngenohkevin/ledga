@@ -60,13 +60,6 @@ class CategoryPaletteTest {
     }
 
     @Test
-    fun `soft is an opaque tint of the colour over the background`() {
-        val s = CategoryPalette.soft(Color(0xFFD98A00), Color.White)
-        assertEquals(1f, s.alpha)
-        assertTrue(Contrast.luminance(s) > Contrast.luminance(Color(0xFFD98A00)))
-    }
-
-    @Test
     fun `pick chooses by theme`() {
         val c = CategoryColor(Color.Red, Color.Blue)
         assertEquals(Color.Red, c.pick(dark = false))

@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import com.ledga.app.ui.design.components.CategoryIcon
 import com.ledga.app.ui.design.components.WellSize
 import com.ledga.app.ui.design.theme.LedgaTheme
+import com.ledga.app.ui.design.tokens.ChartTones
 import com.ledga.app.ui.design.type.LedgaType
 
 /**
@@ -58,7 +59,7 @@ fun ShareBar(
                 Text(amount, style = LedgaType.amount, color = c.ink, maxLines = 1, softWrap = false)
             }
             Box(Modifier.padding(top = 6.dp).fillMaxWidth().height(6.dp).clip(track).background(c.barTrack)) {
-                Box(Modifier.fillMaxWidth(fraction.coerceIn(0f, 1f)).fillMaxHeight().clip(track).background(color))
+                Box(Modifier.fillMaxWidth(fraction.coerceIn(0f, 1f)).fillMaxHeight().clip(track).background(ChartTones.strong(color, c.surface)))
             }
             Text(caption, Modifier.padding(top = 3.dp), style = LedgaType.caption, color = c.muted)
         }
