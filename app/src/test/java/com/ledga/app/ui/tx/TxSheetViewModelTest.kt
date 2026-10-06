@@ -91,4 +91,16 @@ class TxSheetViewModelTest {
         vm.open("TJK4AB12FF")
         assertFalse(vm.state.first { it.tx != null }.canBeOwnAccount)
     }
+
+    @Test
+    fun `switching own account off where only this payment changes asks nothing`() = runTest {
+        ingest(Sms.send("TJK4AB12KA", "500.00"), Sms.send("TJK4AB12KB", "600.00", "22/3/26 at 1:30 PM"), Sms.send("TJK4AB12KC", "700.00", "23/3/26 at 1:30 PM"))
+        edits.setOwnAccount("TJK4AB12KA", own = true, allFromName = false)
+        val vm = vm()
+        vm.open("TJK4AB12KA")
+        vm.state.first { it.tx?.code == "TJK4AB12KA" && it.isOwnAccount }
+        vm.setOwnAccount(false)
+        val s = vm.state.first { it.tx?.code == "TJK4AB12KA" && !it.isOwnAccount }
+        assertNull(s.pendingOwn, "one payment changes: no question about all 3")
+    }
 }

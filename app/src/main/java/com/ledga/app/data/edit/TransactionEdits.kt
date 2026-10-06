@@ -89,31 +89,40 @@ class TransactionEdits(private val db: LedgaDatabase, private val deriver: Deriv
         deriver.reclassifyAll()
     }
 
-    /** How many payments from this name would end up own-account ([own]) or not, under "all from <name>" (R37). */
+    /** How many payments from this name change if "all from <name>" becomes own-account ([own]) or not (R37). */
     suspend fun ownAccountCount(code: String, own: Boolean): Int {
         val tx = db.transactionsDao().get(code) ?: return 0
-        if (tx.counterpartyName == null) return 0
-        return ownPlan(tx, own).endState.size
+        val name = tx.counterpartyName ?: return 0
+        // Exactly the payments that change: those that can be own-account and aren't already where [own] puts them.
+        return ownCandidates(name).count { it.kind.ownAccountFlow != null && isOwn(it.flow) != own }
     }
 
-    /** [allFromName] false: an override for this code. True (R37): a USER rule on, or the matching USER rules off. */
+    /**
+     * [allFromName] false: an override for this code. True (R37): the name's USER own-account rule on, or off with an
+     * exception on any of its payments a broader rule of the person's still marks own.
+     */
     suspend fun setOwnAccount(code: String, own: Boolean, allFromName: Boolean) {
         val tx = db.transactionsDao().get(code) ?: return
-        if (!allFromName || tx.counterpartyName == null) {
+        val name = tx.counterpartyName
+        if (!allFromName || name == null) {
             deriver.saveOverride(override(code).copy(ownAccount = own))
             return
         }
-        val plan = ownPlan(tx, own)
+        val nameRule = ownRule(name)
+        val candidates = ownCandidates(name).map { it.code }
         db.withTransaction {
-            if (own) {
-                db.rulesDao().deleteUser(plan.nameRule.field.name, plan.nameRule.pattern, plan.nameRule.action.name)
-                db.rulesDao().insert(plan.nameRule.toRow())
-            } else if (plan.removed.isNotEmpty()) {
-                db.rulesDao().deleteIds(plan.removed.map { it.id })
-            }
-            plan.matched.chunked(Deriver.CHUNK).forEach { db.overridesDao().clearOwnAccount(it, clock.instant()) }
+            // Only the rule "all from <name>" makes: a broader rule the person already has (v1's imports bring some)
+            // stays, so payments from other names never change behind the count.
+            db.rulesDao().deleteUser(nameRule.field.name, nameRule.pattern, nameRule.action.name)
+            if (own) db.rulesDao().insert(nameRule.toRow())
+            candidates.chunked(Deriver.CHUNK).forEach { db.overridesDao().clearOwnAccount(it, clock.instant()) }
         }
         deriver.reclassifyAll()
+        if (!own) {
+            // A broader rule may still mark some of them own: an exception on each keeps "all N from <name>" true.
+            candidates.filter { c -> db.transactionsDao().get(c)?.flow?.let(::isOwn) == true }
+                .forEach { c -> deriver.saveOverride(override(c).copy(ownAccount = false)) }
+        }
     }
 
     /** A new category in [group] (R43), or the existing one with that name there. Returns its key. */
@@ -133,29 +142,15 @@ class TransactionEdits(private val db: LedgaDatabase, private val deriver: Deriv
         return key
     }
 
-    /** What "all from <name>" does to own-account state: the rule added or removed, who it covers, who ends up [own]. */
-    private class OwnPlan(val nameRule: Rule, val removed: List<Rule>, val matched: List<String>, val endState: List<String>)
+    /** The rule "all from <name>" makes for own accounts (R37). */
+    private fun ownRule(name: String) =
+        Rule(NEW_ID, RuleField.NAME_CONTAINS, name, RuleAction.MARK_OWN_ACCOUNT, null, RuleOrigin.USER, 0, clock.instant())
 
-    private suspend fun ownPlan(tx: TxRow, own: Boolean): OwnPlan {
-        val name = tx.counterpartyName!!
-        val rules = db.rulesDao().all().map { it.toCore() }
-        val groups = groups()
-        val probe = RuleEngine(rules, groups::get)
-        val nameRule = Rule(NEW_ID, RuleField.NAME_CONTAINS, name, RuleAction.MARK_OWN_ACCOUNT, null, RuleOrigin.USER, 0, clock.instant())
-        val removed = if (own) {
-            emptyList()
-        } else {
-            probe.ordered.filter { it.origin == RuleOrigin.USER && it.action == RuleAction.MARK_OWN_ACCOUNT && probe.matches(it, tx.counterparty()) }
-        }
-        val after = if (own) rules.filterNot { same(it, nameRule) } + nameRule else rules.filterNot { it in removed }
-        val engine = RuleEngine(after, groups::get)
-        val matched = named(name).filter { probe.matches(nameRule, it.counterparty()) }
-        val overrides = overridesFor(matched.map { it.code })
-        val endState = matched.filter { t ->
-            t.kind.ownAccountFlow != null &&
-                isOwn(Derivation.reclassify(t.toDerived(), overrides[t.code]?.copy(ownAccount = null), engine).flow) == own
-        }
-        return OwnPlan(nameRule, removed, matched.map { it.code }, endState.map { it.code })
+    /** The payments "all from <name>" covers: those [ownRule] matches. */
+    private suspend fun ownCandidates(name: String): List<TxRow> {
+        val rule = ownRule(name)
+        val probe = RuleEngine(listOf(rule), groups()::get)
+        return named(name).filter { probe.matches(rule, it.counterparty()) }
     }
 
     /** Payments that would carry [categoryKey] once [rule] replaces any USER rule like it and their own choices are cleared. */

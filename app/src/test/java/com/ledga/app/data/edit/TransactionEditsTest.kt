@@ -8,6 +8,7 @@ import com.ledga.app.data.ingest.RawSms
 import com.ledga.app.data.ingest.SmsIngestor
 import com.ledga.app.data.room.CategoryOrigin
 import com.ledga.app.data.room.LineRow
+import com.ledga.app.data.room.RuleRow
 import com.ledga.app.data.room.SmsSource
 import com.ledga.app.data.room.SmsStatus
 import com.ledga.app.testing.Sms
@@ -20,12 +21,6 @@ import com.ledga.core.model.CategoryGroup
 import com.ledga.core.model.FlowKind
 import com.ledga.core.money.Money
 import com.ledga.core.time.InstantRange
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.test.runTest
-import org.junit.After
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.robolectric.RobolectricTestRunner
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneOffset
@@ -33,6 +28,12 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.test.runTest
+import org.junit.After
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 
 /** Spec §7.4: what a person changes on a transaction, and exactly what each change touches (R35–R37, R43, R46). */
 @RunWith(RobolectricTestRunner::class)
@@ -180,5 +181,36 @@ class TransactionEditsTest {
         assertEquals(personal, tx("TJK4AB12FB").lineId)
         edits.setLine("TJK4AB12FB", null)
         assertNull(tx("TJK4AB12FB").lineId, "null goes back to the line its SMS arrived on (none here)")
+    }
+
+    @Test
+    fun `the own-account count is how many change, not how many end up`() = runTest {
+        ingest(
+            Sms.send("TJK4AB12KA", "500.00", "21/3/26 at 1:30 PM"),
+            Sms.send("TJK4AB12KB", "600.00", "22/3/26 at 1:30 PM"),
+            Sms.send("TJK4AB12KC", "700.00", "23/3/26 at 1:30 PM"),
+        )
+        edits.setOwnAccount("TJK4AB12KA", own = true, allFromName = false)
+        assertEquals(1, edits.ownAccountCount("TJK4AB12KA", own = false), "switching this one back off changes only it")
+        assertEquals(2, edits.ownAccountCount("TJK4AB12KB", own = true), "the one already own doesn't change")
+    }
+
+    @Test
+    fun `own account off for all from a name leaves other names and the person's broader rule alone`() = runTest {
+        ingest(
+            Sms.BANK_APP,
+            Sms.receive("TJK4AB12LA", "EXAMPLE BANK LIMITED- APP", "3,000.00"),
+            Sms.receive("TJK4AB12LB", "EXAMPLE SACCO", "2,000.00"),
+        )
+        // A broader own-account rule the person already had (as v1's imports bring).
+        db.rulesDao().insert(RuleRow(field = RuleField.NAME_CONTAINS, pattern = "EXAMPLE", action = RuleAction.MARK_OWN_ACCOUNT, categoryKey = null, origin = RuleOrigin.USER, priority = 0, createdAt = clock.instant()))
+        deriver.reclassifyAll()
+        assertEquals(FlowKind.OWN_IN, tx("TJK4AB12LB").flow)
+        assertEquals(2, edits.ownAccountCount("TJK4AB12FC", own = false))
+        edits.setOwnAccount("TJK4AB12FC", own = false, allFromName = true)
+        assertEquals(FlowKind.INCOME, tx("TJK4AB12FC").flow)
+        assertEquals(FlowKind.INCOME, tx("TJK4AB12LA").flow)
+        assertEquals(FlowKind.OWN_IN, tx("TJK4AB12LB").flow, "another name keeps its own-account state")
+        assertEquals(listOf("EXAMPLE"), userRules().map { it.pattern }, "the person's own rule stays")
     }
 }
