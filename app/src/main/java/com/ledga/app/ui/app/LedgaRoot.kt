@@ -103,6 +103,7 @@ fun LedgaNavHost(onboarded: Boolean, screens: LedgaScreens = AppScreens) {
                         openTrackers = { nav.openTab(Tab.TRACKERS) },
                         openTracker = ::openTracker,
                         openYou = { nav.openTab(Tab.YOU) },
+                        openAlerts = { nav.navigate(AlertsRoute) { launchSingleTop = true } },
                     ),
                 )
             }
@@ -122,6 +123,7 @@ fun LedgaNavHost(onboarded: Boolean, screens: LedgaScreens = AppScreens) {
                 )
             }
             composable<YouRoute> { screens.You() }
+            composable<AlertsRoute> { screens.Alerts(onBack = { nav.popBackStack() }) }
         }
     }
 }

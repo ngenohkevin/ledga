@@ -85,6 +85,7 @@ import com.ledga.core.time.PeriodType
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import com.ledga.app.ui.design.components.TxRow as TransactionRow
+import com.ledga.app.ui.app.RoundButton
 
 /** What Tracker detail's taps do. Every default does nothing, for screenshots and tests. */
 data class TrackerDetailActions(
@@ -173,15 +174,6 @@ private fun DetailTopBar(ui: TrackerDetailUi, actions: TrackerDetailActions) {
     }
 }
 
-@Composable
-private fun RoundButton(icon: ImageVector, label: String, onClick: () -> Unit) {
-    val c = LedgaTheme.colors
-    IconButton(onClick = onClick) {
-        Box(Modifier.size(36.dp).clip(CircleShape).background(c.surface).border(Sizes.hairline, c.line, CircleShape), contentAlignment = Alignment.Center) {
-            Icon(icon, contentDescription = label, tint = c.ink2, modifier = Modifier.size(Sizes.iconSmall))
-        }
-    }
-}
 
 @Composable
 private fun ChartCard(ui: TrackerDetailUi, category: CategoryRow, actions: TrackerDetailActions) {

@@ -79,6 +79,8 @@ data class HomeUi(
     /** R59: Android 13+, onboarded, notifications not allowed, and the person hasn't said "Not now". */
     val notificationsNudge: Boolean = false,
     val notificationsToSettings: Boolean = false,
+    /** R71: alerts not yet read (the bell's badge). */
+    val unreadAlerts: Int = 0,
 )
 
 /** Home (spec §10.4): each card reads the ledger on the chosen line (R47) and moves on with the clock (spec §7.6). */
@@ -133,7 +135,7 @@ class HomeViewModel @Inject constructor(
 
     private data class Access(val smsGranted: Boolean, val smsBlocked: Boolean, val notifyAsk: Boolean, val notifyBlocked: Boolean)
 
-    private data class Background(val history: HistoryProgress?, val legacyImportFailed: Boolean, val hasHistory: Boolean)
+    private data class Background(val history: HistoryProgress?, val legacyImportFailed: Boolean, val hasHistory: Boolean, val unreadAlerts: Int)
 
     /** Re-read whenever the day, the line or the segment changes: the running period's start comes from the clock then. */
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -157,7 +159,9 @@ class HomeViewModel @Inject constructor(
         content,
         combine(smsGranted, smsBlocked, notifyAsk, notifyBlocked) { a, b, c, d -> Access(a, b, c, d) },
         settings.settings,
-        combine(work.history, work.legacyImportFailed, db.transactionsDao().observeSpan()) { h, failed, span -> Background(h, failed, span.count > 0) },
+        combine(work.history, work.legacyImportFailed, db.transactionsDao().observeSpan(), db.alertsDao().observeUnread()) { h, failed, span, unread ->
+            Background(h, failed, span.count > 0, unread)
+        },
         merge(hours, resumedAt),
     ) { c, a, s, bg, at ->
         val choice = c.frame.line
@@ -181,6 +185,7 @@ class HomeViewModel @Inject constructor(
             legacyImportFailed = bg.legacyImportFailed,
             notificationsNudge = a.notifyAsk && s.onboarded && !s.notificationNudgeDismissed,
             notificationsToSettings = a.notifyBlocked,
+            unreadAlerts = bg.unreadAlerts,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeUi())
 

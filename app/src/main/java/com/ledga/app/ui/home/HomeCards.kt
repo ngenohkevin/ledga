@@ -73,6 +73,9 @@ import com.ledga.core.money.Decimals
 import com.ledga.core.time.PeriodType
 import java.time.LocalDate
 import com.ledga.app.ui.design.components.TxRow as TransactionRow
+import androidx.compose.ui.semantics.contentDescription
+import com.ledga.app.ui.alerts.AlertText
+import androidx.compose.foundation.layout.defaultMinSize
 
 /** The header (spec §10.4, R55): You's name with the avatar, or the greeting alone; the search button. */
 @Composable
@@ -98,6 +101,27 @@ internal fun HomeHeader(ui: HomeUi, actions: HomeActions) {
         IconButton(onClick = actions.onSearch) {
             Box(Modifier.size(36.dp).clip(CircleShape).background(c.surface).border(Sizes.hairline, c.line, CircleShape), contentAlignment = Alignment.Center) {
                 Icon(Ph.MagnifyingGlass, contentDescription = "Search payments", tint = c.ink2, modifier = Modifier.size(Sizes.iconSmall))
+            }
+        }
+        // R55, R71: the bell beside search. IconButton clips what it draws, so the badge sits beside it, over its
+        // corner; taps on the badge still reach the button. The badge is primary/onPrimary (an AA pair) and TalkBack
+        // hears one phrase.
+        Box {
+            IconButton(onClick = actions.onAlerts, modifier = Modifier.semantics { contentDescription = AlertText.bellLabel(ui.unreadAlerts) }) {
+                Box(Modifier.size(36.dp).clip(CircleShape).background(c.surface).border(Sizes.hairline, c.line, CircleShape), contentAlignment = Alignment.Center) {
+                    Icon(Ph.Bell, contentDescription = null, tint = c.ink2, modifier = Modifier.size(Sizes.iconSmall))
+                }
+            }
+            AlertText.badge(ui.unreadAlerts)?.let { text ->
+                Text(
+                    text,
+                    Modifier.align(Alignment.TopEnd).padding(top = 2.dp, end = 2.dp).clearAndSetSemantics { }
+                        .clip(RoundedCornerShape(percent = 50)).background(c.primary).defaultMinSize(minWidth = 16.dp).padding(horizontal = 4.dp),
+                    style = LedgaType.overline,
+                    color = c.onPrimary,
+                    textAlign = TextAlign.Center,
+                    maxLines = 1,
+                )
             }
         }
     }

@@ -6,6 +6,7 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import androidx.room.migration.Migration
+import com.ledga.app.data.room.dao.AlertsDao
 import com.ledga.app.data.room.dao.CategoriesDao
 import com.ledga.app.data.room.dao.LedgerDao
 import com.ledga.app.data.room.dao.LegacyDao
@@ -40,6 +41,7 @@ abstract class LedgaDatabase : RoomDatabase() {
     abstract fun ledgerDao(): LedgerDao
     abstract fun legacyDao(): LegacyDao
     abstract fun linesDao(): LinesDao
+    abstract fun alertsDao(): AlertsDao
 
     companion object {
         const val FILE_NAME = "ledga.db"

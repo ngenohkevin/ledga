@@ -13,5 +13,8 @@ import kotlinx.serialization.Serializable
 
 @Serializable data object OnboardingRoute
 
+/** Alerts (R71): pushed over Home, no bottom bar. */
+@Serializable data object AlertsRoute
+
 /** Tracker detail (spec §10.4): pushed full screen, no bottom bar. The ViewModel reads [categoryKey] by that name. */
 @Serializable data class TrackerRoute(val categoryKey: String)

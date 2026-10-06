@@ -40,6 +40,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import com.ledga.app.data.room.AlertRow
 
 /** Spec §10.4 Home: every card from the ledger, on the chosen line, live (R47, R57–R61). Synthetic SMS and rows. */
 @RunWith(RobolectricTestRunner::class)
@@ -225,5 +226,13 @@ class HomeViewModelTest {
         assertEquals(ActivityLink.Transactions(focusSearch = true), links.requests.value)
         vm.openSpending()
         assertEquals(ActivityLink.Spending, links.requests.value)
+    }
+
+    @Test
+    fun `the bell counts the alerts not yet read (R71)`() = runTest {
+        db.alertsDao().insertIgnore(AlertRow("a", "DAILY", "t", "b", null, Instant.parse("2026-03-24T17:00:00Z"), null))
+        db.alertsDao().insertIgnore(AlertRow("b", "DAILY", "t", "b", null, Instant.parse("2026-03-23T17:00:00Z"), null))
+        db.alertsDao().insertIgnore(AlertRow("c", "DAILY", "t", "b", null, Instant.parse("2026-03-22T17:00:00Z"), Instant.parse("2026-03-22T18:00:00Z")))
+        assertEquals(2, vm().ui.first { it.unreadAlerts == 2 }.unreadAlerts)
     }
 }

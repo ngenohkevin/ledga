@@ -2,6 +2,7 @@ package com.ledga.app.ui.app
 
 import androidx.compose.runtime.Composable
 import com.ledga.app.ui.activity.ActivityTab
+import com.ledga.app.ui.alerts.AlertsScreen
 import com.ledga.app.ui.home.HomeNav
 import com.ledga.app.ui.trackers.TrackerDetailRoute
 import com.ledga.app.ui.trackers.TrackersTab
@@ -24,6 +25,8 @@ interface LedgaScreens {
     @Composable fun Tracker(onBack: () -> Unit, onSeeAll: () -> Unit)
 
     @Composable fun You()
+
+    @Composable fun Alerts(onBack: () -> Unit)
 }
 
 /** The real screens, each with its Hilt ViewModel. */
@@ -39,4 +42,6 @@ object AppScreens : LedgaScreens {
     @Composable override fun Tracker(onBack: () -> Unit, onSeeAll: () -> Unit) = TrackerDetailRoute(onBack = onBack, onSeeAll = onSeeAll)
 
     @Composable override fun You() = ComingNext(Tab.YOU)
+
+    @Composable override fun Alerts(onBack: () -> Unit) = AlertsScreen(onBack = onBack)
 }

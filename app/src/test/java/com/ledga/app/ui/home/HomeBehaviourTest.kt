@@ -142,4 +142,12 @@ class HomeBehaviourTest {
         val needs = layout.multiParagraph.intrinsics.maxIntrinsicWidth
         assertTrue(needs <= layout.size.width + 0.5f, "the tile cuts its caption: it needs $needs px and has ${layout.size.width}")
     }
+
+    @Test
+    fun `the bell opens Alerts and says how many are unread (R71)`() {
+        var alerts = 0
+        show(ui.copy(unreadAlerts = 12), HomeActions(onAlerts = { alerts++ }))
+        compose.onNodeWithContentDescription("Alerts, 12 unread").performClick()
+        assertEquals(1, alerts)
+    }
 }

@@ -29,6 +29,7 @@ class LedgaNavHostTest {
             Text("Home screen")
             Button(onClick = { nav.openTracker("electricity") }) { Text("Home tile") }
             Button(onClick = nav.openActivity) { Text("Home search") }
+            Button(onClick = nav.openAlerts) { Text("Home bell") }
         }
 
         @Composable override fun Activity() = Text("Activity screen")
@@ -45,6 +46,11 @@ class LedgaNavHostTest {
         }
 
         @Composable override fun You() = Text("You screen")
+
+        @Composable override fun Alerts(onBack: () -> Unit) = Column {
+            Text("Alerts screen")
+            Button(onClick = onBack) { Text("Alerts back") }
+        }
     }
 
     private fun show() = compose.setContent { LedgaTheme(Appearance.LIGHT, reducedMotion = true) { LedgaNavHost(onboarded = true, screens = StandIns) } }
@@ -98,5 +104,18 @@ class LedgaNavHostTest {
         tap("Trackers row twice")
         back()
         compose.onNodeWithText("Trackers row").assertIsDisplayed()
+    }
+
+    @Test
+    fun `the bell pushes Alerts over Home without the bottom bar, and Back returns`() {
+        show()
+        tap("Home bell")
+        compose.onNodeWithText("Alerts screen").assertIsDisplayed()
+        compose.onNodeWithText("Trackers").assertDoesNotExist()
+        back()
+        compose.onNodeWithText("Home screen").assertIsDisplayed()
+        tap("Home bell")
+        tap("Alerts back")
+        compose.onNodeWithText("Home screen").assertIsDisplayed()
     }
 }

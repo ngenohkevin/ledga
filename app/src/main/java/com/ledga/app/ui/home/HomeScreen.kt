@@ -75,6 +75,7 @@ data class HomeActions(
     val onOpenTx: (String) -> Unit = {},
     val onPickCategory: (String) -> Unit = {},
     val onAllRecent: () -> Unit = {},
+    val onAlerts: () -> Unit = {},
 )
 
 /**
@@ -160,6 +161,7 @@ data class HomeNav(
     val openTrackers: () -> Unit = {},
     val openTracker: (String) -> Unit = {},
     val openYou: () -> Unit = {},
+    val openAlerts: () -> Unit = {},
 )
 
 /** Home's tab (route): the ViewModel, the permissions (4a M3), the sheets, and Undo after Hide. */
@@ -211,6 +213,7 @@ fun HomeRoute(nav: HomeNav, vm: HomeViewModel = hiltViewModel()) {
             vm.openRecent()
             nav.openActivity()
         },
+        onAlerts = nav.openAlerts,
     )
     Box(Modifier.fillMaxSize()) {
         HomeContent(ui, actions)

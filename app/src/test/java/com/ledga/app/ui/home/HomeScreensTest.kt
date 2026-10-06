@@ -74,6 +74,7 @@ class HomeScreensTest {
 
     private val home = HomeUi(
         loaded = true,
+        unreadAlerts = 3,
         greeting = "Good morning",
         name = "Amani",
         line = LineChoice(listOf(PERSONAL)),
