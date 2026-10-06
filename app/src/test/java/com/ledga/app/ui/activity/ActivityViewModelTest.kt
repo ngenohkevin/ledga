@@ -3,6 +3,8 @@ package com.ledga.app.ui.activity
 import kotlin.test.assertTrue
 import kotlin.test.assertNull
 import androidx.paging.testing.asSnapshot
+import com.ledga.app.data.derive.DateFilter
+import com.ledga.app.data.derive.DatePreset
 import com.ledga.app.data.derive.Deriver
 import com.ledga.app.data.derive.FlowFilter
 import com.ledga.app.data.derive.LedgerQueries
@@ -26,6 +28,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -145,5 +148,21 @@ class ActivityViewModelTest {
         assertEquals(ActivitySegment.TRANSACTIONS, vm.segment.value)
         vm.searchFocused()
         assertEquals(0, vm.ui.first { it.searchFocus == 0 }.searchFocus, "a focused request is done")
+    }
+
+    @Test
+    fun `This month moves on to the new month at midnight (R69)`() = runTest {
+        clock.instant = Instant.parse("2026-03-31T20:00:00Z") // 31 March, 23:00 in Nairobi
+        ingest(Sms.send("TJK4AB12HM", "500.00", "31/3/26 at 10:00 PM"))
+        val ticks = Channel<Unit>()
+        val vm = vms.track(
+            ActivityViewModel(LedgerQueries(db), db, LinesRepository(db.linesDao(), FakeSims(), clock), LiveClock(clock) { ticks.receive() }, edits, ActivityLinks()),
+        )
+        vm.applySheet(TransactionFilter(dates = DateFilter.Preset(DatePreset.THIS_MONTH)))
+        assertEquals(setOf(LocalDate.parse("2026-03-31")), vm.ui.first { it.dayTotals.isNotEmpty() }.dayTotals.keys)
+        clock.instant = Instant.parse("2026-03-31T21:00:01Z") // 1 April, 00:00:01 in Nairobi
+        ticks.send(Unit)
+        // Frozen at apply time, "This month" would still list March's payment.
+        assertTrue(vm.ui.first { it.today == LocalDate.parse("2026-04-01") && it.dayTotals.isEmpty() }.dayTotals.isEmpty())
     }
 }

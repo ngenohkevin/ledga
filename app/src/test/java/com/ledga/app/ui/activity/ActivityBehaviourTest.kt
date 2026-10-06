@@ -47,6 +47,8 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
+import com.ledga.app.data.derive.DateFilter
+import com.ledga.app.data.derive.DatePreset
 
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -109,7 +111,7 @@ class ActivityBehaviourTest {
         compose.setContent {
             LedgaTheme(Appearance.LIGHT, reducedMotion = true) {
                 Column(Modifier.verticalScroll(rememberScrollState())) {
-                    FilterSheetContent(TransactionFilter(), categories.values.sortedBy { it.sortOrder }, Instant.parse("2026-10-06T06:00:00Z")) { applied += it }
+                    FilterSheetContent(TransactionFilter(), categories.values.sortedBy { it.sortOrder }, LocalDate.parse("2026-10-06")) { applied += it }
                 }
             }
         }
@@ -120,7 +122,7 @@ class ActivityBehaviourTest {
         compose.onNodeWithText("Show results").performScrollTo().performClick()
         val f = applied.single()
         assertEquals(setOf(Categories.ELECTRICITY), f.categoryKeys)
-        assertEquals("Last month", f.dates?.label)
+        assertEquals(DateFilter.Preset(DatePreset.LAST_MONTH), f.dates)
         assertEquals(100_000L, f.minAmountCents)
         assertEquals(true, f.includeHidden)
     }

@@ -149,11 +149,10 @@ class SpendingViewModel @Inject constructor(
         viewModelScope.launch { line.select(id) }
     }
 
-    /** "Tap → filtered transactions" (spec §10.4): that category or group, in the selected month. */
+    /** "Tap → filtered transactions" (spec §10.4): that category or group, in the selected month (R69: live while current). */
     fun transactionsFor(row: ShareRow): TransactionFilter {
         val m = ui.value.month ?: return TransactionFilter(categoryKeys = row.categoryKeys, lineId = ui.value.line.lineId)
-        val range = Periods.liveRange(Period(PeriodType.MONTH, m.atDay(1)), live.now())
-        return TransactionFilter(categoryKeys = row.categoryKeys, dates = DateFilter(DateLabels.monthYear(m), range), lineId = ui.value.line.lineId)
+        return TransactionFilter(categoryKeys = row.categoryKeys, dates = DateFilter.Month(m), lineId = ui.value.line.lineId)
     }
 
     private fun load(s: Selection): Flow<SpendingUi> {

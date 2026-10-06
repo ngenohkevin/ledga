@@ -31,6 +31,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import com.ledga.app.data.derive.DateFilter
 
 @RunWith(RobolectricTestRunner::class)
 class SpendingViewModelTest {
@@ -121,7 +122,7 @@ class SpendingViewModelTest {
         assertEquals(0.599f, sep.shares.first().fraction, 0.001f)
         val filter = vm.transactionsFor(sep.shares.first())
         assertEquals(setOf(Categories.ELECTRICITY), filter.categoryKeys)
-        assertEquals("September 2026", filter.dates?.label)
+        assertEquals(DateFilter.Month(YearMonth.of(2026, 9)), filter.dates)
         vm.setByGroup(true)
         assertEquals(listOf("Bills & utilities", "Money"), vm.ui.first { it.byGroup && it.shares.isNotEmpty() }.shares.map { it.name })
     }

@@ -42,6 +42,7 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import java.time.Instant
 import java.time.LocalDate
+import java.time.YearMonth
 
 /** Spec §15.2: Activity › Transactions and its filter sheet, light/dark × 1.0/1.3, plus landscape. Synthetic data. */
 @RunWith(RobolectricTestRunner::class)
@@ -89,7 +90,7 @@ class ActivityScreensTest {
 
     @Test
     fun noMatches() = snapScreen("activity_no_matches") {
-        val march = DateFilter("March 2026", InstantRange(Instant.parse("2026-02-28T21:00:00Z"), Instant.parse("2026-03-31T21:00:00Z")))
+        val march = DateFilter.Month(YearMonth.of(2026, 3))
         val filter = TransactionFilter(flow = FlowFilter.OUT, categoryKeys = setOf(Categories.FUEL), dates = march)
         Transactions(ui.copy(query = "zzz", filter = filter), emptyList(), filterCount = filter.sheetCount)
     }
@@ -102,7 +103,7 @@ class ActivityScreensTest {
                     FilterSheetContent(
                         current = TransactionFilter(categoryKeys = setOf(Categories.FUEL, Categories.ELECTRICITY), minAmountCents = 100_000),
                         categories = categories.values.sortedBy { it.sortOrder },
-                        now = Instant.parse("2026-10-06T06:00:00Z"),
+                        today = LocalDate.parse("2026-10-06"),
                         onApply = {},
                     )
                 }
@@ -112,4 +113,20 @@ class ActivityScreensTest {
 
     @Test
     fun landscape() = snapScreenLandscape("activity_transactions") { Transactions(ui, rows) }
+
+    @Test
+    fun filterSheetCustom() = snapScreen("activity_filters_custom") {
+        Box(Modifier.fillMaxSize().background(LedgaTheme.colors.canvas), contentAlignment = Alignment.BottomCenter) {
+            SheetScaffold(title = "Filters") {
+                Column(Modifier.verticalScroll(rememberScrollState())) {
+                    FilterSheetContent(
+                        current = TransactionFilter(dates = DateFilter.Custom(LocalDate.parse("2026-09-02"), LocalDate.parse("2026-09-14"))),
+                        categories = categories.values.sortedBy { it.sortOrder },
+                        today = LocalDate.parse("2026-10-06"),
+                        onApply = {},
+                    )
+                }
+            }
+        }
+    }
 }

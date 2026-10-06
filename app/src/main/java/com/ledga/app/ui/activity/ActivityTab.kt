@@ -199,11 +199,13 @@ fun ActivityTab(vm: ActivityViewModel = hiltViewModel()) {
         onChangeCategory = { sheets = sheets.copy(picker = it) },
     )
     CategoryPickerHost(sheets.picker, onDismiss = { sheets = sheets.copy(picker = null) })
-    if (filtersOpen) {
+    // The sheet's custom range starts from today (R70); on the first frame, before the date is known, it waits.
+    val today = ui.today
+    if (filtersOpen && today != null) {
         FilterSheet(
             current = ui.filter,
             categories = ui.categories.values.sortedBy { it.sortOrder },
-            now = vm.now(),
+            today = today,
             onApply = {
                 vm.applySheet(it)
                 filtersOpen = false

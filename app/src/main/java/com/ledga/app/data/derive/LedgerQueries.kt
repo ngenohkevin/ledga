@@ -37,13 +37,16 @@ class LedgerQueries(private val db: LedgaDatabase) {
 
     suspend fun combinedBalance(): Money? = combine(db.transactionsDao().latestBalances())
 
-    /** Activity › Transactions (spec §7.5, R38): newest first, narrowed by [filter]. */
-    fun transactions(filter: TransactionFilter): PagingSource<Int, TxRow> = Args(filter).run {
+    /**
+     * Activity › Transactions (spec §7.5, R38): newest first, narrowed by [filter]. [today] turns a date filter into its
+     * range (R69); it is needed only when there is one.
+     */
+    fun transactions(filter: TransactionFilter, today: LocalDate? = null): PagingSource<Int, TxRow> = Args(filter, today).run {
         db.transactionsDao().page(includeHidden, lineId, like, flow, anyCategory, categories, from, to, minCents, counterpartyKey)
     }
 
     /** Day header totals for [filter] by Nairobi day (R38, R45): the list's own filter, so they always agree. */
-    fun dayTotals(filter: TransactionFilter): Flow<Map<LocalDate, DayTotal>> = Args(filter).run {
+    fun dayTotals(filter: TransactionFilter, today: LocalDate? = null): Flow<Map<LocalDate, DayTotal>> = Args(filter, today).run {
         db.ledgerDao().dayTotals(includeHidden, lineId, like, flow, anyCategory, categories, from, to, minCents, counterpartyKey)
     }.map { rows -> rows.associateBy { LocalDate.ofEpochDay(it.day) } }
 
@@ -92,15 +95,16 @@ class LedgerQueries(private val db: LedgaDatabase) {
         db.ledgerDao().latestSpends(categoryKey, lineId, limit)
 
     /** [TransactionFilter] as the shared SQL filter's arguments (`TX_FILTER`). */
-    private class Args(f: TransactionFilter) {
+    private class Args(f: TransactionFilter, today: LocalDate?) {
         val includeHidden = f.includeHidden
         val lineId = f.lineId
         val like = LedgerQueries.likePattern(f.query)
         val flow = f.flow.name
         val anyCategory = f.categoryKeys.isEmpty()
         val categories = f.categoryKeys.sorted()
-        val from = f.dates?.range?.start
-        val to = f.dates?.range?.endExclusive
+        private val range = f.dates?.range(checkNotNull(today) { "a date filter is turned into a range against today (R69)" })
+        val from = range?.start
+        val to = range?.endExclusive
         val minCents = f.minAmountCents
         val counterpartyKey = f.counterpartyKey
     }

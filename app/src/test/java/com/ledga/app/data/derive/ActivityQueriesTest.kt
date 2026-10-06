@@ -24,6 +24,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import java.time.Instant
 import java.time.LocalDate
+import java.time.YearMonth
 import kotlin.test.assertEquals
 
 /** Activity's reads (spec §7.5): the list and its day totals (R38), People (R42), Spending's buckets (R45). */
@@ -34,8 +35,9 @@ class ActivityQueriesTest {
     private val queries = LedgerQueries(db)
     private val received = Instant.parse("2026-07-01T06:00:00Z")
 
-    /** March 2026 in Nairobi: 1 March 00:00 to 1 April 00:00, UTC+3. */
-    private val march = DateFilter("March 2026", InstantRange(Instant.parse("2026-02-28T21:00:00Z"), Instant.parse("2026-03-31T21:00:00Z")))
+    /** March 2026 in Nairobi: 1 March 00:00 to 1 April 00:00, UTC+3 (closed: the test's "today" is in July). */
+    private val march = DateFilter.Month(YearMonth.of(2026, 3))
+    private val today = LocalDate.parse("2026-07-01")
 
     @After fun close() = db.close()
 
@@ -47,7 +49,7 @@ class ActivityQueriesTest {
     )
 
     private suspend fun codes(filter: TransactionFilter): List<String> {
-        val page = queries.transactions(filter).load(PagingSource.LoadParams.Refresh(null, 100, false)) as PagingSource.LoadResult.Page
+        val page = queries.transactions(filter, today).load(PagingSource.LoadParams.Refresh(null, 100, false)) as PagingSource.LoadResult.Page
         return page.data.map { it.code }
     }
 
@@ -130,6 +132,6 @@ class ActivityQueriesTest {
             mapOf("2026-03" to MonthTotal("2026-03", 10_700, 1), "2026-04" to MonthTotal("2026-04", 20_700, 1)),
             queries.spentByMonth(InstantRange(Instant.parse("2026-01-01T00:00:00Z"), null)).first(),
         )
-        assertEquals(PeriodTotals(spentCents = 10_700, feeCents = 700, inCents = 2_000_000), queries.totals(march.range).first())
+        assertEquals(PeriodTotals(spentCents = 10_700, feeCents = 700, inCents = 2_000_000), queries.totals(march.range(today)).first())
     }
 }

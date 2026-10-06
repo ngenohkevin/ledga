@@ -6,7 +6,6 @@ import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
-import com.ledga.app.data.derive.DateFilter
 import com.ledga.app.data.derive.FlowFilter
 import com.ledga.app.data.derive.LedgerQueries
 import com.ledga.app.data.derive.TransactionFilter
@@ -17,9 +16,6 @@ import com.ledga.app.data.room.LedgaDatabase
 import com.ledga.app.data.room.LineRow
 import com.ledga.app.data.room.dao.DayTotal
 import com.ledga.app.time.LiveClock
-import com.ledga.core.time.InstantRange
-import com.ledga.core.time.PeriodType
-import com.ledga.core.time.Periods
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
@@ -34,10 +30,10 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.time.Instant
 import java.time.LocalDate
 import javax.inject.Inject
 
@@ -46,26 +42,6 @@ enum class ActivitySegment(val label: String) {
     TRANSACTIONS("Transactions"),
     SPENDING("Spending"),
     PEOPLE("People"),
-}
-
-/** The filter sheet's date presets (R39). "Last 3 months" is this month and the two before it. */
-enum class DatePreset(val label: String) {
-    THIS_MONTH("This month"),
-    LAST_MONTH("Last month"),
-    LAST_3_MONTHS("Last 3 months"),
-    THIS_YEAR("This year"),
-    ;
-
-    fun filter(now: Instant): DateFilter {
-        val month = Periods.current(PeriodType.MONTH, now)
-        val range = when (this) {
-            THIS_MONTH -> Periods.liveRange(month, now)
-            LAST_MONTH -> month.previous().range()
-            LAST_3_MONTHS -> InstantRange(month.previous().previous().startInstant, null)
-            THIS_YEAR -> Periods.liveRange(Periods.current(PeriodType.YEAR, now), now)
-        }
-        return DateFilter(label, range)
-    }
 }
 
 /** Everything the Transactions segment shows besides the paged rows. */
@@ -100,15 +76,23 @@ class ActivityViewModel @Inject constructor(
     private val filter = MutableStateFlow(TransactionFilter())
     private val searchFocus = MutableStateFlow(0)
 
-    /** What the list runs: chips and sheet at once, the typed search once typing settles (cleared at once). */
+    /** One timer for the list and the day headers (4c testing note: `LiveClock` runs one timer per collector). */
+    private val today = live.today.shareIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), replay = 1)
+
+    /** What a load runs: the filter, and the day its dates are turned into a range against (R69; null without dates). */
+    private data class Load(val filter: TransactionFilter, val today: LocalDate?)
+
+    /** Chips and sheet at once, the typed search once typing settles (cleared at once), and a new range each day. */
     @OptIn(FlowPreview::class)
-    private val settled: Flow<TransactionFilter> =
-        combine(filter, query.debounce { if (it.isEmpty()) 0L else QUERY_SETTLE_MS }) { f, q -> f.copy(query = q) }
-            .distinctUntilChanged()
+    private val settled: Flow<Load> =
+        combine(filter, query.debounce { if (it.isEmpty()) 0L else QUERY_SETTLE_MS }, today) { f, q, t ->
+            val run = f.copy(query = q)
+            Load(run, t.takeIf { run.dates != null })
+        }.distinctUntilChanged()
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val items: Flow<PagingData<ActivityItem>> = settled
-        .flatMapLatest { f -> Pager(PagingConfig(pageSize = PAGE, enablePlaceholders = false)) { ledger.transactions(f) }.flow }
+        .flatMapLatest { l -> Pager(PagingConfig(pageSize = PAGE, enablePlaceholders = false)) { ledger.transactions(l.filter, l.today) }.flow }
         .map { it.toActivityItems() }
         .cachedIn(viewModelScope)
 
@@ -118,10 +102,10 @@ class ActivityViewModel @Inject constructor(
     val ui: StateFlow<TransactionsUi> = combine(
         filter,
         query,
-        settled.flatMapLatest { ledger.dayTotals(it) },
+        settled.flatMapLatest { ledger.dayTotals(it.filter, it.today) },
         db.categoriesDao().observeAll().map { rows -> rows.associateBy { it.key } },
-        combine(lines.observe(), live.today, db.transactionsDao().observeSpan(), searchFocus) { ls, today, span, focus ->
-            Extras(ls, today, span.count > 0, focus)
+        combine(lines.observe(), today, db.transactionsDao().observeSpan(), searchFocus) { ls, day, span, focus ->
+            Extras(ls, day, span.count > 0, focus)
         },
     ) { f, q, totals, categories, x ->
         TransactionsUi(q, f, totals, categories, x.lines, x.today, x.hasHistory, x.searchFocus)
@@ -180,8 +164,6 @@ class ActivityViewModel @Inject constructor(
 
     /** The snackbar's Undo after Hide (spec §10.4). */
     fun undoHide(code: String): Job = viewModelScope.launch { edits.setHidden(code, false) }
-
-    fun now(): Instant = live.now()
 
     companion object {
         const val PAGE = 50
