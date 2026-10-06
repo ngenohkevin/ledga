@@ -54,7 +54,7 @@ private fun SmallCharts() {
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.m)) {
         LedgaCard {
             Text("Spent this month", style = LedgaType.caption, color = c.muted)
-            AmountText(1_111_100L, style = LedgaType.amountL)
+            AmountText(3_655_000L, style = LedgaType.amountL)
             MiniBars(
                 listOf(3_820_000L, 4_110_000L, 3_560_000L, 4_480_000L, 4_250_000L, 2_910_000L),
                 Modifier.padding(top = Spacing.m),
@@ -68,7 +68,7 @@ private fun SmallCharts() {
             }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
-            TrackerTile("fluent_high_voltage", "Electricity", "Ksh 1,111", categoryColor(Categories.ELECTRICITY), Modifier.weight(1f))
+            TrackerTile("fluent_high_voltage", "Electricity", "Ksh 1,850", categoryColor(Categories.ELECTRICITY), Modifier.weight(1f))
             TrackerTile("fluent_droplet", "Water", "Ksh 1,200", categoryColor(Categories.WATER), Modifier.weight(1f))
         }
         LedgaCard(contentPadding = PaddingValues(0.dp)) {
@@ -76,7 +76,7 @@ private fun SmallCharts() {
             RowDivider()
             ShareBar("fluent_fuel_pump", "Fuel", "Ksh 8,000", 0.27f, categoryColor(Categories.FUEL), "27% · 3 payments")
             RowDivider()
-            ShareBar("fluent_high_voltage", "Electricity", "Ksh 1,111", 0.08f, categoryColor(Categories.ELECTRICITY), "8% · 2 payments")
+            ShareBar("fluent_high_voltage", "Electricity", "Ksh 1,850", 0.08f, categoryColor(Categories.ELECTRICITY), "8% · 2 payments")
         }
     }
 }
@@ -88,7 +88,7 @@ private fun TrackerTile(icon: String, name: String, amount: String, color: andro
         CategoryIcon(icon, contentDescription = null, size = WellSize.Small)
         Text(name, Modifier.padding(top = 8.dp), style = LedgaType.caption, color = c.muted)
         Text(amount, style = LedgaType.amountM, color = c.ink)
-        SparkBars(listOf(210_000L, 245_000L, 198_000L, 230_000L, 260_000L, 120_000L), color, Modifier.padding(top = 7.dp))
+        SparkBars(listOf(210_000L, 185_000L, 198_000L, 230_000L, 260_000L, 120_000L), color, Modifier.padding(top = 7.dp))
     }
 }
 
@@ -97,7 +97,7 @@ private fun ColumnCharts() {
     val c = LedgaTheme.colors
     val electricity = categoryColor(Categories.ELECTRICITY)
     val months = listOf("NOV", "DEC", "JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT")
-    val values = listOf(210_000L, 245_000L, 198_000L, 230_000L, 260_000L, 215_000L, 240_000L, 225_000L, 250_000L, 245_000L, 232_000L, 120_000L)
+    val values = listOf(210_000L, 185_000L, 198_000L, 230_000L, 260_000L, 215_000L, 240_000L, 225_000L, 250_000L, 185_000L, 232_000L, 120_000L)
     val single = months.mapIndexed { i, m ->
         Bar(m, listOf(values[i]), speech = "$m, Ksh ${AmountFormat.plain(values[i])}", inProgress = i == months.lastIndex)
     }

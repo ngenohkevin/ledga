@@ -43,12 +43,12 @@ class PeopleScreensTest {
     private val categories = Categories.SEED.associate {
         it.key to CategoryRow(it.key, it.name, it.group, it.icon3d, null, null, it.tracked, it.sortOrder, CategoryOrigin.SYSTEM, false)
     }
-    private val jane = PersonRowUi("JANE TESTER|0712111", "Jane Tester", "0712345111", 23, 1_111_100, Instant.parse("2026-10-02T15:00:00Z"))
+    private val jane = PersonRowUi("JANE TESTER|0712111", "Jane Tester", "0712345111", 23, 1_265_000, Instant.parse("2026-10-02T15:00:00Z"))
     private val people = PeopleUi(
         loaded = true,
         direction = PeopleDirection.SENT,
         minCents = 500_000,
-        maxCents = 1_111_100,
+        maxCents = 1_265_000,
         today = today,
         rows = listOf(
             jane,
@@ -74,7 +74,7 @@ class PeopleScreensTest {
         val items = remember { flowOf(PagingData.from(rows, complete)) }.collectAsLazyPagingItems()
         Box(Modifier.fillMaxSize().background(LedgaTheme.colors.canvas), contentAlignment = Alignment.BottomCenter) {
             SheetScaffold(title = null) {
-                PersonSheetContent(PersonSheetUi(jane, PersonSummary(1_111_100, 23, 90_000, 1), categories, today), items, onOpenTx = {})
+                PersonSheetContent(PersonSheetUi(jane, PersonSummary(1_265_000, 23, 90_000, 1), categories, today), items, onOpenTx = {})
             }
         }
     }

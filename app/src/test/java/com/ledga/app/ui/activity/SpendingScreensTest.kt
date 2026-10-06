@@ -24,29 +24,29 @@ import java.util.Locale
 class SpendingScreensTest {
     private val current = YearMonth.of(2026, 10)
     private val months = (7 downTo 0).map { current.minusMonths(it.toLong()) }
-    private val values = listOf<Long>(3_890_000, 4_120_000, 4_010_000, 1_111_100, 3_970_000, 5_210_000, 1_111_100, 1_111_100)
+    private val values = listOf<Long>(3_890_000, 4_120_000, 4_010_000, 4_630_000, 3_970_000, 5_210_000, 3_655_000, 985_000)
     private val bars = months.mapIndexed { i, m ->
         Bar(m.month.getDisplayName(TextStyle.SHORT, Locale.ENGLISH).uppercase(Locale.ENGLISH), listOf(values[i]), DateLabels.monthYear(m), inProgress = i == 7)
     }
 
     private fun share(key: String, name: String, icon: String, cents: Long, count: Int) =
-        ShareRow(key, name, icon, key, null, null, cents, count, cents / 1_111_100f, setOf(key))
+        ShareRow(key, name, icon, key, null, null, cents, count, cents / 3_655_000f, setOf(key))
 
     private val september = SpendingUi(
         loaded = true,
         month = YearMonth.of(2026, 9),
         current = current,
         earliest = YearMonth.of(2025, 1),
-        totals = PeriodTotals(spentCents = 1_111_100, feeCents = 41_200, inCents = 6_100_000),
+        totals = PeriodTotals(spentCents = 3_655_000, feeCents = 35_900, inCents = 5_450_000),
         deltaPercent = 9,
         comparedWith = "Aug",
         months = months,
         bars = bars,
         shares = listOf(
-            share(Categories.SENT_TO_PEOPLE, "Sent to people", "fluent_outbox_tray", 1_111_100, 23),
-            share(Categories.FUEL, "Fuel", "fluent_fuel_pump", 1_111_100, 4),
-            share(Categories.GROCERIES, "Groceries", "fluent_shopping_cart", 111_100, 9),
-            share(Categories.ELECTRICITY, "Electricity", "fluent_high_voltage", 245_000, 3),
+            share(Categories.SENT_TO_PEOPLE, "Sent to people", "fluent_outbox_tray", 1_265_000, 23),
+            share(Categories.FUEL, "Fuel", "fluent_fuel_pump", 985_000, 4),
+            share(Categories.GROCERIES, "Groceries", "fluent_shopping_cart", 597_000, 9),
+            share(Categories.ELECTRICITY, "Electricity", "fluent_high_voltage", 178_000, 3),
             share(Categories.OTHER, "Other", "fluent_package", 3_000, 1),
         ),
     )

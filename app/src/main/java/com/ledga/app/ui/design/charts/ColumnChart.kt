@@ -221,7 +221,7 @@ private fun TooltipAt(index: Int, count: Int, fraction: Float, headroom: Dp, gap
     }
 }
 
-/** The selected bar's tooltip: "Ksh 1,111 · Sep" over "3 payments", in canvas on ink (mockup `.tip`). */
+/** The selected bar's tooltip: "Ksh 1,850 · Sep" over "3 payments", in canvas on ink (mockup `.tip`). */
 @Composable
 fun ChartTooltip(title: String, caption: String? = null) {
     val c = LedgaTheme.colors

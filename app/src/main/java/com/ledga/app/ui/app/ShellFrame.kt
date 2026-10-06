@@ -53,5 +53,5 @@ fun ScreenTitle(text: String, modifier: Modifier = Modifier) = Text(
     color = LedgaTheme.colors.ink,
 )
 
-/** "1,111": a count with thousands separators (onboarding's import counts). */
+/** "6,385": a count with thousands separators (onboarding's import counts). */
 internal fun grouped(n: Int): String = String.format(Locale.ENGLISH, "%,d", n)

@@ -42,7 +42,7 @@ private fun AtomsSpecimen() {
             Text("Updated 7:12 PM · from Safaricom", style = LedgaType.caption, color = c.muted)
         }
         Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
-            StatTile("This month", "Ksh 1,111", Modifier.weight(1f))
+            StatTile("This month", "Ksh 1,850", Modifier.weight(1f))
             StatTile("Avg / month", "Ksh 1,980", Modifier.weight(1f))
         }
         Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s), verticalAlignment = Alignment.CenterVertically) {

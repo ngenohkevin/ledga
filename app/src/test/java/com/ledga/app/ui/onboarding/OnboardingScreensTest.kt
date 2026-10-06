@@ -16,7 +16,7 @@ import java.time.Instant
 @Config(qualifiers = "xhdpi")
 class OnboardingScreensTest {
     private val all = listOf(Step.WELCOME, Step.SMS, Step.IMPORT, Step.LINES, Step.NOTIFICATIONS)
-    private val preview = InboxPreview(7_412, Instant.parse("2023-03-12T07:00:00Z"), Instant.parse("2026-10-06T06:00:00Z"))
+    private val preview = InboxPreview(6_385, Instant.parse("2023-03-12T07:00:00Z"), Instant.parse("2026-10-06T06:00:00Z"))
 
     private fun screen(state: OnboardingState): @Composable () -> Unit = {
         OnboardingScreen(state, {}, {}, {}, {}, {}, { _, _ -> }, {})
@@ -34,7 +34,7 @@ class OnboardingScreensTest {
     @Test
     fun importing() = snapScreen(
         "onboarding_importing",
-        screen(OnboardingState(Step.IMPORT, all, preview = preview, import = ImportProgress.Running(1_200, 7_412))),
+        screen(OnboardingState(Step.IMPORT, all, preview = preview, import = ImportProgress.Running(1_200, 6_385))),
     )
 
     @Test

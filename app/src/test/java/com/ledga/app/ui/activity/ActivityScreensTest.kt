@@ -61,10 +61,10 @@ class ActivityScreensTest {
 
     /** Nairobi 6 Oct (today) and 5 Oct (yesterday), mockup `activity`'s rows. */
     private val rows = listOf(
-        txRow(code = "TJK4AB12RA", kind = TxKind.BUY_GOODS, amountCents = 300_000, name = "RUBIS LANGATA", account = null, categoryKey = Categories.FUEL, at = Instant.parse("2026-10-06T15:40:00Z")),
+        txRow(code = "TJK4AB12RA", kind = TxKind.BUY_GOODS, amountCents = 300_000, name = "SAMPLE FUEL STATION", account = null, categoryKey = Categories.FUEL, at = Instant.parse("2026-10-06T15:40:00Z")),
         txRow(code = "TJK4AB12FA", at = Instant.parse("2026-10-06T11:15:00Z")),
         txRow(code = "TJK4AB12RC", kind = TxKind.RECEIVE, flow = FlowKind.INCOME, amountCents = 500_000, name = "JANE TESTER", phone = "0712***111", account = null, categoryKey = Categories.RECEIVED, at = Instant.parse("2026-10-06T08:02:00Z")),
-        txRow(code = "TJK4AB12RD", kind = TxKind.BUY_GOODS, amountCents = 111_100, name = "NAIVAS SAMPLE NAME 4", account = null, categoryKey = Categories.GROCERIES, at = Instant.parse("2026-10-05T16:12:00Z")),
+        txRow(code = "TJK4AB12RD", kind = TxKind.BUY_GOODS, amountCents = 127_500, name = "SAMPLE SUPERMARKET", account = null, categoryKey = Categories.GROCERIES, at = Instant.parse("2026-10-05T16:12:00Z")),
         fulizaTxRow().copy(occurredAt = Instant.parse("2026-10-05T14:30:00Z")),
         txRow(code = "TJK4AB12RE", kind = TxKind.BUY_GOODS, amountCents = 123_456_789, name = "A VERY LONG MERCHANT NAME THAT KEEPS GOING SUPERMARKET LIMITED", account = null, categoryKey = Categories.SHOPPING, at = Instant.parse("2026-10-05T05:03:00Z")),
     )

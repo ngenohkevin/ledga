@@ -28,14 +28,14 @@ import org.robolectric.annotation.GraphicsMode
 @Config(qualifiers = "w360dp-h800dp-xhdpi")
 class PeopleBehaviourTest {
     @get:Rule val compose = createComposeRule()
-    private val jane = PersonRowUi("JANE TESTER|0712111", "Jane Tester", "0712345111", 23, 1_111_100, Instant.parse("2026-10-02T15:00:00Z"))
-    private val ui = PeopleUi(loaded = true, direction = PeopleDirection.SENT, maxCents = 1_111_100, rows = listOf(jane), today = LocalDate.parse("2026-10-06"))
+    private val jane = PersonRowUi("JANE TESTER|0712111", "Jane Tester", "0712345111", 23, 1_265_000, Instant.parse("2026-10-02T15:00:00Z"))
+    private val ui = PeopleUi(loaded = true, direction = PeopleDirection.SENT, maxCents = 1_265_000, rows = listOf(jane), today = LocalDate.parse("2026-10-06"))
 
     @Test
     fun `a person row opens their sheet`() {
         val opened = mutableListOf<PersonRowUi>()
         compose.setContent { LedgaTheme(Appearance.LIGHT, reducedMotion = true) { PeoplePane(ui, PeopleActions(onOpen = { opened += it })) } }
-        compose.onNodeWithContentDescription("Jane Tester, 23 payments, Ksh 11,111 sent").performClick()
+        compose.onNodeWithContentDescription("Jane Tester, 23 payments, Ksh 12,650 sent").performClick()
         assertEquals(listOf(jane), opened)
     }
 

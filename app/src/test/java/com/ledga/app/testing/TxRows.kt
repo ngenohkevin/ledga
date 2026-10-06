@@ -10,7 +10,7 @@ import java.time.LocalDate
 
 /**
  * A synthetic `transactions` row for UI tests (the repo is public: invented names, numbers and codes). The default is
- * the mockup's KPLC payment: Mon 5 Oct 2026, 2:15 PM in Nairobi, Ksh 1,000, balance after Ksh 15,480.50, line 1.
+ * the mockup's KPLC payment: Mon 5 Oct 2026, 2:15 PM in Nairobi, Ksh 1,000, balance after Ksh 23,150.75, line 1.
  */
 fun txRow(
     code: String = "TJK4AB12FA",
@@ -23,7 +23,7 @@ fun txRow(
     account: String? = "37100000001",
     at: Instant = Instant.parse("2026-10-05T11:15:00Z"),
     categoryKey: String = Categories.ELECTRICITY,
-    balanceCents: Long? = 1_111_111,
+    balanceCents: Long? = 2_315_075,
     lineId: Long? = 1,
     note: String? = null,
     hidden: Boolean = false,
