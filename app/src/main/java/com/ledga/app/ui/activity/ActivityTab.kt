@@ -121,10 +121,8 @@ fun ActivityTab(vm: ActivityViewModel = hiltViewModel()) {
     val segment by vm.segment.collectAsStateWithLifecycle()
     val ui by vm.ui.collectAsStateWithLifecycle()
     val items = vm.items.collectAsLazyPagingItems()
-    var openCode by rememberSaveable { mutableStateOf<String?>(null) }
-    var pickCode by rememberSaveable { mutableStateOf<String?>(null) }
+    var sheets by rememberSaveable(stateSaver = OpenSheets.Saver) { mutableStateOf(OpenSheets()) }
     var filtersOpen by rememberSaveable { mutableStateOf(false) }
-    var personKey by rememberSaveable { mutableStateOf<String?>(null) }
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     Box(Modifier.fillMaxSize()) {
@@ -137,8 +135,8 @@ fun ActivityTab(vm: ActivityViewModel = hiltViewModel()) {
                         onQuery = vm::setQuery,
                         onFlow = vm::setFlow,
                         onLine = vm::toggleLine,
-                        onOpen = { openCode = it },
-                        onPickCategory = { pickCode = it },
+                        onOpen = { sheets = sheets.copy(payment = it) },
+                        onPickCategory = { sheets = sheets.copy(picker = it) },
                         onClearFilters = vm::clearFilters,
                     ),
                 )
@@ -165,27 +163,32 @@ fun ActivityTab(vm: ActivityViewModel = hiltViewModel()) {
                             onDirection = people::setDirection,
                             onQuery = people::setQuery,
                             onMinimum = people::setMinimum,
-                            onOpen = { personKey = it.key },
+                            onOpen = { sheets = sheets.copy(person = it.key) },
                         ),
                     )
-                    PersonSheetHost(p.rows.firstOrNull { it.key == personKey }, onDismiss = { personKey = null }, onOpenTx = { openCode = it })
+                    PersonSheetHost(
+                        p.rows.firstOrNull { it.key == sheets.person },
+                        onDismiss = { sheets = sheets.copy(person = null) },
+                        onOpenTx = { sheets = sheets.copy(payment = it) },
+                    )
                 }
             }
         }
         SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter).padding(Spacing.l))
     }
     TransactionSheetHost(
-        code = openCode,
-        onDismiss = { openCode = null },
+        code = sheets.payment,
+        onDismiss = { sheets = sheets.copy(payment = null) },
         onHidden = { code ->
+            sheets = sheets.afterHide()
             scope.launch {
                 val result = snackbar.showSnackbar("Payment hidden", actionLabel = "Undo", duration = SnackbarDuration.Short)
                 if (result == SnackbarResult.ActionPerformed) vm.undoHide(code)
             }
         },
-        onChangeCategory = { pickCode = it },
+        onChangeCategory = { sheets = sheets.copy(picker = it) },
     )
-    CategoryPickerHost(pickCode, onDismiss = { pickCode = null })
+    CategoryPickerHost(sheets.picker, onDismiss = { sheets = sheets.copy(picker = null) })
     if (filtersOpen) {
         FilterSheet(
             current = ui.filter,
