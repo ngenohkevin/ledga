@@ -96,6 +96,29 @@
     (R49). Restoring does not bring back category choices an earlier "apply to all" cleared.
 - **Settings.** `notificationNudgeDismissed` (R59): Home's notifications banner is gone for good after "Not now".
 
+## You, Categories & rules, Alerts (Phase 4d)
+
+- **Alerts.** `AlertsDao` reads the `alerts` table Phase 5 writes: `observeWithTx` (newest first, with the payment's code
+  while it exists and isn't hidden), `observeUnread`, `unreadKeys`/`markRead` (chunk to `Deriver.CHUNK`), and
+  `insertIgnore` for Phase 5's dedupe (spec §11: nothing posts twice). `alerts.type` is an `AlertType` name (`LARGE`,
+  `FULIZA_DRAW`, `FULIZA_DUE`, `DAILY`, `WEEKLY`); anything else reads as `OTHER`. Pruning after 60 days is Phase 5's.
+- **Date filters.** `TransactionFilter.dates` is a `DateFilter` choice; `LedgerQueries.transactions/dayTotals(filter,
+  today)` turn it into a range (`today` is required when there are dates). Presets for the current period stay
+  open-ended; a `Month` is open while it is the current month; a `Custom` range covers whole Nairobi days, both ends.
+- **Writes (`TransactionEdits`).**
+  - `setRuleEnabled(id, enabled)` flips a rule, built-in or yours, and reclassifies; the same state changes nothing.
+  - `setCategoryIcon`, `setCategoryColor`, `setArchived` act only on USER categories, and only with an icon or swatch
+    from `CategoryLooks`. They change no transaction, so nothing reclassifies.
+  - Archiving (R72) hides a category from the picker, the filter sheet and "Track a category" and stops tracking it;
+    its payments keep it and its rules keep working. An archived name stays taken in its group (`renameCategory`), and
+    `createCategory` with that name brings the archived one back.
+  - `CategoryRules.forCategory(rules, key)` is what a category's screen lists: every rule filing into it, on or off;
+    Own accounts lists the `MARK_OWN_ACCOUNT` rules.
+- **Settings.** The notification setters clamp: `setDailySummaryMinute` keeps 0–1439, `setLargeThreshold` keeps
+  Ksh 100 to Ksh 1,000,000 (cents); anything else is ignored. Phase 5 reads them.
+- **Lines.** `LinesRepository.rename` refuses blank and cuts to 24. Granting phone access later runs `syncActive()`.
+- **History check.** `BalanceChain.check` over `TransactionsDao.all()` (hidden rows included: the wallet moved).
+
 ## Phase 5 acceptance step (from the 2026-10-05 Phase 1 review)
 
 The v1 export can't prove inbox-wide coverage: v1 never stored the messages its parser rejected. So after the first full inbox rescan **on the owner's phone**, record:

@@ -52,7 +52,6 @@ Everything lives in `com.ledga.app.ui.design`. Until Phase 4 uses it, R8 strips 
   - `@Serializable` routes in `ui/app/Routes.kt`.
 - A one-question screen (onboarding) scrolls its content and pins its actions to the bottom, so they're reachable at 1.3× and with the keyboard open. Keep an outlined field's label short: a label that wraps at 1.3× runs into the border (`OnboardingLayoutTest`).
 - Pixel assertions on Robolectric: draw the window's root view into a `Bitmap` (`ChartContrastTest`); Compose's `captureToImage` uses PixelCopy and times out under software rendering.
-- Until 4d lands, `ComingNext` holds the You tab (R32). Development builds only.
 - **Activity (4b).** `ActivityTab` hosts three segments, each with its own ViewModel: Transactions in `ActivityViewModel`, `SpendingViewModel`, `PeopleViewModel`.
   - Spending's "tap a category" calls `ActivityViewModel.showTransactions(filter)`.
   - Flow chips are a single choice (`ChoiceChip(role = Role.RadioButton)` in a `selectableGroup`); line chips toggle (`Role.Checkbox`).
@@ -113,6 +112,33 @@ Everything lives in `com.ledga.app.ui.design`. Until Phase 4 uses it, R8 strips 
 - **Shared sheets keep their state (R62).** Hosts pass a saveable session id (`rememberSaveable(code) { Random.nextLong() }`);
   `open(code, session)` reloads only for a new session; the session has no default (a clock default can repeat under Robolectric). `PickerState.code` stops a stale picker frame. `OpenSheets` lives
   in `ui.tx`.
+
+- **Pushed screens (4d, R83).** You's subscreens, Categories & rules, a category, a licence and Alerts push full screen
+  without the bottom bar, in `DetailFrame` (round Back, a title that wraps to two lines, `safeDrawing` padding). A hop
+  into Activity from any of them returns on Back to the screen it left: `LedgaNavHost.owningTab()` is the last tab root
+  on the back stack. `LedgaNavHostTest` covers every route with stand-ins. `DetailFrame` paints no background: the
+  app's `ShellFrame` does, so a pushed screen's golden wraps its content in `ShellFrame(null, onSelect = {})`.
+- **You (4d).** `YouContent` is a card per group (`GroupLabel` + `LedgaCard` of `ListRow`s): Money, App, Data, About.
+  Phase 5 adds Export & restore and Android backup under Data; Phase 6 adds Updates and Version history under About
+  (R66): add a row, not a section. Rescan's row shows its progress, and a result only for a rescan started there (R77).
+- **Alerts (4d, R71).** Home's bell sits beside search; its badge is `onPrimary` on `primary`, "9+" above nine, and
+  TalkBack hears "Alerts, N unread" (the badge's own text is cleared from semantics). M3's `IconButton` clips what it
+  draws, so the badge is a sibling over the button's corner, not its child (a child was cut off). Opening Alerts marks every alert
+  read; what was unread stays "New" for that visit. A row opens its payment only while the payment exists and isn't
+  hidden; Undo after Hide lives in Alerts' own snackbar host.
+- **Categories & rules (4d, R67, R72–R74).** A rule's whole row is its switch (`toggleable`, role Switch); your own rule
+  also has a delete button (Undo). Built-in categories keep their icon and colour; your own choose from
+  `CategoryLooks.ICONS` and `SWATCHES` (`IconChoiceContent`, `ColourChoiceContent`, radio groups). Archived categories
+  sit under "Archived" with "Bring back". Each group's "+ New category" chip tells TalkBack its group. The add-rule and rename sheets are shared with Tracker detail (`ui/rules`:
+  `RuleDraft`, `AddRuleSheet`, `RenameSheet`).
+- **Dates (4d, R69, R70).** A `DateFilter` is what the person chose (`Preset`, `Month`, `Custom`), turned into a range
+  against `LiveClock.today` on each load. M3's date picker speaks UTC midnights: convert through `PickerDates`, never the
+  device zone. M3's pickers take Inter from `LedgaType.material`.
+- **Settings screens (4d).** Radio groups use `ChoiceRow` in a `selectableGroup`. Permission rows follow 4a M3 (ask
+  first; once Android won't ask again, open Settings) through the shared `Context.showsRationale`.
+- **History check (4d, R79).** A break row's subtitle is its day; "Expected Ksh … · M-Pesa said Ksh …" sits under the row
+  in full (it is the point of the row; as a one-line subtitle it was cut to "Expected K…" at 1.3×), hidden from
+  TalkBack because the row's phrase already says it.
 
 ## Screenshot tests
 
