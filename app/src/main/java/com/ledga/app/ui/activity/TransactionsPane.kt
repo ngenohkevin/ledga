@@ -3,6 +3,7 @@ package com.ledga.app.ui.activity
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -14,11 +15,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.unit.dp
 import androidx.paging.LoadState
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.itemContentType
@@ -60,10 +63,27 @@ data class TransactionsActions(
  */
 @Composable
 fun TransactionsPane(ui: TransactionsUi, items: LazyPagingItems<ActivityItem>, actions: TransactionsActions, modifier: Modifier = Modifier) {
-    Column(modifier.fillMaxSize()) {
+    BoxWithConstraints(modifier.fillMaxSize()) {
+        // Owner ruling M5: in a short pane (a phone in landscape) the search and chips scroll away with the list, so the
+        // payments get the height; in a normal one they stay put above it (mockup `activity`).
+        val controlsScroll = maxHeight < SHORT_PANE
+        Column(Modifier.fillMaxSize()) {
+            if (!controlsScroll) Controls(ui, actions)
+            Box(Modifier.weight(1f).fillMaxWidth().padding(top = if (controlsScroll) 0.dp else Spacing.s)) {
+                TransactionList(ui, items, actions, header = if (controlsScroll) ({ Controls(ui, actions) }) else null)
+            }
+        }
+    }
+}
+
+/** Below this height the controls scroll with the list (M5): fixed, they would leave a phone in landscape one row. */
+private val SHORT_PANE = 400.dp
+
+@Composable
+private fun Controls(ui: TransactionsUi, actions: TransactionsActions) {
+    Column(Modifier.fillMaxWidth()) {
         SearchField(ui.query, actions.onQuery, "Name, phone, code or amount", Modifier.padding(horizontal = Spacing.screen, vertical = Spacing.s))
         FilterChips(ui, actions)
-        Box(Modifier.weight(1f).fillMaxWidth().padding(top = Spacing.s)) { TransactionList(ui, items, actions) }
     }
 }
 
@@ -103,40 +123,68 @@ private fun FilterChips(ui: TransactionsUi, actions: TransactionsActions) {
     }
 }
 
+/** The list, or its loading, error or empty state. [header] (the controls in a short pane) scrolls above either. */
 @Composable
-private fun TransactionList(ui: TransactionsUi, items: LazyPagingItems<ActivityItem>, actions: TransactionsActions) {
+private fun TransactionList(
+    ui: TransactionsUi,
+    items: LazyPagingItems<ActivityItem>,
+    actions: TransactionsActions,
+    header: (@Composable () -> Unit)?,
+) {
     val refresh = items.loadState.refresh
     when {
-        items.itemCount == 0 && refresh is LoadState.Loading -> LoadingCard()
-        items.itemCount == 0 && refresh is LoadState.Error -> ErrorState(
-            title = "Couldn't read your payments",
-            body = "Something went wrong reading this phone's history.",
-            onRetry = { items.retry() },
-        )
-        items.itemCount == 0 && !ui.hasHistory && ui.filter.isEverything && ui.query.isBlank() -> EmptyState(
-            iconKey = "fluent_memo",
-            title = "No payments yet",
-            body = "M-Pesa payments show up here as soon as Ledga reads them.",
-        )
-        items.itemCount == 0 -> EmptyState(
-            iconKey = "fluent_magnifying_glass_tilted_left",
-            title = "Nothing matches",
-            body = "Try another name, code or amount, or clear the filters.",
-            actionLabel = "Clear filters",
-            onAction = actions.onClearFilters,
-        )
-        else -> LazyColumn(
-            Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(start = Spacing.screen, end = Spacing.screen, bottom = Spacing.xxl),
-        ) {
+        items.itemCount == 0 && refresh is LoadState.Loading -> WithHeader(header) { LoadingCard() }
+        items.itemCount == 0 && refresh is LoadState.Error -> WithHeader(header) {
+            ErrorState(
+                title = "Couldn't read your payments",
+                body = "Something went wrong reading this phone's history.",
+                onRetry = { items.retry() },
+            )
+        }
+        items.itemCount == 0 && !ui.hasHistory && ui.filter.isEverything && ui.query.isBlank() -> WithHeader(header) {
+            EmptyState(
+                iconKey = "fluent_memo",
+                title = "No payments yet",
+                body = "M-Pesa payments show up here as soon as Ledga reads them.",
+            )
+        }
+        items.itemCount == 0 -> WithHeader(header) {
+            EmptyState(
+                iconKey = "fluent_magnifying_glass_tilted_left",
+                title = "Nothing matches",
+                body = "Try another name, code or amount, or clear the filters.",
+                actionLabel = "Clear filters",
+                onAction = actions.onClearFilters,
+            )
+        }
+        else -> LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = Spacing.xxl)) {
+            if (header != null) {
+                item(key = "controls", contentType = "controls") { Column(Modifier.padding(bottom = Spacing.s)) { header() } }
+            }
             items(count = items.itemCount, key = items.itemKey { it.key }, contentType = items.itemContentType { it::class.simpleName }) { i ->
-                when (val item = items[i]) {
-                    is ActivityItem.Day -> DayStart(item, ui)
-                    is ActivityItem.Tx -> TxListRow(item.row, dividerAbove = i > 0 && items.peek(i - 1) is ActivityItem.Tx, ui, actions)
-                    ActivityItem.End -> CardCap()
-                    null -> SkeletonRow()
+                Box(Modifier.padding(horizontal = Spacing.screen)) {
+                    when (val item = items[i]) {
+                        is ActivityItem.Day -> DayStart(item, ui)
+                        is ActivityItem.Tx -> TxListRow(item.row, dividerAbove = i > 0 && items.peek(i - 1) is ActivityItem.Tx, ui, actions)
+                        ActivityItem.End -> CardCap()
+                        null -> SkeletonRow()
+                    }
                 }
             }
+        }
+    }
+}
+
+/** A state screen under the scrolling controls of a short pane, or on its own. */
+@Composable
+private fun WithHeader(header: (@Composable () -> Unit)?, content: @Composable () -> Unit) {
+    if (header == null) {
+        content()
+    } else {
+        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+            header()
+            Spacer(Modifier.height(Spacing.s))
+            content()
         }
     }
 }
