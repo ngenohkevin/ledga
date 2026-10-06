@@ -48,6 +48,9 @@ class SettingsStore @Inject constructor(private val store: DataStore<Preferences
 
     suspend fun setFullRescanOwed(owed: Boolean) = edit { it[SettingsKeys.FULL_RESCAN_OWED] = owed }
 
+    /** R59: Home's notifications banner is gone for good. */
+    suspend fun dismissNotificationNudge() = edit { it[SettingsKeys.NOTIFICATION_NUDGE_DISMISSED] = true }
+
     private suspend fun edit(block: (MutablePreferences) -> Unit) {
         store.edit { block(it) }
     }
@@ -71,6 +74,7 @@ class SettingsStore @Inject constructor(private val store: DataStore<Preferences
                 notifyFuliza = p[SettingsKeys.NOTIFY_FULIZA] ?: d.notifyFuliza,
                 smsWatermarkMillis = p[SettingsKeys.SMS_WATERMARK] ?: d.smsWatermarkMillis,
                 fullRescanOwed = p[SettingsKeys.FULL_RESCAN_OWED] ?: d.fullRescanOwed,
+                notificationNudgeDismissed = p[SettingsKeys.NOTIFICATION_NUDGE_DISMISSED] ?: d.notificationNudgeDismissed,
             )
         }
     }

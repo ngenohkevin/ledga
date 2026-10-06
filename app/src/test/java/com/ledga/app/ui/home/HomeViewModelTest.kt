@@ -1,0 +1,192 @@
+package com.ledga.app.ui.home
+
+import com.ledga.app.data.derive.Deriver
+import com.ledga.app.data.derive.LedgerQueries
+import com.ledga.app.data.derive.TransactionFilter
+import com.ledga.app.data.edit.TransactionEdits
+import com.ledga.app.data.ingest.RawSms
+import com.ledga.app.data.ingest.SmsIngestor
+import com.ledga.app.data.room.SmsSource
+import com.ledga.app.data.settings.SettingsStore
+import com.ledga.app.data.trackers.Trackers
+import com.ledga.app.testing.FakeBackgroundWork
+import com.ledga.app.testing.FakePrefsStore
+import com.ledga.app.testing.MainDispatcherRule
+import com.ledga.app.testing.MutableClock
+import com.ledga.app.testing.Sms
+import com.ledga.app.testing.TestDb
+import com.ledga.app.testing.TestViewModels
+import com.ledga.app.testing.selectedLine
+import com.ledga.app.testing.twoLines
+import com.ledga.app.testing.txRow
+import com.ledga.app.time.LiveClock
+import com.ledga.app.ui.activity.ActivityLink
+import com.ledga.app.ui.activity.ActivityLinks
+import com.ledga.core.model.Categories
+import com.ledga.core.time.PeriodType
+import java.time.Instant
+import java.time.LocalDate
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.test.runTest
+import org.junit.After
+import org.junit.Rule
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+
+/** Spec §10.4 Home: every card from the ledger, on the chosen line, live (R47, R57–R61). Synthetic SMS and rows. */
+@RunWith(RobolectricTestRunner::class)
+class HomeViewModelTest {
+    @get:Rule val main = MainDispatcherRule()
+    private val db = TestDb.inMemory()
+    private val clock = MutableClock(Instant.parse("2026-03-25T09:00:00Z")) // Wed 25 Mar 2026, 12:00 in Nairobi
+    private val deriver = Deriver(db, clock)
+    private val work = FakeBackgroundWork()
+    private val prefs = FakePrefsStore()
+    private val settings = SettingsStore(prefs)
+    private val links = ActivityLinks()
+    private var granted = true
+    private var notifyAsk = false
+    private val vms = TestViewModels()
+
+    private fun vm(live: LiveClock = LiveClock(clock) { awaitCancellation() }) = vms.track(
+        HomeViewModel(
+            LedgerQueries(db), db, Trackers(db, LedgerQueries(db)), selectedLine(db, prefs), live, work,
+            { granted }, { notifyAsk }, settings, TransactionEdits(db, deriver, clock), links,
+        ),
+    )
+
+    @After fun close() {
+        vms.stopAll()
+        db.close()
+    }
+
+    private suspend fun ingest(vararg bodies: String) =
+        SmsIngestor(db, deriver).ingestAll(bodies.map { RawSms("MPESA", it, clock.instant(), null, null, SmsSource.INBOX) })
+
+    @Test
+    fun `Home shows this month's spending, Recent and the newest balance`() = runTest {
+        ingest(Sms.SEND, Sms.KPLC) // both on 21 March
+        val ui = vm().ui.first { it.loaded && it.recent.size == 2 }
+        assertEquals(150_700, ui.spending.spentCents) // 500 + 7 fee + 1,000
+        assertEquals(listOf("TJK4AB12FA", "TJK4AB12FB"), ui.recent.map { it.code })
+        assertEquals(200_000, ui.balance?.cents, "KPLC's message is the newer one")
+        assertTrue(ui.hasHistory)
+    }
+
+    @Test
+    fun `the greeting follows the hour, re-read when Home resumes`() = runTest {
+        val vm = vm()
+        assertEquals("Good afternoon", vm.ui.first { it.loaded }.greeting)
+        clock.instant = Instant.parse("2026-03-25T15:00:00Z") // 18:00
+        vm.refresh()
+        assertEquals("Good evening", vm.ui.first { it.greeting == "Good evening" }.greeting)
+    }
+
+    @Test
+    fun `the chosen line narrows Home, and from-line shows only under All lines`() = runTest {
+        twoLines(db)
+        db.transactionsDao().upsertAll(
+            listOf(
+                txRow(code = "TJK4AB12QA", lineId = 1, amountCents = 100_000, balanceCents = 500_000, at = Instant.parse("2026-03-20T07:00:00Z")),
+                txRow(code = "TJK4AB12QB", lineId = 2, amountCents = 40_000, balanceCents = 120_000, at = Instant.parse("2026-03-21T07:00:00Z")),
+            ),
+        )
+        val vm = vm()
+        val all = vm.ui.first { it.loaded && it.line.showChip && it.balance != null }
+        assertEquals(620_000, all.balance?.cents)
+        assertEquals("Business ··78", all.balanceFrom)
+        assertEquals(140_000, all.spending.spentCents)
+        vm.selectLine(2)
+        val business = vm.ui.first { it.line.lineId == 2L }
+        assertEquals(120_000, business.balance?.cents)
+        assertNull(business.balanceFrom, "the chip already says which line")
+        assertEquals(40_000, business.spending.spentCents)
+        assertEquals(listOf("TJK4AB12QB"), business.recent.map { it.code })
+        assertEquals(40_000, business.trackers.first { it.category.key == Categories.ELECTRICITY }.thisMonth.total.cents)
+    }
+
+    @Test
+    fun `Week and Year change the spending card`() = runTest {
+        ingest(Sms.SEND, Sms.KPLC) // Saturday 21 March; today is Wednesday 25 March
+        val vm = vm()
+        vm.ui.first { it.loaded && it.spending.spentCents == 150_700L }
+        vm.setPeriod(PeriodType.WEEK)
+        val week = vm.ui.first { it.spending.type == PeriodType.WEEK }
+        assertEquals(0, week.spending.spentCents, "21 March was last week")
+        assertEquals(150_700, week.spending.bars[4])
+        vm.setPeriod(PeriodType.YEAR)
+        assertEquals(150_700, vm.ui.first { it.spending.type == PeriodType.YEAR }.spending.spentCents)
+    }
+
+    @Test
+    fun `when the month ends, the spending card and the trackers move on`() = runTest {
+        ingest(Sms.KPLC) // 21 March, Ksh 1,000
+        val ticks = Channel<Unit>()
+        val vm = vm(LiveClock(clock) { ticks.receive() })
+        val march = vm.ui.first { it.loaded && it.spending.spentCents == 100_000L }
+        assertEquals(100_000, march.trackers.first { it.category.key == Categories.ELECTRICITY }.thisMonth.total.cents)
+        clock.instant = Instant.parse("2026-03-31T21:00:00Z") // 1 April, 00:00 in Nairobi
+        ticks.send(Unit)
+        val april = vm.ui.first { it.today == LocalDate.parse("2026-04-01") }
+        assertEquals(0, april.spending.spentCents)
+        assertEquals(listOf("Nov", "Dec", "Jan", "Feb", "Mar", "Apr"), april.spending.labels)
+        val electricity = april.trackers.first { it.category.key == Categories.ELECTRICITY }
+        assertEquals(0, electricity.thisMonth.total.cents)
+        assertEquals(100_000, electricity.lastMonth.total.cents)
+    }
+
+    @Test
+    fun `the notifications banner shows once onboarded until Not now, and a lasting refusal sends the next tap to Settings`() = runTest {
+        notifyAsk = true
+        val vm = vm()
+        assertFalse(vm.ui.first { it.loaded }.notificationsNudge, "not before onboarding")
+        settings.setOnboarded()
+        assertTrue(vm.ui.first { it.notificationsNudge }.notificationsNudge)
+        vm.onNotificationsResult(granted = false, showRationale = false)
+        assertTrue(vm.ui.first { it.notificationsToSettings }.notificationsToSettings)
+        vm.dismissNotifications()
+        assertFalse(vm.ui.first { !it.notificationsNudge }.notificationsNudge)
+    }
+
+    @Test
+    fun `allowing SMS imports the whole inbox once, and a lasting refusal sends the next tap to Settings`() = runTest {
+        granted = false
+        val vm = vm()
+        vm.ui.first { it.loaded && !it.smsGranted }
+        vm.onSmsDenied(showRationale = false)
+        assertTrue(vm.ui.first { it.smsToSettings }.smsToSettings)
+        granted = true
+        vm.refresh() // back from Settings
+        vm.refresh() // and the next resume
+        assertFalse(vm.ui.first { it.smsGranted }.smsToSettings)
+        assertEquals(listOf("importInbox"), work.calls)
+    }
+
+    @Test
+    fun `Home says when v1's notes and categories couldn't be moved`() = runTest {
+        val vm = vm()
+        work.legacyImportFailed.value = true
+        vm.ui.first { it.legacyImportFailed }
+    }
+
+    @Test
+    fun `See all, search and the spending card open Activity through the links, on the chosen line`() = runTest {
+        twoLines(db)
+        val vm = vm()
+        vm.selectLine(2)
+        vm.ui.first { it.line.lineId == 2L }
+        vm.openRecent()
+        assertEquals(ActivityLink.Transactions(TransactionFilter(lineId = 2)), links.requests.value)
+        vm.openSearch()
+        assertEquals(ActivityLink.Transactions(focusSearch = true), links.requests.value)
+        vm.openSpending()
+        assertEquals(ActivityLink.Spending, links.requests.value)
+    }
+}

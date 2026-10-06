@@ -34,4 +34,6 @@ data class Settings(
     val smsWatermarkMillis: Long = 0L,
     /** The migration's full rescan (spec §8 step 3) hasn't completed yet: the next start runs it instead of a catch-up. */
     val fullRescanOwed: Boolean = false,
+    /** R59: the person said "Not now" to Home's notifications banner; You → Notifications (4d) keeps the explanation. */
+    val notificationNudgeDismissed: Boolean = false,
 )

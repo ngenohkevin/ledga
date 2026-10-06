@@ -20,4 +20,5 @@ internal object SettingsKeys {
     val NOTIFY_FULIZA = booleanPreferencesKey("notify_fuliza")
     val SMS_WATERMARK = longPreferencesKey("sms_watermark")
     val FULL_RESCAN_OWED = booleanPreferencesKey("full_rescan_owed")
+    val NOTIFICATION_NUDGE_DISMISSED = booleanPreferencesKey("notification_nudge_dismissed")
 }
