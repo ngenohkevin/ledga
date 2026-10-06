@@ -72,6 +72,8 @@ data class PersonSheetUi(
     val summary: PersonSummary = PersonSummary(0, 0, 0, 0),
     val categories: Map<String, CategoryRow> = emptyMap(),
     val today: LocalDate? = null,
+    /** "Business ··78" while a line is chosen (R47): the totals and payments are that line's only. */
+    val lineLabel: String? = null,
 )
 
 @HiltViewModel
@@ -83,14 +85,15 @@ class PersonSheetViewModel @Inject constructor(
 ) : ViewModel() {
     private val person = MutableStateFlow<PersonRowUi?>(null)
     private val lineId = line.choice.map { it.lineId }.distinctUntilChanged()
+    private val chosen = line.choice.map { it.selected }.distinctUntilChanged()
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    val ui: StateFlow<PersonSheetUi> = combine(person, lineId) { p, id -> p to id }.flatMapLatest { (p, id) ->
+    val ui: StateFlow<PersonSheetUi> = combine(person, chosen) { p, l -> p to l }.flatMapLatest { (p, l) ->
         if (p == null) {
             flowOf(PersonSheetUi())
         } else {
-            combine(ledger.personSummary(p.key, id), db.categoriesDao().observeAll(), live.today) { s, cats, today ->
-                PersonSheetUi(p, s, cats.associateBy { it.key }, today)
+            combine(ledger.personSummary(p.key, l?.id), db.categoriesDao().observeAll(), live.today) { s, cats, today ->
+                PersonSheetUi(p, s, cats.associateBy { it.key }, today, l?.let(TxText::lineLabel))
             }
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), PersonSheetUi())
@@ -120,6 +123,8 @@ fun PersonSheetContent(ui: PersonSheetUi, items: LazyPagingItems<TxRow>, onOpenT
                 InitialAvatar(p.name, inflow = false, size = WellSize.XLarge)
                 Text(p.name, Modifier.padding(top = Spacing.m).semantics { heading() }, style = LedgaType.section, color = c.ink, textAlign = TextAlign.Center)
                 p.phone?.let { Text(it, style = LedgaType.caption, color = c.muted) }
+                // People's line chip sits under the sheet, so the sheet says which line its totals are for (R47).
+                ui.lineLabel?.let { Text("On $it", style = LedgaType.caption, color = c.muted) }
                 Row(Modifier.fillMaxWidth().padding(top = Spacing.l), horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
                     StatTile("Sent · ${ui.summary.sentCount}", ksh(ui.summary.sentCents), Modifier.weight(1f))
                     StatTile("Received · ${ui.summary.receivedCount}", ksh(ui.summary.receivedCents), Modifier.weight(1f))

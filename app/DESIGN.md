@@ -68,7 +68,7 @@ Everything lives in `com.ledga.app.ui.design`. Until Phase 4 uses it, R8 strips 
 - **Sheet screenshots.** Robolectric doesn't capture `ModalBottomSheet`'s dialog window. Snap a sheet's stateless content inside `SheetScaffold` instead (`TransactionSheetScreensTest`).
 - **Category picker.** "Apply to all" defaults on (N > 1) only when the person picks a different category; Save with the payment's own category and "apply to all" off changes nothing. The grid shows four columns while a cell holds the longest seeded word at the current text size, else three (`CategoryPickerBehaviourTest`).
 - **One line choice (R47).** `SelectedLine.choice` (a `LineChoice`) narrows Home, Activity › Spending and People (and the
-  person sheet), Trackers and Tracker detail. Every one of them shows `LinePicker`, the chip plus switcher sheet, which
+  person sheet, which says "On <line>" because People's chip sits under it), Trackers and Tracker detail. Every one of them shows `LinePicker`, the chip plus switcher sheet, which
   draws nothing on a phone with fewer than two lines. Read `LineChoice.lineId`, never `selectedId`: the choice counts only
   with two or more lines and while that line exists. Transactions keeps its own line chips; a link into it carries the line.
 - **Links into Activity (R61).** A screen that opens Activity calls `ActivityLinks.open(…)` and then switches tabs.

@@ -16,12 +16,14 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTouchInput
 import androidx.paging.LoadState
+import com.ledga.app.data.room.dao.PersonSummary
 import androidx.paging.LoadStates
 import androidx.paging.PagingData
 import androidx.paging.compose.collectAsLazyPagingItems
@@ -149,5 +151,17 @@ class ActivityBehaviourTest {
         }
         compose.onNode(hasSetTextAction()).assertIsFocused()
         assertEquals(1, consumed, "the pane hands the request back, so a later visit doesn't take the focus again")
+    }
+
+    @Test
+    fun `the person sheet says which line its totals are for`() {
+        val jane = PersonRowUi(key = "0712345111", name = "Jane Tester", phone = "0712 345 111", count = 1, totalCents = 70_000, lastAt = created)
+        compose.setContent {
+            LedgaTheme(Appearance.LIGHT, reducedMotion = true) {
+                val items = remember { flowOf(PagingData.from(emptyList<com.ledga.app.data.room.TxRow>(), complete)) }.collectAsLazyPagingItems()
+                PersonSheetContent(PersonSheetUi(jane, PersonSummary(70_000, 1, 0, 0), categories, today, lineLabel = "Business ··87"), items, onOpenTx = {})
+            }
+        }
+        compose.onNodeWithText("On Business ··87").assertIsDisplayed()
     }
 }

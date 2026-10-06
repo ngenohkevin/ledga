@@ -114,5 +114,10 @@ class PeopleViewModelTest {
         assertEquals(120_000, vm.ui.first { it.loaded && it.rows.isNotEmpty() }.rows.single().totalCents)
         line.select(2)
         assertEquals(70_000, vm.ui.first { it.line.lineId == 2L }.rows.single().totalCents)
+        val sheet = vms.track(PersonSheetViewModel(LedgerQueries(db), db, live, line))
+        sheet.open(vm.ui.value.rows.single())
+        val narrowed = sheet.ui.first { it.person != null }
+        assertEquals("Business ··78", narrowed.lineLabel, "the sheet says its totals are one line's")
+        assertEquals(70_000, narrowed.summary.sentCents)
     }
 }
