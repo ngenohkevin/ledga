@@ -7,6 +7,7 @@ import androidx.work.WorkManager
 import com.ledga.app.data.capture.ScanMode
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 /** "Updating your history…" (spec §7.2): [total] is 0 until the running job reports it. */
@@ -72,6 +73,9 @@ interface BackgroundWork {
     /** Onboarding's Import and You → Rescan: the whole inbox. */
     fun importInbox()
 
+    /** True while the post-migration chain has a step queued or running (its own rescan and rebuild are coming). */
+    suspend fun migrationChainRunning(): Boolean
+
     /** The "Updating your history…" banner: null when nothing is running. */
     val history: Flow<HistoryProgress?>
 
@@ -96,6 +100,9 @@ class WorkManagerBackgroundWork(private val wm: WorkManager) : BackgroundWork {
     override fun importInbox() {
         wm.enqueueUniqueWork(IMPORT, ExistingWorkPolicy.KEEP, InboxScanWorker.request(ScanMode.FULL))
     }
+
+    override suspend fun migrationChainRunning(): Boolean =
+        wm.getWorkInfosForUniqueWorkFlow(STARTUP).first().any { !it.state.isFinished }
 
     override val history: Flow<HistoryProgress?> =
         combine(listOf(STARTUP, RebuildWorker.UNIQUE_NAME, IMPORT).map { wm.getWorkInfosForUniqueWorkFlow(it) }) { lists ->

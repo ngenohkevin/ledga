@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 /** Records what was asked of WorkManager; tests drive the progress flows by hand. */
 class FakeBackgroundWork : BackgroundWork {
     val calls = mutableListOf<String>()
+    var chainRunning = false
     override val history = MutableStateFlow<HistoryProgress?>(null)
     override val inboxImport = MutableStateFlow<ImportProgress>(ImportProgress.Idle)
 
@@ -26,4 +27,6 @@ class FakeBackgroundWork : BackgroundWork {
     override fun importInbox() {
         calls += "importInbox"
     }
+
+    override suspend fun migrationChainRunning() = chainRunning
 }

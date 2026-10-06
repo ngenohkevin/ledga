@@ -5,6 +5,8 @@ import com.ledga.app.data.legacy.LegacyImporter
 import com.ledga.app.data.legacy.PreV6Snapshot
 import com.ledga.app.data.lines.LinesRepository
 import com.ledga.app.data.room.LedgaDatabase
+import com.ledga.app.data.room.MetaKeys
+import com.ledga.app.data.room.MetaRow
 import com.ledga.app.data.settings.Settings
 import com.ledga.app.data.settings.SettingsStore
 import com.ledga.app.work.BackgroundWork
@@ -30,7 +32,8 @@ fun interface SmsAccess {
  * on a v1 file, and queues the history work owed:
  * - after the migration: the import → full rescan → rebuild chain (and v1's leftovers are cleared, R31);
  * - after a parser or derivation version change: a rebuild;
- * - otherwise: deletes the pre-v6 copy once nothing is owed, and catches up on missed SMS.
+ * - otherwise: deletes the pre-v6 copy once the migration's work is done (only with proof the migration happened here),
+ *   and catches up on missed SMS (or runs the migration's full rescan if it never completed).
  * `LedgaApp` has already taken the pre-v6 snapshot. Never throws: a failure becomes [StartupState.Failed].
  */
 class Startup(
@@ -52,12 +55,24 @@ class Startup(
     }
 
     private suspend fun afterOpen(): StartupState {
+        val meta = db.metaDao()
         val legacyPending = importer.isPending()
+        if (legacyPending) {
+            meta.put(MetaRow(MetaKeys.MIGRATED_FROM_V1, "1"))
+            settings.setFullRescanOwed(true)
+        }
+        // The pre-v6 copy goes only on proof that this database received it. A copy next to a database that never went
+        // through the migration (recreated, emptied) may be the only one of the user's history: recovery, not deletion.
+        if (snapshot.exists() && meta.get(MetaKeys.MIGRATED_FROM_V1) == null) {
+            return StartupState.Failed(UNMOVED_COPY, snapshot.file())
+        }
+        val chainRunning = work.migrationChainRunning()
         when {
             legacyPending -> {
                 runCatching(leftovers)
                 work.afterMigration()
             }
+            chainRunning -> Unit // its own rescan and rebuild are coming
             deriver.needsRebuild() -> work.rebuild()
             // Migrated, imported and rebuilt: the safety copy has done its job (spec §8 step 1).
             snapshot.exists() -> snapshot.delete()
@@ -65,8 +80,16 @@ class Startup(
         val s = runCatching { settings.current() }.getOrDefault(Settings())
         if (s.onboarded && sms.granted()) {
             runCatching { lines.syncActive() }
-            if (!legacyPending) work.catchUp()
+            when {
+                legacyPending || chainRunning -> Unit // the chain's full rescan covers it
+                s.fullRescanOwed -> work.importInbox()
+                else -> work.catchUp()
+            }
         }
         return StartupState.Ready(s.onboarded)
+    }
+
+    private companion object {
+        const val UNMOVED_COPY = "A copy of your data from before the update was found, but this database never received it."
     }
 }

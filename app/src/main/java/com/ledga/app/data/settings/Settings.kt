@@ -32,4 +32,6 @@ data class Settings(
     val notifyFuliza: Boolean = true,
     /** The newest inbox `date` (epoch ms) already scanned; 0 = never (spec §9.1). */
     val smsWatermarkMillis: Long = 0L,
+    /** The migration's full rescan (spec §8 step 3) hasn't completed yet: the next start runs it instead of a catch-up. */
+    val fullRescanOwed: Boolean = false,
 )

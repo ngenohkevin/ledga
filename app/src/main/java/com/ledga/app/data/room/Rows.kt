@@ -155,6 +155,9 @@ object MetaKeys {
     /** The parser/derivation versions the current `transactions` were built with. */
     const val PARSER_VERSION = "parserVersion"
     const val DERIVATION_VERSION = "derivationVersion"
+
+    /** Written by Startup when it first sees MIGRATION_5_6's staging tables: this database holds the v1 history. */
+    const val MIGRATED_FROM_V1 = "migratedFromV1"
 }
 
 /** A line's latest stated wallet balance (query result, not a table). */

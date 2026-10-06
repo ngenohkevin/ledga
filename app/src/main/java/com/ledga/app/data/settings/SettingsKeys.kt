@@ -19,4 +19,5 @@ internal object SettingsKeys {
     val LARGE_CENTS = longPreferencesKey("notify_large_cents")
     val NOTIFY_FULIZA = booleanPreferencesKey("notify_fuliza")
     val SMS_WATERMARK = longPreferencesKey("sms_watermark")
+    val FULL_RESCAN_OWED = booleanPreferencesKey("full_rescan_owed")
 }

@@ -69,6 +69,7 @@ class StartupTest {
         assertEquals(StartupState.Ready(onboarded = true), startup(withPendingImport(TestDb.inMemory())).run())
         assertEquals(listOf("afterMigration"), work.calls, "the chain's full rescan replaces the catch-up")
         assertEquals(1, leftoversCleared)
+        assertTrue(settings.current().fullRescanOwed, "owed until the chain's full scan completes")
     }
 
     @Test
@@ -82,13 +83,45 @@ class StartupTest {
     }
 
     @Test
-    fun `the pre-v6 copy is kept while history work is owed and deleted once it is done`() = runTest {
+    fun `the pre-v6 copy is kept while the migration's work is owed and deleted once it is done`() = runTest {
         val snapshot = PreV6Snapshot(context)
         snapshot.file().apply { parentFile!!.mkdirs(); writeText("copy") }
-        startup(withPendingImport(TestDb.inMemory()), snapshot).run()
+        val db = withPendingImport(TestDb.inMemory())
+        startup(db, snapshot).run()
         assertTrue(snapshot.exists())
-        startup(TestDb.inMemory(), snapshot).run()
+        db.openHelper.writableDatabase.execSQL("DROP TABLE legacy_tx") // LegacyImporter finished
+        startup(db, snapshot).run()
         assertFalse(snapshot.exists())
+    }
+
+    @Test
+    fun `a pre-v6 copy is never deleted unless this database went through the migration - recovery instead`() = runTest {
+        val snapshot = PreV6Snapshot(context)
+        snapshot.file().apply { parentFile!!.mkdirs(); writeText("copy") }
+        val state = startup(TestDb.inMemory(), snapshot).run()
+        assertIs<StartupState.Failed>(state)
+        assertEquals(snapshot.file(), state.snapshot)
+        assertTrue(snapshot.exists(), "the copy may be the only one of the user's history")
+    }
+
+    @Test
+    fun `while the migration chain is still running, startup queues no second rebuild and no catch-up`() = runTest {
+        val db = TestDb.inMemory()
+        db.metaDao().put(MetaRow(MetaKeys.DERIVATION_VERSION, "0"))
+        settings.setOnboarded()
+        smsGranted = true
+        work.chainRunning = true
+        startup(db).run()
+        assertEquals(emptyList(), work.calls)
+    }
+
+    @Test
+    fun `a full rescan the migration left owed runs on the next start instead of a catch-up`() = runTest {
+        settings.setOnboarded()
+        settings.setFullRescanOwed(true)
+        smsGranted = true
+        startup(TestDb.inMemory()).run()
+        assertEquals(listOf("importInbox"), work.calls)
     }
 
     @Test

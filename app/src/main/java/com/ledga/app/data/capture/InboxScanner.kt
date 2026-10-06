@@ -45,6 +45,8 @@ class InboxScanner(
             progress(minOf((i + 1) * Deriver.CHUNK, found.size), found.size)
         }
         found.maxOfOrNull { it.receivedAt.toEpochMilli() }?.let { settings.advanceWatermark(it) }
+        // Every message in the inbox has now been through the ingestor: the migration's rescan, if owed, is done.
+        if (mode == ScanMode.FULL) settings.setFullRescanOwed(false)
         return ScanResult(found.size, inserted, duplicates, codes)
     }
 

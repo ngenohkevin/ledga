@@ -46,6 +46,8 @@ class SettingsStore @Inject constructor(private val store: DataStore<Preferences
         it[SettingsKeys.SMS_WATERMARK] = maxOf(it[SettingsKeys.SMS_WATERMARK] ?: 0L, millis)
     }
 
+    suspend fun setFullRescanOwed(owed: Boolean) = edit { it[SettingsKeys.FULL_RESCAN_OWED] = owed }
+
     private suspend fun edit(block: (MutablePreferences) -> Unit) {
         store.edit { block(it) }
     }
@@ -68,6 +70,7 @@ class SettingsStore @Inject constructor(private val store: DataStore<Preferences
                 largeThresholdCents = p[SettingsKeys.LARGE_CENTS]?.takeIf { it > 0 } ?: d.largeThresholdCents,
                 notifyFuliza = p[SettingsKeys.NOTIFY_FULIZA] ?: d.notifyFuliza,
                 smsWatermarkMillis = p[SettingsKeys.SMS_WATERMARK] ?: d.smsWatermarkMillis,
+                fullRescanOwed = p[SettingsKeys.FULL_RESCAN_OWED] ?: d.fullRescanOwed,
             )
         }
     }

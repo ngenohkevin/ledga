@@ -15,6 +15,8 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import java.time.Instant
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 @RunWith(RobolectricTestRunner::class)
 class InboxScannerTest {
@@ -75,5 +77,15 @@ class InboxScannerTest {
         inbox = listOf(sms(Sms.SEND, "2026-03-21T10:30:30Z", sub = null))
         scanner.scan(ScanMode.FULL)
         assertEquals(db.linesDao().all().single().id, db.transactionsDao().get("TJK4AB12FB")?.lineId)
+    }
+
+    @Test
+    fun `a full scan settles the rescan the migration left owed, and a catch-up doesn't`() = runTest {
+        inbox = listOf(sms(Sms.SEND, "2026-03-21T10:30:30Z"))
+        settings.setFullRescanOwed(true)
+        scanner.scan(ScanMode.CATCH_UP)
+        assertTrue(settings.current().fullRescanOwed)
+        scanner.scan(ScanMode.FULL)
+        assertFalse(settings.current().fullRescanOwed)
     }
 }
