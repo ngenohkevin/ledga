@@ -47,6 +47,9 @@ import java.time.Instant
 import java.time.LocalDate
 import javax.inject.Inject
 
+/** One line's balance under the All lines total: "Personal ··11 · Ksh 3,175.57 · 7:42 PM". */
+data class BalanceLine(val label: String, val cents: Long, val at: Instant)
+
 /** Everything Home shows (spec §10.4). */
 data class HomeUi(
     val loaded: Boolean = false,
@@ -55,8 +58,11 @@ data class HomeUi(
     val name: String? = null,
     val line: LineChoice = LineChoice(),
     val balance: HomeBalance? = null,
-    /** "Personal ··11": the newest reading's line, only under All lines on a two-line phone (spec §10.4 "from <line>"). */
-    val balanceFrom: String? = null,
+    /**
+     * Under All lines on a phone with two or more lines: each line's part of the total, in the lines' order (owner,
+     * 2026-10-06; it replaces spec §10.4's "from <line>", which read as if the total were that line's).
+     */
+    val balanceLines: List<BalanceLine> = emptyList(),
     val fuliza: FulizaStatus? = null,
     val spending: SpendingCardUi = SpendingCardUi(),
     val trackers: List<TrackerSummary> = emptyList(),
@@ -161,10 +167,7 @@ class HomeViewModel @Inject constructor(
             name = s.displayName,
             line = choice,
             balance = c.balance,
-            balanceFrom = c.balance?.fromLineId
-                ?.takeIf { choice.showChip && choice.lineId == null }
-                ?.let { id -> choice.lines.firstOrNull { it.id == id } }
-                ?.let(TxText::lineLabel),
+            balanceLines = balanceLines(c.balance, choice),
             fuliza = c.fuliza,
             spending = c.spending,
             trackers = c.trackers,
@@ -240,4 +243,13 @@ class HomeViewModel @Inject constructor(
             ledger.spentByPeriod(type, InstantRange(periods.first().startInstant, null), lineId),
         ) { totals, before, sums -> HomeSpending.card(type, now, totals, before, sums) }
     }
+}
+
+/** Each line's part of the All lines total, labelled and in the lines' order; empty with a line chosen or one line. */
+private fun balanceLines(balance: HomeBalance?, choice: LineChoice): List<BalanceLine> {
+    if (balance == null || !choice.showChip || choice.lineId != null) return emptyList()
+    val parts = balance.lines.associateBy { it.lineId }
+    return choice.lines.mapNotNull { line -> parts[line.id]?.let { BalanceLine(TxText.lineLabel(line), it.cents, it.updatedAt) } }
+        .takeIf { it.size >= 2 }
+        .orEmpty()
 }

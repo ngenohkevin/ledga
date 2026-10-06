@@ -68,7 +68,9 @@
   - `LedgerQueries.balances()` is each line's latest stated balance with its time; hidden payments count, because the
     balance is the wallet's.
   - `HomeBalance.of(readings, lineId)` adds up each line's latest under all lines, or takes the latest overall when no
-    reading has a line.
+    reading has a line. Under all lines it also keeps each line's part (`HomeBalance.lines`): on a two-line phone Home
+    lists them under the total ("Personal ··11 · Ksh … · 7:42 PM") instead of spec §10.4's "from <line>" (owner,
+    2026-10-06: the total read as that line's balance). A quiet line's money still counts; its row shows how old it is.
   - `fulizaReadings()` with `FulizaStatus.forLine(readings, lineId)` gives a line's status or the lines added up.
     Ceiling and available are known only when every line's are; the earliest due date leads.
   - `recent(lineId, categoryKey?)` is the newest five, in Activity's order.

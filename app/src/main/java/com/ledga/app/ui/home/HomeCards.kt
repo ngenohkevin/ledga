@@ -103,7 +103,10 @@ internal fun HomeHeader(ui: HomeUi, actions: HomeActions) {
     }
 }
 
-/** The balance card (spec §10.4): "M-Pesa balance", the line chip (R47), the balance, when and where from, the Fuliza strip. */
+/**
+ * The balance card (spec §10.4): "M-Pesa balance", the line chip (R47), the balance, when it was stated (under All lines
+ * on a two-line phone, each line's balance and time instead), the Fuliza strip.
+ */
 @Composable
 internal fun BalanceCard(ui: HomeUi, actions: HomeActions) {
     val c = LedgaTheme.colors
@@ -118,11 +121,12 @@ internal fun BalanceCard(ui: HomeUi, actions: HomeActions) {
             Text("It shows with your next M-Pesa message.", style = LedgaType.caption, color = c.muted)
         } else {
             AnimatedAmount(balance.cents, Modifier.padding(top = Spacing.xs))
-            Text(
-                HomeText.updated(balance.updatedAt, ui.balanceFrom, ui.today ?: DateLabels.nairobiDate(balance.updatedAt)),
-                style = LedgaType.caption,
-                color = c.muted,
-            )
+            val today = ui.today ?: DateLabels.nairobiDate(balance.updatedAt)
+            if (ui.balanceLines.isEmpty()) {
+                Text(HomeText.updated(balance.updatedAt, today), style = LedgaType.caption, color = c.muted)
+            } else {
+                ui.balanceLines.forEach { Text(HomeText.lineBalance(it, today), style = LedgaType.caption, color = c.muted) }
+            }
         }
         ui.fuliza?.let { FulizaStrip(it, ui.today, actions.onFuliza, Modifier.padding(top = Spacing.m)) }
     }

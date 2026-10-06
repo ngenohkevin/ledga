@@ -39,7 +39,14 @@ class HomeQueriesTest {
             txRow(code = "TJK4AB12KD", lineId = null, balanceCents = 999_900, at = Instant.parse("2026-10-04T07:00:00Z")),
         )
         val readings = ledger.balances().first()
-        assertEquals(HomeBalance(190_000, Instant.parse("2026-10-03T07:00:00Z"), 2), HomeBalance.of(readings, null))
+        assertEquals(
+            HomeBalance(
+                190_000, Instant.parse("2026-10-03T07:00:00Z"), 2,
+                listOf(LineBalance(1, 150_000, Instant.parse("2026-10-02T07:00:00Z")), LineBalance(2, 40_000, Instant.parse("2026-10-03T07:00:00Z"))),
+            ),
+            HomeBalance.of(readings, null),
+            "the total and each line's part of it",
+        )
         assertEquals(HomeBalance(150_000, Instant.parse("2026-10-02T07:00:00Z"), 1), HomeBalance.of(readings, 1))
         assertNull(HomeBalance.of(readings, 3))
         assertNull(HomeBalance.of(emptyList(), null))

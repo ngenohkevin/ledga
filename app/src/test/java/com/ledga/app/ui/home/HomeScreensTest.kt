@@ -105,6 +105,19 @@ class HomeScreensTest {
     }
 
     @Test
+    fun twoLines() = snapScreen("home_two_lines") {
+        val ui = home.copy(
+            line = LineChoice(listOf(PERSONAL, BUSINESS)),
+            balance = HomeBalance(2_411_425, Instant.parse("2026-10-06T05:40:00Z"), 1),
+            balanceLines = listOf(
+                BalanceLine("Personal ··11", 2_315_075, Instant.parse("2026-10-06T05:40:00Z")),
+                BalanceLine("Business ··78", 96_350, Instant.parse("2026-09-02T20:37:00Z")),
+            ),
+        )
+        ShellFrame(Tab.HOME, onSelect = {}) { HomeContent(ui, HomeActions()) }
+    }
+
+    @Test
     fun noSms() = snapScreen("home_no_sms") {
         ShellFrame(Tab.HOME, onSelect = {}) { HomeContent(HomeUi(loaded = true, greeting = "Good morning", smsGranted = false), HomeActions()) }
     }

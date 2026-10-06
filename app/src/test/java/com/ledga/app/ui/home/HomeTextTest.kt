@@ -20,11 +20,17 @@ class HomeTextTest {
     }
 
     @Test
-    fun `updated says when, and from which line only when given`() {
-        assertEquals("Updated 2:15 PM · from Personal ··11", HomeText.updated(Instant.parse("2026-10-06T11:15:00Z"), "Personal ··11", today))
-        assertEquals("Updated yesterday 2:15 PM", HomeText.updated(Instant.parse("2026-10-05T11:15:00Z"), null, today))
-        assertEquals("Updated 3 Oct, 2:15 PM", HomeText.updated(Instant.parse("2026-10-03T11:15:00Z"), null, today))
-        assertEquals("Updated 3 Oct 2025, 2:15 PM", HomeText.updated(Instant.parse("2025-10-03T11:15:00Z"), null, today))
+    fun `updated says when`() {
+        assertEquals("Updated 2:15 PM", HomeText.updated(Instant.parse("2026-10-06T11:15:00Z"), today))
+        assertEquals("Updated yesterday 2:15 PM", HomeText.updated(Instant.parse("2026-10-05T11:15:00Z"), today))
+        assertEquals("Updated 3 Oct, 2:15 PM", HomeText.updated(Instant.parse("2026-10-03T11:15:00Z"), today))
+        assertEquals("Updated 3 Oct 2025, 2:15 PM", HomeText.updated(Instant.parse("2025-10-03T11:15:00Z"), today))
+    }
+
+    @Test
+    fun `under All lines each line says its balance and when M-Pesa stated it`() {
+        assertEquals("Personal ··11 · Ksh 3,450.25 · 2:15 PM", HomeText.lineBalance(BalanceLine("Personal ··11", 345_025, Instant.parse("2026-10-06T11:15:00Z")), today))
+        assertEquals("Business ··78 · Ksh 1,200 · 2 Sep", HomeText.lineBalance(BalanceLine("Business ··78", 120_000, Instant.parse("2026-09-02T20:37:00Z")), today))
     }
 
     @Test

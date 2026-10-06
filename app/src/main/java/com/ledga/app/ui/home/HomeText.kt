@@ -17,8 +17,8 @@ object HomeText {
         else -> "Good evening"
     }
 
-    /** "Updated 2:15 PM · from Personal ··11", "Updated yesterday 2:15 PM", "Updated 3 Oct, 2:15 PM", "… 3 Oct 2025, 2:15 PM". */
-    fun updated(at: Instant, from: String?, today: LocalDate): String {
+    /** "Updated 2:15 PM", "Updated yesterday 2:15 PM", "Updated 3 Oct, 2:15 PM", "Updated 3 Oct 2025, 2:15 PM". */
+    fun updated(at: Instant, today: LocalDate): String {
         val day = DateLabels.nairobiDate(at)
         val time = DateLabels.clock(at)
         val whenText = when (day) {
@@ -26,8 +26,12 @@ object HomeText {
             today.minusDays(1) -> "yesterday $time"
             else -> (if (day.year == today.year) DateLabels.dayMonth(day) else DateLabels.date(day)) + ", $time"
         }
-        return "Updated $whenText" + from?.let { " · from $it" }.orEmpty()
+        return "Updated $whenText"
     }
+
+    /** "Personal ··11 · Ksh 3,175.57 · 7:42 PM": a line's part of the All lines total, with Recent's time or day. */
+    fun lineBalance(line: BalanceLine, today: LocalDate): String =
+        "${line.label} · ${AmountFormat.CURRENCY} ${AmountFormat.plain(line.cents)} · ${rowTime(line.at, today)}"
 
     /** "Due 2 Nov", or "Was due 2 Nov" once the date has passed (R58). */
     fun due(due: LocalDate, today: LocalDate?): String =

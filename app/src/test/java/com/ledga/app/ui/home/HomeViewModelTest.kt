@@ -105,7 +105,7 @@ class HomeViewModelTest {
     }
 
     @Test
-    fun `the chosen line narrows Home, and from-line shows only under All lines`() = runTest {
+    fun `the chosen line narrows Home, and each line's balance shows only under All lines`() = runTest {
         twoLines(db)
         db.transactionsDao().upsertAll(
             listOf(
@@ -116,12 +116,19 @@ class HomeViewModelTest {
         val vm = vm()
         val all = vm.ui.first { it.loaded && it.line.showChip && it.balance != null }
         assertEquals(620_000, all.balance?.cents)
-        assertEquals("Business ··78", all.balanceFrom)
+        assertEquals(
+            listOf(
+                BalanceLine("Personal ··11", 500_000, Instant.parse("2026-03-20T07:00:00Z")),
+                BalanceLine("Business ··78", 120_000, Instant.parse("2026-03-21T07:00:00Z")),
+            ),
+            all.balanceLines,
+            "the total, then each line's own balance and time (owner, 2026-10-06)",
+        )
         assertEquals(140_000, all.spending.spentCents)
         vm.selectLine(2)
         val business = vm.ui.first { it.line.lineId == 2L }
         assertEquals(120_000, business.balance?.cents)
-        assertNull(business.balanceFrom, "the chip already says which line")
+        assertEquals(emptyList(), business.balanceLines, "the chip already says which line")
         assertEquals(40_000, business.spending.spentCents)
         assertEquals(listOf("TJK4AB12QB"), business.recent.map { it.code })
         assertEquals(40_000, business.trackers.first { it.category.key == Categories.ELECTRICITY }.thisMonth.total.cents)
