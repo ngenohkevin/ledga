@@ -42,7 +42,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.ledga.app.ui.app.ScreenTitle
-import com.ledga.app.ui.design.components.EmptyState
 import com.ledga.app.ui.design.components.SegmentedControl
 import com.ledga.app.ui.design.icons.Ph
 import com.ledga.app.ui.design.theme.LedgaTheme
@@ -125,6 +124,7 @@ fun ActivityTab(vm: ActivityViewModel = hiltViewModel()) {
     var openCode by rememberSaveable { mutableStateOf<String?>(null) }
     var pickCode by rememberSaveable { mutableStateOf<String?>(null) }
     var filtersOpen by rememberSaveable { mutableStateOf(false) }
+    var personKey by rememberSaveable { mutableStateOf<String?>(null) }
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     Box(Modifier.fillMaxSize()) {
@@ -156,7 +156,20 @@ fun ActivityTab(vm: ActivityViewModel = hiltViewModel()) {
                         ),
                     )
                 }
-                ActivitySegment.PEOPLE -> SegmentArrivesNext("People")
+                ActivitySegment.PEOPLE -> {
+                    val people: PeopleViewModel = hiltViewModel()
+                    val p by people.ui.collectAsStateWithLifecycle()
+                    PeoplePane(
+                        p,
+                        PeopleActions(
+                            onDirection = people::setDirection,
+                            onQuery = people::setQuery,
+                            onMinimum = people::setMinimum,
+                            onOpen = { personKey = it.key },
+                        ),
+                    )
+                    PersonSheetHost(p.rows.firstOrNull { it.key == personKey }, onDismiss = { personKey = null }, onOpenTx = { openCode = it })
+                }
             }
         }
         SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter).padding(Spacing.l))
@@ -186,8 +199,3 @@ fun ActivityTab(vm: ActivityViewModel = hiltViewModel()) {
         )
     }
 }
-
-/** Tasks 10 and 11 of this plan replace these with Spending and People. */
-@Composable
-private fun SegmentArrivesNext(name: String) =
-    EmptyState("fluent_bar_chart", "$name arrives next", "This part of Activity is still being built.")
