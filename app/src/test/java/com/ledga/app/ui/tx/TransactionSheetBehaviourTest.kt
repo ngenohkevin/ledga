@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -11,22 +12,25 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.text.TextLayoutResult
 import com.ledga.app.data.room.LineRow
+import com.ledga.app.testing.Sms
 import com.ledga.app.testing.txRow
 import com.ledga.app.ui.design.theme.Appearance
 import com.ledga.app.ui.design.theme.LedgaTheme
+import com.ledga.app.ui.design.type.LedgaType
 import com.ledga.core.model.Categories
 import com.ledga.core.model.FlowKind
 import com.ledga.core.model.TxKind
+import java.time.Instant
+import java.time.LocalDate
+import kotlin.test.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
-import java.time.Instant
-import java.time.LocalDate
-import kotlin.test.assertEquals
 
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -98,5 +102,20 @@ class TransactionSheetBehaviourTest {
         compose.onNodeWithText("Personal ··23").performClick()
         compose.onNodeWithText("Business ··87").performClick()
         assertEquals(listOf(2L), moved)
+    }
+
+    @Test
+    fun `the original SMS is set in Ledga's own font, not the phone's`() {
+        compose.setContent {
+            LedgaTheme(Appearance.LIGHT, reducedMotion = true) {
+                Column(Modifier.verticalScroll(rememberScrollState())) {
+                    TransactionSheetContent(TxSheetState(txRow(), sms = listOf(Sms.KPLC), today = today), TxSheetActions(), startSmsOpen = true)
+                }
+            }
+        }
+        val node = compose.onNodeWithText("TJK4AB12FA Confirmed", substring = true, useUnmergedTree = true).fetchSemanticsNode()
+        val layout = mutableListOf<TextLayoutResult>().also { node.config[SemanticsActions.GetTextLayoutResult].action?.invoke(it) }.single()
+        // A system family (Monospace, Default) follows the phone's font setting, which on Samsung can be a script font.
+        assertEquals(LedgaType.caption.fontFamily, layout.layoutInput.style.fontFamily)
     }
 }

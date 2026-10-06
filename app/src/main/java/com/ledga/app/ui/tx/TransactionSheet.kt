@@ -46,7 +46,6 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
@@ -385,7 +384,8 @@ private fun SmsRow(bodies: List<String>, open: Boolean, onToggle: () -> Unit) {
                 Modifier.fillMaxWidth().clip(RoundedCornerShape(Radii.stat)).background(c.plate).padding(Spacing.m),
                 verticalArrangement = Arrangement.spacedBy(Spacing.m),
             ) {
-                bodies.forEach { Text(it, style = LedgaType.caption.copy(fontFamily = FontFamily.Monospace), color = c.ink2) }
+                // Ledga's own Inter, never a system family: Monospace follows the phone's font setting (a script font on some Samsungs).
+                bodies.forEach { Text(it, style = LedgaType.caption, color = c.ink2) }
             }
         }
     }
