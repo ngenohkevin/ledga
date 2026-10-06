@@ -75,19 +75,37 @@ fun RecoveryScreen(reason: String, canShare: Boolean, onShare: () -> Unit, onRet
             maxLines = 4,
             overflow = TextOverflow.Ellipsis,
         )
+        if (canShare) {
+            Text(
+                RECOVERY_PRIVACY_TEXT,
+                Modifier.padding(top = Spacing.l),
+                style = LedgaType.caption,
+                color = c.ink2,
+                textAlign = TextAlign.Center,
+            )
+        }
         Spacer(Modifier.height(Spacing.xxl))
         if (canShare) PrimaryPill("Send me the database", onShare, Modifier.fillMaxWidth())
         SoftPill("Try again", onRetry, Modifier.fillMaxWidth().padding(top = Spacing.s))
     }
 }
 
+/** Spec §14: an export says plainly that it holds raw financial SMS; the recovery copy is a whole-database export. */
+internal const val RECOVERY_PRIVACY_TEXT = "The file holds your M-Pesa messages, so send it only to the developer."
+
 object RecoveryShare {
-    /** "Send me the database": the pre-v6 copy, shared as a file through Ledga's FileProvider (`files/pre-v6/`). */
+    /**
+     * "Send me the database": the pre-v6 copy through Ledga's FileProvider (`files/pre-v6/`), with the `-wal` and
+     * `-shm` files it was copied with: v1 was stopped mid-write by the update, so its latest changes may live in the WAL.
+     */
     fun intent(context: Context, file: File): Intent {
-        val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
-        val send = Intent(Intent.ACTION_SEND)
+        val uris = ArrayList(
+            listOf("", "-wal", "-shm").map { File(file.path + it) }.filter { it.exists() }
+                .map { FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", it) },
+        )
+        val send = Intent(Intent.ACTION_SEND_MULTIPLE)
             .setType("application/octet-stream")
-            .putExtra(Intent.EXTRA_STREAM, uri)
+            .putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)
             .putExtra(Intent.EXTRA_SUBJECT, "Ledga database (before the update)")
             .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         return Intent.createChooser(send, "Send the database")
