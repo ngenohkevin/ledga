@@ -35,6 +35,7 @@ import com.ledga.app.ui.design.components.SkeletonRow
 import com.ledga.app.ui.design.components.cardSegment
 import com.ledga.app.ui.design.format.DateLabels
 import com.ledga.app.ui.design.icons.Ph
+import com.ledga.app.ui.design.tokens.Radii
 import com.ledga.app.ui.design.tokens.Spacing
 import com.ledga.app.ui.tx.TxText
 import com.ledga.app.ui.design.components.TxRow as TransactionRow
@@ -166,9 +167,9 @@ private fun DayStart(item: ActivityItem.Day, ui: TransactionsUi) {
     }
 }
 
-/** The day card's rounded bottom (R40). */
+/** The day card's rounded bottom (R40): as tall as the corner, so the arc starts where the last row ends. */
 @Composable
-private fun CardCap() = Box(Modifier.fillMaxWidth().height(Spacing.m).cardSegment(Segment.Bottom))
+private fun CardCap() = Box(Modifier.fillMaxWidth().height(Radii.card).cardSegment(Segment.Bottom))
 
 @Composable
 private fun TxListRow(row: TxRow, dividerAbove: Boolean, ui: TransactionsUi, actions: TransactionsActions) {
