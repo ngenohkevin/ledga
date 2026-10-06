@@ -8,6 +8,7 @@ import com.ledga.app.data.capture.InboxSource
 import com.ledga.app.data.capture.MpesaInbox
 import com.ledga.app.data.derive.Deriver
 import com.ledga.app.data.derive.LedgerQueries
+import com.ledga.app.data.edit.TransactionEdits
 import com.ledga.app.data.ingest.SmsIngestor
 import com.ledga.app.data.legacy.LegacyImporter
 import com.ledga.app.data.legacy.PreV6Snapshot
@@ -51,6 +52,11 @@ object DataModule {
     @Provides
     @Singleton
     fun ledger(db: LedgaDatabase): LedgerQueries = LedgerQueries(db)
+
+    /** Every change a person makes to a transaction (spec §7.4). */
+    @Provides
+    @Singleton
+    fun edits(db: LedgaDatabase, deriver: Deriver, clock: Clock): TransactionEdits = TransactionEdits(db, deriver, clock)
 
     @Provides
     fun legacyImporter(db: LedgaDatabase, clock: Clock): LegacyImporter = LegacyImporter(db, clock)
