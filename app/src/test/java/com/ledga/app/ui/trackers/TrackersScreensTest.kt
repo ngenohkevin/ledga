@@ -2,6 +2,7 @@ package com.ledga.app.ui.trackers
 
 import com.ledga.app.data.room.CategoryOrigin
 import com.ledga.app.data.room.CategoryRow
+import com.ledga.app.data.room.dao.CategorySpend
 import com.ledga.app.data.trackers.TrackerSummary
 import com.ledga.app.testing.snapScreen
 import com.ledga.app.testing.snapScreenLandscape
@@ -34,16 +35,20 @@ class TrackersScreensTest {
     private val byKey = categories.associateBy { it.key }
     private val months = Periods.lastN(PeriodType.MONTH, now, 13)
 
-    private fun tracker(key: String, last6: List<Long>, average: Long?, usual: Int? = null): TrackerSummary {
+    private fun tracker(key: String, last6: List<Long>, average: Long?, usual: Int? = null, last: CategorySpend? = null): TrackerSummary {
         val values = List(7) { 0L } + last6
-        return TrackerSummary(byKey.getValue(key), months.mapIndexed { i, p -> Bucket(p, Money(values[i]), if (values[i] > 0) 1 else 0) }, average, usual, null)
+        return TrackerSummary(byKey.getValue(key), months.mapIndexed { i, p -> Bucket(p, Money(values[i]), if (values[i] > 0) 1 else 0) }, average, usual, last)
     }
 
     private val trackers = listOf(
         tracker(Categories.ELECTRICITY, listOf(171_000, 182_000, 168_000, 190_000, 176_000, 95_000), 178_000),
         tracker(Categories.WATER, listOf(64_000, 58_000, 61_000, 66_000, 59_000, 0), 61_000, usual = 12),
         tracker(Categories.FUEL, listOf(740_000, 815_000, 690_000, 760_000, 705_000, 230_000), 742_000),
-        tracker(Categories.CAR_SERVICE, listOf(0, 520_000, 0, 0, 0, 0), 87_000),
+        // The June service the bar shows is its last payment, as the reader would report it.
+        tracker(
+            Categories.CAR_SERVICE, listOf(0, 520_000, 0, 0, 0, 0), 87_000,
+            last = CategorySpend("TJK4AB12CS", Categories.CAR_SERVICE, Instant.parse("2026-06-12T07:00:00Z"), 520_000, "SAMPLE GARAGE"),
+        ),
     )
     private val labels = listOf("MAY", "JUN", "JUL", "AUG", "SEP", "OCT")
     private val bars = labels.mapIndexed { i, label -> Bar(label, trackers.map { it.months[7 + i].total.cents }, label, inProgress = i == 5) }

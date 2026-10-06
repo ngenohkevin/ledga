@@ -10,7 +10,8 @@ import java.time.LocalDate
 
 /**
  * A synthetic `transactions` row for UI tests (the repo is public: invented names, numbers and codes). The default is
- * the mockup's KPLC payment: Mon 5 Oct 2026, 2:15 PM in Nairobi, Ksh 1,000, balance after Ksh 23,150.75, line 1.
+ * an invented KPLC payment: Mon 5 Oct 2026, 2:15 PM in Nairobi, Ksh 1,000, balance after Ksh 23,150.75, line 1. Never
+ * copy a value from the mockups: they carry the owner's real data.
  */
 fun txRow(
     code: String = "TJK4AB12FA",
