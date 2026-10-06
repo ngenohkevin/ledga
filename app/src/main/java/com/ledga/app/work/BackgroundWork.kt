@@ -80,6 +80,9 @@ interface BackgroundWork {
     val history: Flow<HistoryProgress?>
 
     val inboxImport: Flow<ImportProgress>
+
+    /** The post-migration import gave up: v1's notes, categories and rules aren't in yet (it retries each start). */
+    val legacyImportFailed: Flow<Boolean>
 }
 
 class WorkManagerBackgroundWork(private val wm: WorkManager) : BackgroundWork {
@@ -110,6 +113,8 @@ class WorkManagerBackgroundWork(private val wm: WorkManager) : BackgroundWork {
         }
 
     override val inboxImport: Flow<ImportProgress> = wm.getWorkInfosForUniqueWorkFlow(IMPORT).map(ImportProgress::of)
+
+    override val legacyImportFailed: Flow<Boolean> = wm.getWorkInfosForUniqueWorkFlow(STARTUP).map(LegacyImportWorker::gaveUp)
 
     companion object {
         const val STARTUP = "ledga-startup"

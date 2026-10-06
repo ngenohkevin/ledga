@@ -11,6 +11,7 @@ class FakeBackgroundWork : BackgroundWork {
     var chainRunning = false
     override val history = MutableStateFlow<HistoryProgress?>(null)
     override val inboxImport = MutableStateFlow<ImportProgress>(ImportProgress.Idle)
+    override val legacyImportFailed = MutableStateFlow(false)
 
     override fun afterMigration() {
         calls += "afterMigration"

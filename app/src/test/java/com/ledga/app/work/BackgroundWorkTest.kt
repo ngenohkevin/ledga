@@ -35,7 +35,9 @@ import org.robolectric.RobolectricTestRunner
 import java.time.Instant
 import java.util.UUID
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 @RunWith(RobolectricTestRunner::class)
 class BackgroundWorkTest {
@@ -125,5 +127,25 @@ class BackgroundWorkTest {
         )
         assertEquals(ImportProgress.Failed, ImportProgress.of(listOf(info(WorkInfo.State.FAILED))))
         assertEquals(ImportProgress.Idle, ImportProgress.of(listOf(info(WorkInfo.State.CANCELLED))))
+    }
+
+    @Test
+    fun `a legacy import that keeps failing lets the rescan and rebuild still run, and says so`() = runTest {
+        db.openHelper.writableDatabase.execSQL("CREATE TABLE legacy_tx (code TEXT)") // staging the importer can't read
+        val early = TestListenableWorkerBuilder<LegacyImportWorker>(context).setWorkerFactory(factory).build()
+        assertEquals(ListenableWorker.Result.retry(), early.doWork())
+        val last = TestListenableWorkerBuilder<LegacyImportWorker>(context).setWorkerFactory(factory).setRunAttemptCount(3).build()
+        assertEquals(ListenableWorker.Result.success(workDataOf(LegacyImportWorker.KEY_FAILED to true)), last.doWork())
+    }
+
+    @Test
+    fun `a legacy import that gave up shows until one succeeds`() {
+        fun info(state: WorkInfo.State, failed: Boolean) = WorkInfo(
+            UUID.randomUUID(), state, setOf(LegacyImportWorker::class.java.name),
+            outputData = workDataOf(LegacyImportWorker.KEY_FAILED to failed),
+        )
+        assertFalse(LegacyImportWorker.gaveUp(emptyList()))
+        assertFalse(LegacyImportWorker.gaveUp(listOf(info(WorkInfo.State.SUCCEEDED, failed = false))))
+        assertTrue(LegacyImportWorker.gaveUp(listOf(info(WorkInfo.State.SUCCEEDED, failed = true))))
     }
 }

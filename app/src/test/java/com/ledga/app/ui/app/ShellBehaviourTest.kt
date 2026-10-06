@@ -24,4 +24,10 @@ class ShellBehaviourTest {
         compose.onNodeWithText("Try again").performClick()
         assertEquals(1, retries)
     }
+
+    @Test
+    fun `the interim Home warns when v1's notes and categories couldn't be moved`() {
+        compose.setContent { LedgaTheme { InterimHome(InterimHomeState(count = 3, legacyImportFailed = true), onAllowSms = {}) } }
+        compose.onNodeWithText(LEGACY_IMPORT_FAILED_TEXT).assertExists()
+    }
 }

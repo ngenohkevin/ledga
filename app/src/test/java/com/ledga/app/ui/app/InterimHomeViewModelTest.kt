@@ -54,4 +54,11 @@ class InterimHomeViewModelTest {
         vm.state.first { it.smsGranted }
         assertEquals(listOf("importInbox"), work.calls)
     }
+
+    @Test
+    fun `Home says when v1's notes and categories couldn't be moved`() = runTest {
+        val vm = vm()
+        work.legacyImportFailed.value = true
+        vm.state.first { it.legacyImportFailed }
+    }
 }

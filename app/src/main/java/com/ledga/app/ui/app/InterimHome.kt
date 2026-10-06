@@ -60,7 +60,12 @@ data class InterimHomeState(
     val last: Instant? = null,
     val spentThisMonthCents: Long = 0L,
     val history: HistoryProgress? = null,
+    val legacyImportFailed: Boolean = false,
 )
+
+internal const val LEGACY_IMPORT_FAILED_TEXT =
+    "Your notes and categories from the old Ledga couldn't be moved yet. Ledga tries again each time it opens."
+
 
 /**
  * R32: Home until 4c builds the real one. It shows enough to see that an import worked (how many transactions, from
@@ -73,6 +78,7 @@ fun InterimHome(state: InterimHomeState, onAllowSms: () -> Unit, modifier: Modif
         ScreenTitle("Home")
         Column(Modifier.padding(horizontal = Spacing.screen), verticalArrangement = Arrangement.spacedBy(Spacing.m)) {
             state.history?.let { Banner("Updating your history…", BannerTone.Progress, progress = it.fraction) }
+            if (state.legacyImportFailed) Banner(LEGACY_IMPORT_FAILED_TEXT, BannerTone.Warning)
             when {
                 !state.smsGranted -> EmptyState(
                     "fluent_incoming_envelope",
@@ -132,8 +138,9 @@ class InterimHomeViewModel @Inject constructor(
         db.transactionsDao().observeSpan(),
         ledger.spent(month),
         work.history,
-    ) { granted, span, spent, history ->
-        InterimHomeState(granted, span.count, span.firstAt, span.lastAt, spent.cents, history)
+        work.legacyImportFailed,
+    ) { granted, span, spent, history, importFailed ->
+        InterimHomeState(granted, span.count, span.firstAt, span.lastAt, spent.cents, history, importFailed)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), InterimHomeState())
 
     /** On resume: the user may have granted or revoked access in Settings meanwhile. */
