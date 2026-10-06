@@ -18,6 +18,10 @@ interface RulesDao {
     )
     fun observeForCategory(categoryKey: String): Flow<List<RuleRow>>
 
+    /** Categories & rules (R67): every rule, on or off — the person's first and newest first, then built-in ones in seed order. */
+    @Query("SELECT * FROM rules ORDER BY CASE origin WHEN 'USER' THEN 0 ELSE 1 END, CASE origin WHEN 'USER' THEN -createdAt ELSE 0 END, id")
+    fun observeAll(): Flow<List<RuleRow>>
+
     @Insert
     suspend fun insert(row: RuleRow): Long
 

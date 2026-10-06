@@ -387,4 +387,78 @@ class TransactionEditsTest {
             own.close()
         }
     }
+
+    @Test
+    fun `switching a built-in rule off and on moves its payments out and back, and the same switch twice changes nothing (R73)`() = runTest {
+        ingest(Sms.KPLC)
+        val kplc = db.rulesDao().all().first { it.origin == RuleOrigin.SYSTEM && it.pattern.equals("KPLC", ignoreCase = true) }
+        assertTrue(edits.setRuleEnabled(kplc.id, false))
+        assertEquals(Categories.OTHER, tx("TJK4AB12FA").categoryKey)
+        assertTrue(edits.setRuleEnabled(kplc.id, false))
+        assertFalse(db.rulesDao().get(kplc.id)!!.enabled)
+        assertTrue(edits.setRuleEnabled(kplc.id, true))
+        assertEquals(Categories.ELECTRICITY, tx("TJK4AB12FA").categoryKey)
+        assertFalse(edits.setRuleEnabled(Long.MAX_VALUE, true), "an unknown rule")
+    }
+
+    @Test
+    fun `a rule of your own stays listed when switched off, and switching it on files its payments again (R73)`() = runTest {
+        ingest(Sms.paybill("TJK4AB12RA", "SAMPLE ACADEMY", "ADM 1024", "5,000.00"))
+        assertTrue(edits.addRule(Categories.SCHOOL, "SAMPLE ACADEMY", null))
+        val rule = userRules().single()
+        edits.setRuleEnabled(rule.id, false)
+        assertEquals(Categories.OTHER, tx("TJK4AB12RA").categoryKey)
+        assertEquals(listOf(rule.id), CategoryRules.forCategory(db.rulesDao().all(), Categories.SCHOOL).map { it.id })
+        edits.setRuleEnabled(rule.id, true)
+        assertEquals(Categories.SCHOOL, tx("TJK4AB12RA").categoryKey)
+    }
+
+    @Test
+    fun `only categories of your own take an offered icon, a swatch or the archive (R68, R72, R74)`() = runTest {
+        val wedding = edits.createCategory("Wedding", CategoryGroup.EVERYDAY)
+        assertTrue(edits.setCategoryIcon(wedding, "fluent_church"))
+        assertFalse(edits.setCategoryIcon(wedding, "fluent_high_voltage"), "Electricity's icon isn't offered")
+        assertFalse(edits.setCategoryIcon(Categories.GROCERIES, "fluent_church"))
+        val sky = CategoryLooks.SWATCHES.first { it.name == "Sky" }
+        assertTrue(edits.setCategoryColor(wedding, sky))
+        assertFalse(edits.setCategoryColor(Categories.GROCERIES, sky))
+        assertFalse(edits.setArchived(Categories.GROCERIES, true))
+        val row = db.categoriesDao().get(wedding)!!
+        assertEquals("fluent_church", row.icon3d)
+        assertEquals(sky.light, row.color)
+        assertEquals(sky.dark, row.colorDark)
+        val groceries = db.categoriesDao().get(Categories.GROCERIES)!!
+        assertEquals(Categories.seed(Categories.GROCERIES)!!.icon3d, groceries.icon3d)
+        assertNull(groceries.color)
+        assertFalse(groceries.archived)
+    }
+
+    @Test
+    fun `archiving hides a category and stops tracking it, while its payments and rules stay (R72)`() = runTest {
+        ingest(Sms.paybill("TJK4AB12RB", "SAMPLE VENUE", "BOOKING 12", "8,000.00"))
+        val wedding = edits.createCategory("Wedding", CategoryGroup.EVERYDAY)
+        assertTrue(edits.addRule(wedding, "SAMPLE VENUE", null))
+        edits.setTracked(wedding, true)
+        assertTrue(edits.setArchived(wedding, true))
+        val archived = db.categoriesDao().get(wedding)!!
+        assertTrue(archived.archived)
+        assertFalse(archived.tracked)
+        assertEquals(wedding, tx("TJK4AB12RB").categoryKey, "its payment keeps it")
+        assertTrue(userRules().single { it.categoryKey == wedding }.enabled, "its rule keeps working")
+        assertTrue(edits.setArchived(wedding, false))
+        val back = db.categoriesDao().get(wedding)!!
+        assertFalse(back.archived)
+        assertFalse(back.tracked, "bringing it back doesn't track it again")
+    }
+
+    @Test
+    fun `an archived category's name stays taken, and making it again brings the archived one back (R72)`() = runTest {
+        val wedding = edits.createCategory("Wedding", CategoryGroup.EVERYDAY)
+        val chama = edits.createCategory("Chama", CategoryGroup.EVERYDAY)
+        edits.setArchived(wedding, true)
+        assertFalse(edits.renameCategory(chama, "wedding"))
+        assertEquals(wedding, edits.createCategory("Wedding", CategoryGroup.EVERYDAY))
+        assertFalse(db.categoriesDao().get(wedding)!!.archived)
+        assertEquals(1, db.categoriesDao().all().count { it.name.equals("Wedding", ignoreCase = true) })
+    }
 }

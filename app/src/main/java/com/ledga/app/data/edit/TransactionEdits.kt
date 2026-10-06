@@ -152,8 +152,12 @@ class TransactionEdits(private val db: LedgaDatabase, private val deriver: Deriv
         val clean = name.replace(WS, " ").trim().take(CATEGORY_NAME_MAX)
         require(clean.isNotEmpty()) { "a category needs a name" }
         val all = db.categoriesDao().all()
-        val existing = all.firstOrNull { it.groupKey == group && !it.archived && it.name.equals(clean, ignoreCase = true) }
-        if (existing != null) return@serial existing.key
+        // R72: an archived category's name stays taken; making it again brings that one back.
+        val existing = all.firstOrNull { it.groupKey == group && it.name.equals(clean, ignoreCase = true) }
+        if (existing != null) {
+            if (existing.archived) db.categoriesDao().setArchived(existing.key, false)
+            return@serial existing.key
+        }
         val base = "user_" + clean.lowercase().replace(NON_KEY, "_").trim('_').ifEmpty { "category" }
         val key = generateSequence(1) { it + 1 }.map { if (it == 1) base else "${base}_$it" }.first { k -> all.none { it.key == k } }
         db.categoriesDao().insertIgnore(
@@ -168,13 +172,16 @@ class TransactionEdits(private val db: LedgaDatabase, private val deriver: Deriv
     /** R50: track a category, or stop. Tracking changes no transaction, so nothing re-classifies. */
     suspend fun setTracked(categoryKey: String, tracked: Boolean) = serial { db.categoriesDao().setTracked(categoryKey, tracked) }
 
-    /** R51: renames a category everywhere. False for a blank name, an unknown key, or a name another category in its group has. */
+    /**
+     * R51: renames a category everywhere. False for a blank name, an unknown key, or a name another category in its group
+     * has, archived ones included (R72).
+     */
     suspend fun renameCategory(categoryKey: String, name: String): Boolean = serial {
         val clean = name.replace(WS, " ").trim().take(CATEGORY_NAME_MAX)
         val all = db.categoriesDao().all()
         val category = all.firstOrNull { it.key == categoryKey }
         val taken = category != null &&
-            all.any { it.key != categoryKey && it.groupKey == category.groupKey && !it.archived && it.name.equals(clean, ignoreCase = true) }
+            all.any { it.key != categoryKey && it.groupKey == category.groupKey && it.name.equals(clean, ignoreCase = true) }
         if (clean.isEmpty() || category == null || taken) return@serial false
         db.categoriesDao().rename(categoryKey, clean)
         true
@@ -220,6 +227,45 @@ class TransactionEdits(private val db: LedgaDatabase, private val deriver: Deriv
         if (row.origin == RuleOrigin.USER) db.rulesDao().insert(row.copy(id = 0)) else db.rulesDao().setEnabled(row.id, true)
         deriver.reclassifyAll()
     }
+
+    /**
+     * R73: switches a rule on or off, the person's or built-in, and re-classifies. False for an unknown id. Switching to
+     * the state it is already in changes nothing.
+     */
+    suspend fun setRuleEnabled(id: Long, enabled: Boolean): Boolean = serial {
+        val row = db.rulesDao().get(id) ?: return@serial false
+        if (row.enabled != enabled) {
+            db.rulesDao().setEnabled(id, enabled)
+            deriver.reclassifyAll()
+        }
+        true
+    }
+
+    /** R68: an icon from [CategoryLooks.ICONS] for a category of the person's own. False for a built-in category or another icon. */
+    suspend fun setCategoryIcon(categoryKey: String, icon: String): Boolean = serial {
+        if (icon !in CategoryLooks.ICONS || ownCategory(categoryKey) == null) return@serial false
+        db.categoriesDao().setIcon(categoryKey, icon)
+        true
+    }
+
+    /** R74: one of [CategoryLooks.SWATCHES], both themes' colours, for a category of the person's own. */
+    suspend fun setCategoryColor(categoryKey: String, swatch: CategoryLooks.Swatch): Boolean = serial {
+        if (swatch !in CategoryLooks.SWATCHES || ownCategory(categoryKey) == null) return@serial false
+        db.categoriesDao().setColor(categoryKey, swatch.light, swatch.dark)
+        true
+    }
+
+    /**
+     * R72: archives a category of the person's own, or brings it back. Archived, it leaves the picker, the filter sheet
+     * and "Track a category", and stops being tracked. Its payments and rules don't change, so nothing reclassifies.
+     */
+    suspend fun setArchived(categoryKey: String, archived: Boolean): Boolean = serial {
+        if (ownCategory(categoryKey) == null) return@serial false
+        db.categoriesDao().setArchived(categoryKey, archived)
+        true
+    }
+
+    private suspend fun ownCategory(key: String): CategoryRow? = db.categoriesDao().get(key)?.takeIf { it.origin == CategoryOrigin.USER }
 
     /** Writes [rule] in place of any USER rule like it and clears [gainers]' own category choices, in one transaction. */
     private suspend fun writeRule(rule: Rule, gainers: List<String>) {

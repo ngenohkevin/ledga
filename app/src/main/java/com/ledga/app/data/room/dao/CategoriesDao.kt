@@ -31,6 +31,21 @@ interface CategoriesDao {
     @Query("UPDATE categories SET name = :name WHERE `key` = :key")
     suspend fun rename(key: String, name: String)
 
+    @Query("SELECT * FROM categories WHERE `key` = :key")
+    suspend fun get(key: String): CategoryRow?
+
+    /** R68: a category of the person's own only (`TransactionEdits` checks). */
+    @Query("UPDATE categories SET icon3d = :icon WHERE `key` = :key")
+    suspend fun setIcon(key: String, icon: String)
+
+    /** R74: both themes' colours, from one swatch. */
+    @Query("UPDATE categories SET color = :light, colorDark = :dark WHERE `key` = :key")
+    suspend fun setColor(key: String, light: String, dark: String)
+
+    /** R72: archiving stops tracking; bringing it back leaves tracking off. */
+    @Query("UPDATE categories SET archived = :archived, tracked = CASE WHEN :archived THEN 0 ELSE tracked END WHERE `key` = :key")
+    suspend fun setArchived(key: String, archived: Boolean)
+
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertIgnore(row: CategoryRow): Long
 }
