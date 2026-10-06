@@ -6,6 +6,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.async
 import java.time.ZoneId
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
 import androidx.paging.PagingSource
@@ -334,6 +335,46 @@ class TransactionEditsTest {
             assertEquals(Categories.SCHOOL, tx("TJK4AB12JB").categoryKey)
         } finally {
             release.countDown() // a failed assertion must not leave the first edit parked
+            own.close()
+        }
+    }
+
+    @Test
+    fun `an edit finishes even when the screen that asked for it closes partway (R63)`() = runBlocking {
+        // Leaving Tracker detail cancels its ViewModel's scope; a rule written without its re-classify would leave the
+        // payments filed by the old rules, with no Undo offered. Real threads, as above.
+        ingest(water501, water502, water501Again)
+        val inside = CountDownLatch(1)
+        val release = CountDownLatch(1)
+        // The second clock read is inside the rule's own write, after the rule is built: the edit pauses there.
+        val pausing = object : Clock() {
+            private val reads = AtomicInteger()
+            override fun instant(): Instant {
+                if (reads.incrementAndGet() == 2) {
+                    inside.countDown()
+                    release.await()
+                }
+                return clock.instant()
+            }
+            override fun getZone(): ZoneId = ZoneOffset.UTC
+            override fun withZone(zone: ZoneId): Clock = this
+        }
+        val slow = TransactionEdits(db, deriver, pausing)
+        val own = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
+        try {
+            val edit = launch(own) { slow.addRule(Categories.WATER, "sample water", null) }
+            inside.await()
+            edit.cancel()
+            release.countDown()
+            edit.join()
+            assertEquals("SAMPLE WATER", userRules().single().pattern)
+            assertEquals(
+                List(3) { Categories.WATER },
+                listOf("TJK4AB12WA", "TJK4AB12WB", "TJK4AB12WC").map { tx(it).categoryKey },
+                "the rule's payments are filed by it, not left half done",
+            )
+        } finally {
+            release.countDown()
             own.close()
         }
     }

@@ -21,8 +21,10 @@ import com.ledga.core.model.CategoryGroup
 import com.ledga.core.model.FlowKind
 import com.ledga.core.model.TxKind
 import com.ledga.core.parse.Counterparty
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import java.time.Clock
 import java.util.Locale
 
@@ -57,7 +59,8 @@ data class RemovedRule(val row: RuleRow)
 class TransactionEdits(private val db: LedgaDatabase, private val deriver: Deriver, private val clock: Clock) {
     private val writes = Mutex()
 
-    private suspend fun <T> serial(block: suspend () -> T): T = writes.withLock { block() }
+    /** One at a time (R63), and never cancelled part way: leaving the screen that asked must not strand a half-done edit. */
+    private suspend fun <T> serial(block: suspend () -> T): T = withContext(NonCancellable) { writes.withLock { block() } }
 
     suspend fun setNote(code: String, note: String?) = serial {
         deriver.saveOverride(override(code).copy(note = note?.replace(WS, " ")?.trim()?.take(NOTE_MAX)?.ifEmpty { null }))

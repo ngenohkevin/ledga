@@ -81,7 +81,8 @@
   on a phone with fewer than two lines or for a line that no longer exists, so a v1 choice never hides unattributed
   payments.
 - **Writes.** `TransactionEdits` runs its writes one at a time (a `Mutex`, R63; `TransactionEditsTest` pauses one edit
-  mid-way and proves a second waits); its counts don't lock.
+  mid-way and proves a second waits); its counts don't lock. A write is never cancelled part way (`NonCancellable`):
+  leaving the screen that asked, which cancels its ViewModel, can't strand a rule without its re-classify.
   - `setTracked` and `renameCategory` change no transaction, so nothing reclassifies. A rename refuses a blank name or one
     another category in the same group has (R51).
   - `addRule(categoryKey, name, account?)` behaves like "Apply to all" (R36, R48): a USER `NAME_CONTAINS` rule, or
