@@ -137,6 +137,8 @@ dependencies {
 
     // Room paging (v2 transactions list)
     implementation("androidx.room:room-paging:2.8.4")
+    // Paging stays on 3.3.x with room-paging (3.4+ may need newer Kotlin metadata, as Roborazzi 1.61 did).
+    implementation("androidx.paging:paging-compose:3.3.6")
 
     // v2 data-layer tests
     testImplementation(kotlin("test-junit"))
@@ -154,6 +156,7 @@ dependencies {
     // Testing
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
+    testImplementation("androidx.paging:paging-testing:3.3.6")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
     androidTestImplementation(composeBom)

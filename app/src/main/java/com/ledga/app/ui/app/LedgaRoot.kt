@@ -23,6 +23,7 @@ import androidx.navigation.compose.rememberNavController
 import com.ledga.app.data.settings.Settings
 import com.ledga.app.data.settings.TextSize
 import com.ledga.app.startup.StartupState
+import com.ledga.app.ui.activity.ActivityTab
 import com.ledga.app.ui.design.theme.LedgaTheme
 import com.ledga.app.ui.onboarding.OnboardingRoute as OnboardingScreenRoute
 import java.io.File
@@ -78,7 +79,7 @@ fun LedgaNavHost(onboarded: Boolean) {
                 OnboardingScreenRoute(onDone = { nav.navigate(HomeRoute) { popUpTo<OnboardingRoute> { inclusive = true } } })
             }
             composable<HomeRoute> { InterimHomeRoute() }
-            composable<ActivityRoute> { ComingNext(Tab.ACTIVITY) }
+            composable<ActivityRoute> { ActivityTab() }
             composable<TrackersRoute> { ComingNext(Tab.TRACKERS) }
             composable<YouRoute> { ComingNext(Tab.YOU) }
         }
