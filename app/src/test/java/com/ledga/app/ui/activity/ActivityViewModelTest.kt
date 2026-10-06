@@ -1,5 +1,7 @@
 package com.ledga.app.ui.activity
 
+import kotlin.test.assertTrue
+import kotlin.test.assertNull
 import androidx.paging.testing.asSnapshot
 import com.ledga.app.data.derive.Deriver
 import com.ledga.app.data.derive.FlowFilter
@@ -45,7 +47,7 @@ class ActivityViewModelTest {
 
     private val vms = TestViewModels()
 
-    private fun vm() = vms.track(ActivityViewModel(LedgerQueries(db), db, LinesRepository(db.linesDao(), FakeSims(), clock), live, edits))
+    private fun vm(links: ActivityLinks = ActivityLinks()) = vms.track(ActivityViewModel(LedgerQueries(db), db, LinesRepository(db.linesDao(), FakeSims(), clock), live, edits, links))
 
     @After fun close() {
         vms.stopAll()
@@ -116,5 +118,32 @@ class ActivityViewModelTest {
         clock.instant = Instant.parse("2026-03-25T21:00:01Z") // 00:00:01 on 26 March in Nairobi
         live.onResume()
         assertEquals(LocalDate.parse("2026-03-26"), vm.ui.first { it.today == LocalDate.parse("2026-03-26") }.today)
+    }
+
+    @Test
+    fun `a link from another screen opens Transactions with its filter, once`() = runTest {
+        val links = ActivityLinks()
+        val vm = vm(links)
+        vm.ui.first { it.today != null }
+        links.open(ActivityLink.Transactions(TransactionFilter(categoryKeys = setOf(Categories.ELECTRICITY), lineId = 2)))
+        val shown = vm.ui.first { it.filter.lineId == 2L }
+        assertEquals(setOf(Categories.ELECTRICITY), shown.filter.categoryKeys)
+        assertEquals(ActivitySegment.TRANSACTIONS, vm.segment.value)
+        assertNull(links.requests.value, "taken once")
+        vm.clearFilters()
+        assertTrue(vm.ui.first { it.filter.isEverything }.filter.isEverything, "and not applied again")
+    }
+
+    @Test
+    fun `a link waits for Activity, Home's search asks for the search field, and the spending card opens Spending`() = runTest {
+        val links = ActivityLinks()
+        links.open(ActivityLink.Spending) // before Activity's ViewModel exists
+        val vm = vm(links)
+        assertEquals(ActivitySegment.SPENDING, vm.segment.first { it == ActivitySegment.SPENDING })
+        links.open(ActivityLink.Transactions(focusSearch = true))
+        assertEquals(1, vm.ui.first { it.searchFocus == 1 }.searchFocus)
+        assertEquals(ActivitySegment.TRANSACTIONS, vm.segment.value)
+        vm.searchFocused()
+        assertEquals(0, vm.ui.first { it.searchFocus == 0 }.searchFocus, "a focused request is done")
     }
 }

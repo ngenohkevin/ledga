@@ -1,5 +1,6 @@
 package com.ledga.app.ui.activity
 
+import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -134,5 +135,19 @@ class ActivityBehaviourTest {
         val count = compose.onNodeWithTag("filter-count", useUnmergedTree = true).getUnclippedBoundsInRoot()
         // Inside the circle the clip shaved the badge and the digit (seen on the S26); on the edge nothing clips it.
         assertTrue(count.top < button.top && count.right > button.right, "badge $count inside button $button")
+    }
+
+    @Test
+    fun `a search link puts the cursor in the search field, once`() {
+        var consumed = 0
+        compose.setContent {
+            LedgaTheme(Appearance.LIGHT, reducedMotion = true) {
+                val items = remember { flowOf(PagingData.from(listOf(txRow(at = Instant.parse("2026-10-06T11:15:00Z"))), complete).toActivityItems()) }
+                    .collectAsLazyPagingItems()
+                TransactionsPane(ui.copy(searchFocus = 1), items, TransactionsActions(onSearchFocused = { consumed++ }))
+            }
+        }
+        compose.onNode(hasSetTextAction()).assertIsFocused()
+        assertEquals(1, consumed, "the pane hands the request back, so a later visit doesn't take the focus again")
     }
 }

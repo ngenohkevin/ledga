@@ -1,5 +1,10 @@
 package com.ledga.app.ui.activity
 
+import androidx.compose.runtime.withFrameNanos
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -51,6 +56,8 @@ data class TransactionsActions(
     val onOpen: (String) -> Unit = {},
     val onPickCategory: (String) -> Unit = {},
     val onClearFilters: () -> Unit = {},
+    /** R61: the search field took a link's focus request. */
+    val onSearchFocused: () -> Unit = {},
 )
 
 /**
@@ -63,14 +70,25 @@ data class TransactionsActions(
  */
 @Composable
 fun TransactionsPane(ui: TransactionsUi, items: LazyPagingItems<ActivityItem>, actions: TransactionsActions, modifier: Modifier = Modifier) {
+    val search = remember { FocusRequester() }
+    // R61: Home's search button. The field is placed in BoxWithConstraints' subcomposition, so wait a frame first; in a
+    // short pane it may be scrolled out of the tree, and then there is nothing to focus. The request is then consumed, so
+    // coming back to this pane later doesn't take the focus again.
+    LaunchedEffect(ui.searchFocus) {
+        if (ui.searchFocus > 0) {
+            withFrameNanos { }
+            runCatching { search.requestFocus() }
+            actions.onSearchFocused()
+        }
+    }
     BoxWithConstraints(modifier.fillMaxSize()) {
         // Owner ruling M5: in a short pane (a phone in landscape) the search and chips scroll away with the list, so the
         // payments get the height; in a normal one they stay put above it (mockup `activity`).
         val controlsScroll = maxHeight < SHORT_PANE
         Column(Modifier.fillMaxSize()) {
-            if (!controlsScroll) Controls(ui, actions)
+            if (!controlsScroll) Controls(ui, actions, search)
             Box(Modifier.weight(1f).fillMaxWidth().padding(top = if (controlsScroll) 0.dp else Spacing.s)) {
-                TransactionList(ui, items, actions, header = if (controlsScroll) ({ Controls(ui, actions) }) else null)
+                TransactionList(ui, items, actions, header = if (controlsScroll) ({ Controls(ui, actions, search) }) else null)
             }
         }
     }
@@ -80,9 +98,14 @@ fun TransactionsPane(ui: TransactionsUi, items: LazyPagingItems<ActivityItem>, a
 private val SHORT_PANE = 400.dp
 
 @Composable
-private fun Controls(ui: TransactionsUi, actions: TransactionsActions) {
+private fun Controls(ui: TransactionsUi, actions: TransactionsActions, search: FocusRequester) {
     Column(Modifier.fillMaxWidth()) {
-        SearchField(ui.query, actions.onQuery, "Name, phone, code or amount", Modifier.padding(horizontal = Spacing.screen, vertical = Spacing.s))
+        SearchField(
+            ui.query,
+            actions.onQuery,
+            "Name, phone, code or amount",
+            Modifier.padding(horizontal = Spacing.screen, vertical = Spacing.s).focusRequester(search),
+        )
         FilterChips(ui, actions)
     }
 }

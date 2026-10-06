@@ -31,6 +31,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -78,6 +79,8 @@ data class TransactionsUi(
     val today: LocalDate? = null,
     /** False when this phone has no payments at all yet (not merely none matching). */
     val hasHistory: Boolean = true,
+    /** Counts the requests to focus the search field (R61); the pane focuses it when this goes up. */
+    val searchFocus: Int = 0,
 )
 
 /** Activity's segment and its Transactions list (spec §10.4); Spending and People have their own ViewModels. */
@@ -88,12 +91,14 @@ class ActivityViewModel @Inject constructor(
     lines: LinesRepository,
     private val live: LiveClock,
     private val edits: TransactionEdits,
+    private val links: ActivityLinks,
 ) : ViewModel() {
     private val _segment = MutableStateFlow(ActivitySegment.TRANSACTIONS)
     val segment: StateFlow<ActivitySegment> = _segment
 
     private val query = MutableStateFlow("")
     private val filter = MutableStateFlow(TransactionFilter())
+    private val searchFocus = MutableStateFlow(0)
 
     /** What the list runs: chips and sheet at once, the typed search once typing settles (cleared at once). */
     @OptIn(FlowPreview::class)
@@ -107,16 +112,36 @@ class ActivityViewModel @Inject constructor(
         .map { it.toActivityItems() }
         .cachedIn(viewModelScope)
 
+    private data class Extras(val lines: List<LineRow>, val today: LocalDate, val hasHistory: Boolean, val searchFocus: Int)
+
     @OptIn(ExperimentalCoroutinesApi::class)
     val ui: StateFlow<TransactionsUi> = combine(
         filter,
         query,
         settled.flatMapLatest { ledger.dayTotals(it) },
         db.categoriesDao().observeAll().map { rows -> rows.associateBy { it.key } },
-        combine(lines.observe(), live.today, db.transactionsDao().observeSpan()) { ls, today, span -> Triple(ls, today, span.count > 0) },
-    ) { f, q, totals, categories, (ls, today, history) ->
-        TransactionsUi(q, f, totals, categories, ls, today, history)
+        combine(lines.observe(), live.today, db.transactionsDao().observeSpan(), searchFocus) { ls, today, span, focus ->
+            Extras(ls, today, span.count > 0, focus)
+        },
+    ) { f, q, totals, categories, x ->
+        TransactionsUi(q, f, totals, categories, x.lines, x.today, x.hasHistory, x.searchFocus)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), TransactionsUi())
+
+    init {
+        // R61: Home's and Tracker detail's hops, each applied once.
+        viewModelScope.launch {
+            links.requests.filterNotNull().collect { link ->
+                when (link) {
+                    is ActivityLink.Transactions -> {
+                        showTransactions(link.filter)
+                        if (link.focusSearch) searchFocus.update { it + 1 }
+                    }
+                    ActivityLink.Spending -> _segment.value = ActivitySegment.SPENDING
+                }
+                links.taken(link)
+            }
+        }
+    }
 
     fun select(segment: ActivitySegment) {
         _segment.value = segment
@@ -134,6 +159,11 @@ class ActivityViewModel @Inject constructor(
     /** The filter sheet's "Show results": its four filters replace the current ones; the chips and line stay. */
     fun applySheet(sheet: TransactionFilter) = filter.update {
         it.copy(categoryKeys = sheet.categoryKeys, dates = sheet.dates, minAmountCents = sheet.minAmountCents, includeHidden = sheet.includeHidden)
+    }
+
+    /** R61: the pane focused the search field; the request is done. */
+    fun searchFocused() {
+        searchFocus.value = 0
     }
 
     fun clearFilters() {

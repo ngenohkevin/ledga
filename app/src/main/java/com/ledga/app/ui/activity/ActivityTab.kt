@@ -144,6 +144,7 @@ fun ActivityTab(vm: ActivityViewModel = hiltViewModel()) {
                         onOpen = { sheets = sheets.copy(payment = it) },
                         onPickCategory = { sheets = sheets.copy(picker = it) },
                         onClearFilters = vm::clearFilters,
+                        onSearchFocused = vm::searchFocused,
                     ),
                 )
                 ActivitySegment.SPENDING -> {
