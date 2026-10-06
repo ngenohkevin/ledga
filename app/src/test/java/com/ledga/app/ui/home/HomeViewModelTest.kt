@@ -22,6 +22,7 @@ import com.ledga.app.testing.txRow
 import com.ledga.app.time.LiveClock
 import com.ledga.app.ui.activity.ActivityLink
 import com.ledga.app.ui.activity.ActivityLinks
+import com.ledga.app.ui.trackers.StoppedTrackers
 import com.ledga.core.model.Categories
 import com.ledga.core.time.PeriodType
 import java.time.Instant
@@ -59,6 +60,7 @@ class HomeViewModelTest {
         HomeViewModel(
             LedgerQueries(db), db, Trackers(db, LedgerQueries(db)), selectedLine(db, prefs), live, work,
             { granted }, { notifyAsk }, settings, TransactionEdits(db, deriver, clock), links,
+            StoppedTrackers(TransactionEdits(db, deriver, clock)),
         ),
     )
 

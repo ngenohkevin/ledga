@@ -39,7 +39,10 @@ class TrackersViewModelTest {
     private val vms = TestViewModels()
 
     private fun vm() = vms.track(
-        TrackersViewModel(Trackers(db, LedgerQueries(db)), db, selectedLine(db, FakePrefsStore()), LiveClock(clock) { awaitCancellation() }, TransactionEdits(db, deriver, clock)),
+        TrackersViewModel(
+            Trackers(db, LedgerQueries(db)), db, selectedLine(db, FakePrefsStore()), LiveClock(clock) { awaitCancellation() },
+            TransactionEdits(db, deriver, clock), StoppedTrackers(TransactionEdits(db, deriver, clock)),
+        ),
     )
 
     @After fun close() {

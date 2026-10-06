@@ -99,6 +99,8 @@ Everything lives in `com.ledga.app.ui.design`. Until Phase 4 uses it, R8 strips 
     vertically. Its "All" range uses `Bucketing.allTime` (years after 12 months, R54).
   - "Matched by" chips sit on a `LedgaCard`: a chip's plate barely shows on the canvas. `RuleChip`'s label ellipsizes
     before its ×, so a long rule stays removable at large text.
+  - Stop tracking closes the detail (R51); the screen below, Trackers or Home, then says "Stopped tracking <name>" with
+    Undo (`StoppedTrackers`, shown once).
   - The add-rule sheet shows a count only for exactly the text typed (`ShownPreview`, recounted with `mapLatest`). Until
     then it says "Counting…" and Save rule is disabled (`PrimaryPill(enabled = false)`), and
     `TrackerDetailViewModel.addRule` refuses other text: the rule clears hand-filed choices that removing it won't
@@ -133,4 +135,5 @@ Everything lives in `com.ledga.app.ui.design`. Until Phase 4 uses it, R8 strips 
 - Robolectric fakes `System.nanoTime`, so coroutine delays and timeouts (`withTimeoutOrNull`, also under `runBlocking`) never fire. For real time, use `Thread.sleep`.
 - A failing assertion inside `runBlocking`/`runTest` still waits for running children: a latch-parked child turns a RED into a hang. Release latches in `finally`, and give a deliberately parked coroutine its own thread (`TransactionEditsTest`).
 - A ViewModel callback that runs after a suspend edit (e.g. `addRule(…) { onDone }`) arrives after the UI state has already changed. Wait on a `CompletableDeferred` rather than reading a flag at once.
+- A route test with its real ViewModel (`TrackersRouteTest`) runs `viewModelScope` on Robolectric's main looper: clean up with `TestViewModels.stopAllOnMainLooper()` (plain `stopAll()` blocks that thread and times out), and step `mainClock` by hand around a snackbar, or auto-advance runs straight through its timeout.
 - Text that must fit at large font scales: check `TextLayoutResult` (`maxIntrinsicWidth` ≤ width for a line that mustn't be cut, `minIntrinsicWidth` ≤ width for no word broken, `lineCount` for no wrap). Size containers that hold text in the text's own font size, not dp.

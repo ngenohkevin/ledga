@@ -19,6 +19,8 @@ import com.ledga.app.startup.SmsAccess
 import com.ledga.app.time.LiveClock
 import com.ledga.app.ui.activity.ActivityLink
 import com.ledga.app.ui.activity.ActivityLinks
+import com.ledga.app.ui.trackers.StoppedTracking
+import com.ledga.app.ui.trackers.StoppedTrackers
 import com.ledga.app.ui.onboarding.NotificationAccess
 import com.ledga.app.ui.tx.TxText
 import com.ledga.app.work.BackgroundWork
@@ -84,7 +86,17 @@ class HomeViewModel @Inject constructor(
     private val settings: SettingsStore,
     private val edits: TransactionEdits,
     private val links: ActivityLinks,
+    private val stopped: StoppedTrackers,
 ) : ViewModel() {
+    /** "Stopped tracking …" from a tracker opened on Home (R51). */
+    val stoppedTracking: StateFlow<StoppedTracking?> = stopped.latest
+
+    fun stoppedShown(note: StoppedTracking) = stopped.taken(note)
+
+    fun undoStop(note: StoppedTracking) {
+        viewModelScope.launch { stopped.undo(note) }
+    }
+
     private val period = MutableStateFlow(PeriodType.MONTH)
     private val smsGranted = MutableStateFlow(sms.granted())
     private val smsBlocked = MutableStateFlow(false)

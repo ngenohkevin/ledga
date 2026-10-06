@@ -28,6 +28,7 @@ import com.ledga.core.derive.RuleOrigin
 import com.ledga.core.model.Categories
 import java.time.Instant
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlinx.coroutines.awaitCancellation
@@ -49,11 +50,12 @@ class TrackerDetailViewModelTest {
     private val links = ActivityLinks()
     private val prefs = FakePrefsStore()
     private val vms = TestViewModels()
+    private val stopped = StoppedTrackers(TransactionEdits(db, deriver, clock))
 
     private fun vm(key: String = Categories.ELECTRICITY) = vms.track(
         TrackerDetailViewModel(
             SavedStateHandle(mapOf("categoryKey" to key)), Trackers(db, LedgerQueries(db)), selectedLine(db, prefs),
-            LiveClock(clock) { awaitCancellation() }, TransactionEdits(db, deriver, clock), links,
+            LiveClock(clock) { awaitCancellation() }, TransactionEdits(db, deriver, clock), links, stopped,
         ),
     )
 
@@ -165,6 +167,19 @@ class TrackerDetailViewModelTest {
         closed.await()
         assertFalse(db.categoriesDao().all().first { it.key == Categories.ELECTRICITY }.tracked)
         assertTrue(vm("no_such_category").ui.first { it.loaded }.missing)
+    }
+
+    @Test
+    fun `stopping tracking leaves a note with Undo for the screen the detail returns to (R51)`() = runTest {
+        val vm = vm()
+        vm.ui.first { it.loaded }
+        val closed = CompletableDeferred<Unit>()
+        vm.stopTracking { closed.complete(Unit) }
+        closed.await()
+        val note = assertNotNull(stopped.latest.value)
+        assertEquals(StoppedTracking(Categories.ELECTRICITY, "Electricity"), note)
+        stopped.undo(note)
+        assertTrue(db.categoriesDao().all().first { it.key == Categories.ELECTRICITY }.tracked)
     }
 
     @Test

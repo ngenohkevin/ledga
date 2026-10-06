@@ -24,6 +24,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -206,7 +209,12 @@ fun TrackCategoryContent(categories: List<CategoryRow>, onTrack: (String) -> Uni
 fun TrackersTab(onOpen: (String) -> Unit, vm: TrackersViewModel = hiltViewModel()) {
     val ui by vm.ui.collectAsStateWithLifecycle()
     var picking by rememberSaveable { mutableStateOf(false) }
-    TrackersContent(ui, TrackersActions(onRange = vm::setRange, onLine = vm::selectLine, onOpen = onOpen, onTrackNew = { picking = true }))
+    val snackbar = remember { SnackbarHostState() }
+    StoppedTrackingUndo(vm.stoppedTracking, snackbar, vm::stoppedShown, vm::undoStop)
+    Box(Modifier.fillMaxSize()) {
+        TrackersContent(ui, TrackersActions(onRange = vm::setRange, onLine = vm::selectLine, onOpen = onOpen, onTrackNew = { picking = true }))
+        SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter).padding(Spacing.l))
+    }
     if (picking) {
         LedgaModalSheet(onDismiss = { picking = false }, title = "Track a category") {
             TrackCategoryContent(

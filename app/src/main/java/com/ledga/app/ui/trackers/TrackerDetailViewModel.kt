@@ -87,6 +87,7 @@ class TrackerDetailViewModel @Inject constructor(
     private val live: LiveClock,
     private val edits: TransactionEdits,
     private val links: ActivityLinks,
+    private val stopped: StoppedTrackers,
 ) : ViewModel() {
     /** `TrackerRoute.categoryKey`: navigation stores a route's arguments under their property names. */
     val categoryKey: String = checkNotNull(handle.get<String>("categoryKey")) { "TrackerRoute needs a categoryKey" }
@@ -166,10 +167,12 @@ class TrackerDetailViewModel @Inject constructor(
         viewModelScope.launch { onResult(edits.renameCategory(categoryKey, name)) }
     }
 
-    /** R51: stops tracking; the screen closes in [onDone]. */
+    /** R51: stops tracking; the screen closes in [onDone], and the screen below offers Undo ([StoppedTrackers]). */
     fun stopTracking(onDone: () -> Unit) {
+        val name = ui.value.category?.name
         viewModelScope.launch {
             edits.setTracked(categoryKey, false)
+            if (name != null) stopped.post(StoppedTracking(categoryKey, name))
             onDone()
         }
     }
