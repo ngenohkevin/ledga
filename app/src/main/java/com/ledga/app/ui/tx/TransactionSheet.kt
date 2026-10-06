@@ -427,7 +427,7 @@ fun TransactionSheetHost(
                         shown.tx?.let { tx ->
                             val send = Intent(Intent.ACTION_SEND)
                                 .setType("text/plain")
-                                .putExtra(Intent.EXTRA_TEXT, TxText.shareText(tx, shown.categoryName, shown.line))
+                                .putExtra(Intent.EXTRA_TEXT, TxText.shareText(tx, shown.categoryName))
                             context.startActivity(Intent.createChooser(send, "Share payment"))
                         }
                     },

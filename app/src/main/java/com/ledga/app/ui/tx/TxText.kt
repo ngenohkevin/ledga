@@ -124,18 +124,17 @@ object TxText {
         add(Fact("Line", line?.let(::lineLabel) ?: "Not set", isLine = true))
     }
 
-    /** The Share action's plain text (spec §10.4): the person's own payment, nothing else. */
-    fun shareText(tx: TxRow, categoryName: String, line: LineRow?): String = buildList {
+    /**
+     * The Share action's plain text (spec §10.4): the payment itself, as proof of it. Nothing about the person's wallet
+     * or private notes goes with it: no balance, no Fuliza borrowing, no line, no note.
+     */
+    fun shareText(tx: TxRow, categoryName: String): String = buildList {
         add(title(tx))
         add("${AmountFormat.signedKsh(tx.amountCents, isInflow(tx.flow))} · $categoryName")
         add(DateLabels.dateTime(tx.occurredAt))
         add("M-Pesa code ${tx.code}")
         if (tx.kind == TxKind.PAYBILL) tx.counterpartyAccount?.let { add("Account $it") }
         if (tx.feeCents > 0) add("Fees ${ksh(tx.feeCents)}")
-        tx.fulizaDrawnCents?.takeIf { it > 0 }?.let { add("Fuliza covered ${ksh(it)}") }
-        tx.balanceCents?.let { add("Balance after ${ksh(it)}") }
-        line?.let { add("Line ${lineLabel(it)}") }
-        tx.note?.let { add("Note: $it") }
         add("Shared from Ledga")
     }.joinToString("\n")
 

@@ -84,7 +84,7 @@ class TxTextTest {
     }
 
     @Test
-    fun `the shared text is plain and complete`() {
+    fun `the shared text is the payment itself - never the balance, Fuliza, the line or a note`() {
         assertEquals(
             listOf(
                 "KPLC Prepaid",
@@ -92,12 +92,13 @@ class TxTextTest {
                 "Mon 5 Oct 2026, 2:15 PM",
                 "M-Pesa code TJK4AB12FA",
                 "Account 37100000001",
-                "Balance after Ksh 11,111.11",
-                "Line Personal ··23",
                 "Shared from Ledga",
             ).joinToString("\n"),
-            TxText.shareText(txRow(), "Electricity", personal),
+            TxText.shareText(txRow(note = "school fees"), "Electricity"),
         )
+        val fuliza = TxText.shareText(fulizaTxRow(), "Sent to people")
+        assertEquals("Fees Ksh 11.63", fuliza.lines().single { it.startsWith("Fees") })
+        assertEquals(listOf<String>(), fuliza.lines().filter { it.contains("Fuliza") || it.contains("Balance") || it.startsWith("Line") })
     }
 
     @Test
