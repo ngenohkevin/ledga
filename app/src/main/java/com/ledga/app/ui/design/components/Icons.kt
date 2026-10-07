@@ -8,13 +8,19 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.ledga.app.ui.design.icons.CatalogBitmaps
 import com.ledga.app.ui.design.icons.Fluent
+import com.ledga.app.ui.design.icons.FluentIcons
 import com.ledga.app.ui.design.theme.LedgaTheme
 import com.ledga.app.ui.design.type.LedgaType
 
@@ -36,7 +42,29 @@ fun CategoryIcon(iconKey: String, contentDescription: String?, modifier: Modifie
         modifier.size(size.box).clip(RoundedCornerShape(size.radius)).background(LedgaTheme.colors.plate),
         contentAlignment = Alignment.Center,
     ) {
-        Image(painterResource(Fluent.resOf(iconKey)), contentDescription, Modifier.size(size.box * 0.66f))
+        val inner = Modifier.size(size.box * 0.66f)
+        val drawable = FluentIcons.byKey[iconKey]
+        if (drawable != null) Image(painterResource(drawable), contentDescription, inner) else CatalogImage(iconKey, contentDescription, inner)
+    }
+}
+
+/** What a catalog icon shows: nothing (the plate) while it decodes, then the icon, or Other's for a key with no asset (R85). */
+private sealed interface CatalogState {
+    data object Loading : CatalogState
+    data class Ready(val bitmap: ImageBitmap) : CatalogState
+    data object Missing : CatalogState
+}
+
+@Composable
+private fun CatalogImage(key: String, contentDescription: String?, modifier: Modifier) {
+    val assets = LocalContext.current.assets
+    val state by produceState<CatalogState>(CatalogBitmaps.cached(key)?.let(CatalogState::Ready) ?: CatalogState.Loading, key) {
+        if (value is CatalogState.Loading) value = CatalogBitmaps.load(assets, key)?.let(CatalogState::Ready) ?: CatalogState.Missing
+    }
+    when (val s = state) {
+        CatalogState.Loading -> Unit
+        is CatalogState.Ready -> Image(s.bitmap, contentDescription, modifier)
+        CatalogState.Missing -> Image(painterResource(Fluent.resOf(Fluent.FALLBACK)), contentDescription, modifier)
     }
 }
 

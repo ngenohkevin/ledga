@@ -1,0 +1,1596 @@
+key	name	group	keywords
+fluent_alien	alien	Smileys & Emotion	alien|creature|extraterrestrial|face|fantasy|ufo
+fluent_alien_monster	alien monster	Smileys & Emotion	alien|creature|extraterrestrial|face|monster|ufo
+fluent_anger_symbol	anger symbol	Smileys & Emotion	anger symbol|angry|comic|mad
+fluent_angry_face	angry face	Smileys & Emotion	anger|angry|face|mad
+fluent_angry_face_with_horns	angry face with horns	Smileys & Emotion	angry face with horns|demon|devil|face|fantasy|imp
+fluent_anguished_face	anguished face	Smileys & Emotion	anguished|face
+fluent_anxious_face_with_sweat	anxious face with sweat	Smileys & Emotion	anxious face with sweat|blue|cold|face|rushed|sweat
+fluent_astonished_face	astonished face	Smileys & Emotion	astonished|face|shocked|totally
+fluent_beaming_face_with_smiling_eyes	beaming face with smiling eyes	Smileys & Emotion	beaming face with smiling eyes|eye|face|grin|smile
+fluent_beating_heart	beating heart	Smileys & Emotion	beating|beating heart|heartbeat|pulsating
+fluent_black_heart	black heart	Smileys & Emotion	black|black heart|evil|wicked
+fluent_blue_heart	blue heart	Smileys & Emotion	blue|blue heart
+fluent_bomb	bomb	Smileys & Emotion	bomb|comic
+fluent_broken_heart	broken heart	Smileys & Emotion	break|broken|broken heart
+fluent_brown_heart	brown heart	Smileys & Emotion	brown|heart
+fluent_cat_with_tears_of_joy	cat with tears of joy	Smileys & Emotion	cat|cat with tears of joy|face|joy|tear
+fluent_cat_with_wry_smile	cat with wry smile	Smileys & Emotion	cat|cat with wry smile|face|ironic|smile|wry
+fluent_clown_face	clown face	Smileys & Emotion	clown|face
+fluent_cold_face	cold face	Smileys & Emotion	blue-faced|cold|cold face|freezing|frostbite|icicles
+fluent_collision	collision	Smileys & Emotion	boom|collision|comic
+fluent_confounded_face	confounded face	Smileys & Emotion	confounded|face
+fluent_confused_face	confused face	Smileys & Emotion	confused|face|meh
+fluent_cowboy_hat_face	cowboy hat face	Smileys & Emotion	cowboy|cowgirl|face|hat
+fluent_crying_cat	crying cat	Smileys & Emotion	cat|cry|crying cat|face|sad|tear
+fluent_crying_face	crying face	Smileys & Emotion	cry|crying face|face|sad|tear
+fluent_dashing_away	dashing away	Smileys & Emotion	comic|dash|dashing away|running
+fluent_disappointed_face	disappointed face	Smileys & Emotion	disappointed|face
+fluent_disguised_face	disguised face	Smileys & Emotion	disguise|disguised face|face|glasses|incognito|nose
+fluent_dizzy	dizzy	Smileys & Emotion	comic|dizzy|star
+fluent_dotted_line_face	dotted line face	Smileys & Emotion	depressed|disappear|dotted line face|hide|introvert|invisible
+fluent_downcast_face_with_sweat	downcast face with sweat	Smileys & Emotion	cold|downcast face with sweat|face|sweat
+fluent_drooling_face	drooling face	Smileys & Emotion	drooling|face
+fluent_exploding_head	exploding head	Smileys & Emotion	exploding head|mind blown|shocked
+fluent_expressionless_face	expressionless face	Smileys & Emotion	expressionless|face|inexpressive|meh|unexpressive
+fluent_eye_in_speech_bubble	eye in speech bubble	Smileys & Emotion	eye|eye in speech bubble|speech bubble|witness
+fluent_face_blowing_a_kiss	face blowing a kiss	Smileys & Emotion	face|face blowing a kiss|kiss
+fluent_face_exhaling	face exhaling	Smileys & Emotion	exhale|face exhaling|gasp|groan|relief|whisper|whistle
+fluent_face_holding_back_tears	face holding back tears	Smileys & Emotion	angry|cry|face holding back tears|proud|resist|sad
+fluent_face_in_clouds	face in clouds	Smileys & Emotion	absentminded|face in clouds|face in the fog|head in clouds
+fluent_face_savoring_food	face savoring food	Smileys & Emotion	delicious|face|face savoring food|savouring|smile|yum
+fluent_face_screaming_in_fear	face screaming in fear	Smileys & Emotion	face|face screaming in fear|fear|munch|scared|scream
+fluent_face_vomiting	face vomiting	Smileys & Emotion	face vomiting|puke|sick|vomit
+fluent_face_with_diagonal_mouth	face with diagonal mouth	Smileys & Emotion	disappointed|face with diagonal mouth|meh|skeptical|unsure
+fluent_face_with_hand_over_mouth	face with hand over mouth	Smileys & Emotion	face with hand over mouth|whoops
+fluent_face_with_head_bandage	face with head-bandage	Smileys & Emotion	bandage|face|face with head-bandage|hurt|injury
+fluent_face_with_medical_mask	face with medical mask	Smileys & Emotion	cold|doctor|face|face with medical mask|mask|sick
+fluent_face_with_monocle	face with monocle	Smileys & Emotion	face with monocle|stuffy
+fluent_face_with_open_eyes_and_hand_over_mouth	face with open eyes and hand over mouth	Smileys & Emotion	amazement|awe|disbelief|embarrass|face with open eyes and hand over mouth|scared|surprise
+fluent_face_with_open_mouth	face with open mouth	Smileys & Emotion	face|face with open mouth|mouth|open|sympathy
+fluent_face_with_peeking_eye	face with peeking eye	Smileys & Emotion	captivated|face with peeking eye|peep|stare
+fluent_face_with_raised_eyebrow	face with raised eyebrow	Smileys & Emotion	distrust|face with raised eyebrow|skeptic
+fluent_face_with_rolling_eyes	face with rolling eyes	Smileys & Emotion	eyeroll|eyes|face|face with rolling eyes|rolling
+fluent_face_with_spiral_eyes	face with spiral eyes	Smileys & Emotion	dizzy|face with spiral eyes|hypnotized|spiral|trouble|whoa
+fluent_face_with_steam_from_nose	face with steam from nose	Smileys & Emotion	face|face with steam from nose|triumph|won
+fluent_face_with_symbols_on_mouth	face with symbols on mouth	Smileys & Emotion	face with symbols on mouth|swearing
+fluent_face_with_tears_of_joy	face with tears of joy	Smileys & Emotion	face|face with tears of joy|joy|laugh|tear
+fluent_face_with_thermometer	face with thermometer	Smileys & Emotion	face|face with thermometer|ill|sick|thermometer
+fluent_face_with_tongue	face with tongue	Smileys & Emotion	face|face with tongue|tongue
+fluent_face_without_mouth	face without mouth	Smileys & Emotion	face|face without mouth|mouth|quiet|silent
+fluent_fearful_face	fearful face	Smileys & Emotion	face|fear|fearful|scared
+fluent_flushed_face	flushed face	Smileys & Emotion	dazed|face|flushed
+fluent_frowning_face	frowning face	Smileys & Emotion	face|frown|frowning face
+fluent_frowning_face_with_open_mouth	frowning face with open mouth	Smileys & Emotion	face|frown|frowning face with open mouth|mouth|open
+fluent_ghost	ghost	Smileys & Emotion	creature|face|fairy tale|fantasy|ghost|monster
+fluent_goblin	goblin	Smileys & Emotion	creature|face|fairy tale|fantasy|goblin|monster
+fluent_green_heart	green heart	Smileys & Emotion	green|green heart
+fluent_grey_heart	grey heart	Smileys & Emotion	gray|grey heart|heart|silver|slate
+fluent_grimacing_face	grimacing face	Smileys & Emotion	face|grimace|grimacing face
+fluent_grinning_cat	grinning cat	Smileys & Emotion	cat|face|grinning|mouth|open|smile
+fluent_grinning_cat_with_smiling_eyes	grinning cat with smiling eyes	Smileys & Emotion	cat|eye|face|grin|grinning cat with smiling eyes|smile
+fluent_grinning_face	grinning face	Smileys & Emotion	face|grin|grinning face
+fluent_grinning_face_with_big_eyes	grinning face with big eyes	Smileys & Emotion	face|grinning face with big eyes|mouth|open|smile
+fluent_grinning_face_with_smiling_eyes	grinning face with smiling eyes	Smileys & Emotion	eye|face|grinning face with smiling eyes|mouth|open|smile
+fluent_grinning_face_with_sweat	grinning face with sweat	Smileys & Emotion	cold|face|grinning face with sweat|open|smile|sweat
+fluent_grinning_squinting_face	grinning squinting face	Smileys & Emotion	face|grinning squinting face|laugh|mouth|satisfied|smile
+fluent_growing_heart	growing heart	Smileys & Emotion	excited|growing|growing heart|nervous|pulse
+fluent_head_shaking_horizontally	head shaking horizontally	Smileys & Emotion	head shaking horizontally|no|shake
+fluent_head_shaking_vertically	head shaking vertically	Smileys & Emotion	head shaking vertically|nod|yes
+fluent_hear_no_evil_monkey	hear-no-evil monkey	Smileys & Emotion	evil|face|forbidden|hear|hear-no-evil monkey|monkey
+fluent_heart_decoration	heart decoration	Smileys & Emotion	heart|heart decoration
+fluent_heart_exclamation	heart exclamation	Smileys & Emotion	exclamation|heart exclamation|mark|punctuation
+fluent_heart_on_fire	heart on fire	Smileys & Emotion	burn|heart|heart on fire|love|lust|sacred heart
+fluent_heart_with_arrow	heart with arrow	Smileys & Emotion	arrow|cupid|heart with arrow
+fluent_heart_with_ribbon	heart with ribbon	Smileys & Emotion	heart with ribbon|ribbon|valentine
+fluent_hole	hole	Smileys & Emotion	hole
+fluent_hot_face	hot face	Smileys & Emotion	feverish|heat stroke|hot|hot face|red-faced|sweating
+fluent_hugging_face	hugging face	Smileys & Emotion	face|hug|hugging|open hands|smiling face|smiling face with open hands
+fluent_hundred_points	hundred points	Smileys & Emotion	100|full|hundred|hundred points|score
+fluent_hushed_face	hushed face	Smileys & Emotion	face|hushed|stunned|surprised
+fluent_kiss_mark	kiss mark	Smileys & Emotion	kiss|kiss mark|lips
+fluent_kissing_cat	kissing cat	Smileys & Emotion	cat|eye|face|kiss|kissing cat
+fluent_kissing_face	kissing face	Smileys & Emotion	face|kiss|kissing face
+fluent_kissing_face_with_closed_eyes	kissing face with closed eyes	Smileys & Emotion	closed|eye|face|kiss|kissing face with closed eyes
+fluent_kissing_face_with_smiling_eyes	kissing face with smiling eyes	Smileys & Emotion	eye|face|kiss|kissing face with smiling eyes|smile
+fluent_knocked_out_face	knocked-out face	Smileys & Emotion	crossed-out eyes|dead|face|face with crossed-out eyes|knocked out
+fluent_left_speech_bubble	left speech bubble	Smileys & Emotion	dialog|left speech bubble|speech
+fluent_light_blue_heart	light blue heart	Smileys & Emotion	cyan|heart|light blue|light blue heart|teal
+fluent_loudly_crying_face	loudly crying face	Smileys & Emotion	cry|face|loudly crying face|sad|sob|tear
+fluent_love_letter	love letter	Smileys & Emotion	heart|letter|love|mail
+fluent_lying_face	lying face	Smileys & Emotion	face|lie|lying face|pinocchio
+fluent_melting_face	melting face	Smileys & Emotion	disappear|dissolve|liquid|melt|melting face
+fluent_mending_heart	mending heart	Smileys & Emotion	healthier|improving|mending|mending heart|recovering|recuperating|well
+fluent_money_mouth_face	money-mouth face	Smileys & Emotion	face|money|money-mouth face|mouth
+fluent_nauseated_face	nauseated face	Smileys & Emotion	face|nauseated|vomit
+fluent_nerd_face	nerd face	Smileys & Emotion	face|geek|nerd
+fluent_neutral_face	neutral face	Smileys & Emotion	deadpan|face|meh|neutral
+fluent_ogre	ogre	Smileys & Emotion	creature|face|fairy tale|fantasy|monster|ogre
+fluent_orange_heart	orange heart	Smileys & Emotion	orange|orange heart
+fluent_partying_face	partying face	Smileys & Emotion	celebration|hat|horn|party|partying face
+fluent_pensive_face	pensive face	Smileys & Emotion	dejected|face|pensive
+fluent_persevering_face	persevering face	Smileys & Emotion	face|persevere|persevering face
+fluent_pile_of_poo	pile of poo	Smileys & Emotion	dung|face|monster|pile of poo|poo|poop
+fluent_pink_heart	pink heart	Smileys & Emotion	cute|heart|like|love|pink
+fluent_pleading_face	pleading face	Smileys & Emotion	begging|mercy|pleading face|puppy eyes
+fluent_pouting_cat	pouting cat	Smileys & Emotion	cat|face|pouting
+fluent_pouting_face	pouting face	Smileys & Emotion	angry|face|mad|pouting|rage|red
+fluent_purple_heart	purple heart	Smileys & Emotion	purple|purple heart
+fluent_red_heart	red heart	Smileys & Emotion	heart|red heart
+fluent_relieved_face	relieved face	Smileys & Emotion	face|relieved
+fluent_revolving_hearts	revolving hearts	Smileys & Emotion	revolving|revolving hearts
+fluent_right_anger_bubble	right anger bubble	Smileys & Emotion	angry|balloon|bubble|mad|right anger bubble
+fluent_robot	robot	Smileys & Emotion	face|monster|robot
+fluent_rolling_on_the_floor_laughing	rolling on the floor laughing	Smileys & Emotion	face|floor|laugh|rofl|rolling|rolling on the floor laughing|rotfl
+fluent_sad_but_relieved_face	sad but relieved face	Smileys & Emotion	disappointed|face|relieved|sad but relieved face|whew
+fluent_saluting_face	saluting face	Smileys & Emotion	OK|salute|saluting face|sunny|troops|yes
+fluent_see_no_evil_monkey	see-no-evil monkey	Smileys & Emotion	evil|face|forbidden|monkey|see|see-no-evil monkey
+fluent_shaking_face	shaking face	Smileys & Emotion	earthquake|face|shaking|shock|vibrate
+fluent_shushing_face	shushing face	Smileys & Emotion	quiet|shush|shushing face
+fluent_skull	skull	Smileys & Emotion	death|face|fairy tale|monster|skull
+fluent_skull_and_crossbones	skull and crossbones	Smileys & Emotion	crossbones|death|face|monster|skull|skull and crossbones
+fluent_sleeping_face	sleeping face	Smileys & Emotion	face|sleep|sleeping face|zzz
+fluent_sleepy_face	sleepy face	Smileys & Emotion	face|sleep|sleepy face
+fluent_slightly_frowning_face	slightly frowning face	Smileys & Emotion	face|frown|slightly frowning face
+fluent_slightly_smiling_face	slightly smiling face	Smileys & Emotion	face|slightly smiling face|smile
+fluent_smiling_cat_with_heart_eyes	smiling cat with heart-eyes	Smileys & Emotion	cat|eye|face|heart|love|smile|smiling cat with heart-eyes
+fluent_smiling_face	smiling face	Smileys & Emotion	face|outlined|relaxed|smile|smiling face
+fluent_smiling_face_with_halo	smiling face with halo	Smileys & Emotion	angel|face|fantasy|halo|innocent|smiling face with halo
+fluent_smiling_face_with_heart_eyes	smiling face with heart-eyes	Smileys & Emotion	eye|face|love|smile|smiling face with heart-eyes
+fluent_smiling_face_with_hearts	smiling face with hearts	Smileys & Emotion	adore|crush|hearts|in love|smiling face with hearts
+fluent_smiling_face_with_horns	smiling face with horns	Smileys & Emotion	face|fairy tale|fantasy|horns|smile|smiling face with horns
+fluent_smiling_face_with_smiling_eyes	smiling face with smiling eyes	Smileys & Emotion	blush|eye|face|smile|smiling face with smiling eyes
+fluent_smiling_face_with_sunglasses	smiling face with sunglasses	Smileys & Emotion	bright|cool|face|smiling face with sunglasses|sun|sunglasses
+fluent_smiling_face_with_tear	smiling face with tear	Smileys & Emotion	grateful|proud|relieved|smiling|smiling face with tear|tear|touched
+fluent_smirking_face	smirking face	Smileys & Emotion	face|smirk|smirking face
+fluent_sneezing_face	sneezing face	Smileys & Emotion	face|gesundheit|sneeze|sneezing face
+fluent_sparkling_heart	sparkling heart	Smileys & Emotion	excited|sparkle|sparkling heart
+fluent_speak_no_evil_monkey	speak-no-evil monkey	Smileys & Emotion	evil|face|forbidden|monkey|speak|speak-no-evil monkey
+fluent_speech_balloon	speech balloon	Smileys & Emotion	balloon|bubble|comic|dialog|speech
+fluent_squinting_face_with_tongue	squinting face with tongue	Smileys & Emotion	eye|face|horrible|squinting face with tongue|taste|tongue
+fluent_star_struck	star-struck	Smileys & Emotion	eyes|face|grinning|star|star-struck
+fluent_sweat_droplets	sweat droplets	Smileys & Emotion	comic|splashing|sweat|sweat droplets
+fluent_thinking_face	thinking face	Smileys & Emotion	face|thinking
+fluent_thought_balloon	thought balloon	Smileys & Emotion	balloon|bubble|comic|thought
+fluent_tired_face	tired face	Smileys & Emotion	face|tired
+fluent_two_hearts	two hearts	Smileys & Emotion	love|two hearts
+fluent_unamused_face	unamused face	Smileys & Emotion	face|unamused|unhappy
+fluent_upside_down_face	upside-down face	Smileys & Emotion	face|upside-down
+fluent_weary_cat	weary cat	Smileys & Emotion	cat|face|oh|surprised|weary
+fluent_weary_face	weary face	Smileys & Emotion	face|tired|weary
+fluent_white_heart	white heart	Smileys & Emotion	heart|white
+fluent_winking_face	winking face	Smileys & Emotion	face|wink|winking face
+fluent_winking_face_with_tongue	winking face with tongue	Smileys & Emotion	eye|face|joke|tongue|wink|winking face with tongue
+fluent_woozy_face	woozy face	Smileys & Emotion	dizzy|intoxicated|tipsy|uneven eyes|wavy mouth|woozy face
+fluent_worried_face	worried face	Smileys & Emotion	face|worried
+fluent_yawning_face	yawning face	Smileys & Emotion	bored|tired|yawn|yawning face
+fluent_yellow_heart	yellow heart	Smileys & Emotion	yellow|yellow heart
+fluent_zany_face	zany face	Smileys & Emotion	eye|goofy|large|small|zany face
+fluent_zipper_mouth_face	zipper-mouth face	Smileys & Emotion	face|mouth|zipper|zipper-mouth face
+fluent_zzz	zzz	Smileys & Emotion	comic|sleep|zzz
+fluent_mrs_claus	Mrs. Claus	People & Body	celebration|Christmas|claus|mother|Mrs.|Mrs. Claus
+fluent_ok_hand	OK hand	People & Body	hand|OK
+fluent_santa_claus	Santa Claus	People & Body	celebration|Christmas|claus|father|santa|Santa Claus
+fluent_anatomical_heart	anatomical heart	People & Body	anatomical|cardiology|heart|organ|pulse
+fluent_artist	artist	People & Body	artist|palette
+fluent_astronaut	astronaut	People & Body	astronaut|rocket
+fluent_baby	baby	People & Body	baby|young
+fluent_baby_angel	baby angel	People & Body	angel|baby|face|fairy tale|fantasy
+fluent_backhand_index_pointing_down	backhand index pointing down	People & Body	backhand|backhand index pointing down|down|finger|hand|point
+fluent_backhand_index_pointing_left	backhand index pointing left	People & Body	backhand|backhand index pointing left|finger|hand|index|point
+fluent_backhand_index_pointing_right	backhand index pointing right	People & Body	backhand|backhand index pointing right|finger|hand|index|point
+fluent_backhand_index_pointing_up	backhand index pointing up	People & Body	backhand|backhand index pointing up|finger|hand|point|up
+fluent_biting_lip	biting lip	People & Body	anxious|biting lip|fear|flirting|nervous|uncomfortable|worried
+fluent_bone	bone	People & Body	bone|skeleton
+fluent_boy	boy	People & Body	boy|young
+fluent_brain	brain	People & Body	brain|intelligent
+fluent_breast_feeding	breast-feeding	People & Body	baby|breast|breast-feeding|nursing
+fluent_bust_in_silhouette	bust in silhouette	People & Body	bust|bust in silhouette|silhouette
+fluent_busts_in_silhouette	busts in silhouette	People & Body	bust|busts in silhouette|silhouette
+fluent_call_me_hand	call me hand	People & Body	call|call me hand|hand
+fluent_child	child	People & Body	child|gender-neutral|unspecified gender|young
+fluent_clapping_hands	clapping hands	People & Body	clap|clapping hands|hand
+fluent_construction_worker	construction worker	People & Body	construction|hat|worker
+fluent_cook	cook	People & Body	chef|cook
+fluent_crossed_fingers	crossed fingers	People & Body	cross|crossed fingers|finger|hand|luck
+fluent_man_deaf	deaf man	People & Body	deaf|man
+fluent_person_deaf	deaf person	People & Body	accessibility|deaf|deaf person|ear|hear
+fluent_woman_deaf	deaf woman	People & Body	deaf|woman
+fluent_detective	detective	People & Body	detective|sleuth|spy
+fluent_ear	ear	People & Body	body|ear
+fluent_ear_with_hearing_aid	ear with hearing aid	People & Body	accessibility|ear with hearing aid|hard of hearing
+fluent_person_elf	elf	People & Body	elf|magical
+fluent_eye	eye	People & Body	body|eye
+fluent_eyes	eyes	People & Body	eye|eyes|face
+fluent_factory_worker	factory worker	People & Body	assembly|factory|industrial|worker
+fluent_person_fairy	fairy	People & Body	fairy|Oberon|Puck|Titania
+fluent_farmer	farmer	People & Body	farmer|gardener|rancher
+fluent_firefighter	firefighter	People & Body	firefighter|firetruck
+fluent_flexed_biceps	flexed biceps	People & Body	biceps|comic|flex|flexed biceps|muscle
+fluent_folded_hands	folded hands	People & Body	ask|folded hands|hand|high 5|high five|please|pray|thanks
+fluent_foot	foot	People & Body	foot|kick|stomp
+fluent_footprints	footprints	People & Body	clothing|footprint|footprints|print
+fluent_person_genie	genie	People & Body	djinn|genie
+fluent_girl	girl	People & Body	girl|Virgo|young|zodiac
+fluent_guard	guard	People & Body	guard
+fluent_hand_with_fingers_splayed	hand with fingers splayed	People & Body	finger|hand|hand with fingers splayed|splayed
+fluent_hand_with_index_finger_and_thumb_crossed	hand with index finger and thumb crossed	People & Body	expensive|hand with index finger and thumb crossed|heart|love|money|snap
+fluent_handshake	handshake	People & Body	agreement|hand|handshake|meeting|shake
+fluent_health_worker	health worker	People & Body	doctor|health worker|healthcare|nurse|therapist
+fluent_heart_hands	heart hands	People & Body	heart hands|love
+fluent_horse_racing	horse racing	People & Body	horse|jockey|racehorse|racing
+fluent_index_pointing_at_the_viewer	index pointing at the viewer	People & Body	index pointing at the viewer|point|you
+fluent_index_pointing_up	index pointing up	People & Body	finger|hand|index|index pointing up|point|up
+fluent_judge	judge	People & Body	judge|justice|scales
+fluent_left_facing_fist	left-facing fist	People & Body	fist|left-facing fist|leftwards
+fluent_leftwards_hand	leftwards hand	People & Body	hand|left|leftward|leftwards hand
+fluent_leftwards_pushing_hand	leftwards pushing hand	People & Body	high five|leftward|leftwards pushing hand|push|refuse|stop|wait
+fluent_leg	leg	People & Body	kick|leg|limb
+fluent_love_you_gesture	love-you gesture	People & Body	hand|ILY|love-you gesture
+fluent_lungs	lungs	People & Body	breath|exhalation|inhalation|lungs|organ|respiration
+fluent_person_mage	mage	People & Body	mage|sorcerer|sorceress|witch|wizard
+fluent_man	man	People & Body	adult|man
+fluent_man_artist	man artist	People & Body	artist|man|palette
+fluent_man_astronaut	man astronaut	People & Body	astronaut|man|rocket
+fluent_man_biking	man biking	People & Body	bicycle|biking|cyclist|man
+fluent_man_bouncing_ball	man bouncing ball	People & Body	ball|man|man bouncing ball
+fluent_man_bowing	man bowing	People & Body	apology|bowing|favor|gesture|man|sorry
+fluent_man_cartwheeling	man cartwheeling	People & Body	cartwheel|gymnastics|man|man cartwheeling
+fluent_man_climbing	man climbing	People & Body	climber|man climbing
+fluent_man_construction_worker	man construction worker	People & Body	construction|man|worker
+fluent_man_cook	man cook	People & Body	chef|cook|man
+fluent_man_dancing	man dancing	People & Body	dance|dancing|man
+fluent_man_detective	man detective	People & Body	detective|man|sleuth|spy
+fluent_man_elf	man elf	People & Body	magical|man elf
+fluent_man_facepalming	man facepalming	People & Body	disbelief|exasperation|facepalm|man|man facepalming
+fluent_man_factory_worker	man factory worker	People & Body	assembly|factory|industrial|man|worker
+fluent_man_fairy	man fairy	People & Body	man fairy|Oberon|Puck
+fluent_man_farmer	man farmer	People & Body	farmer|gardener|man|rancher
+fluent_man_feeding_baby	man feeding baby	People & Body	baby|feeding|man|nursing
+fluent_man_firefighter	man firefighter	People & Body	firefighter|firetruck|man
+fluent_man_frowning	man frowning	People & Body	frowning|gesture|man
+fluent_man_genie	man genie	People & Body	djinn|man genie
+fluent_man_gesturing_no	man gesturing NO	People & Body	forbidden|gesture|hand|man|man gesturing NO|prohibited
+fluent_man_gesturing_ok	man gesturing OK	People & Body	gesture|hand|man|man gesturing OK|OK
+fluent_man_getting_haircut	man getting haircut	People & Body	haircut|man|man getting haircut
+fluent_man_getting_massage	man getting massage	People & Body	face|man|man getting massage|massage
+fluent_man_golfing	man golfing	People & Body	golf|man|man golfing
+fluent_man_guard	man guard	People & Body	guard|man
+fluent_man_health_worker	man health worker	People & Body	doctor|healthcare|man|man health worker|nurse|therapist
+fluent_man_in_lotus_position	man in lotus position	People & Body	man in lotus position|meditation|yoga
+fluent_man_in_manual_wheelchair	man in manual wheelchair	People & Body	accessibility|man|man in manual wheelchair|wheelchair
+fluent_man_in_manual_wheelchair_facing_right	man in manual wheelchair facing right	People & Body	accessibility|man|man in manual wheelchair|wheelchair
+fluent_man_in_motorized_wheelchair	man in motorized wheelchair	People & Body	accessibility|man|man in motorized wheelchair|wheelchair
+fluent_man_in_motorized_wheelchair_facing_right	man in motorized wheelchair facing right	People & Body	accessibility|man|man in motorized wheelchair|wheelchair
+fluent_man_in_steamy_room	man in steamy room	People & Body	man in steamy room|sauna|steam room
+fluent_man_in_tuxedo	man in tuxedo	People & Body	man|man in tuxedo|tuxedo
+fluent_man_judge	man judge	People & Body	judge|justice|man|scales
+fluent_man_juggling	man juggling	People & Body	juggling|man|multitask
+fluent_man_kneeling	man kneeling	People & Body	kneeling|man
+fluent_man_kneeling_facing_right	man kneeling facing right	People & Body	kneeling|man
+fluent_man_lifting_weights	man lifting weights	People & Body	man|man lifting weights|weight lifter
+fluent_man_mage	man mage	People & Body	man mage|sorcerer|wizard
+fluent_man_mechanic	man mechanic	People & Body	electrician|man|mechanic|plumber|tradesperson
+fluent_man_mountain_biking	man mountain biking	People & Body	bicycle|bike|cyclist|man|man mountain biking|mountain
+fluent_man_office_worker	man office worker	People & Body	architect|business|man|man office worker|manager|white-collar
+fluent_man_pilot	man pilot	People & Body	man|pilot|plane
+fluent_man_playing_handball	man playing handball	People & Body	handball|man|man playing handball
+fluent_man_playing_water_polo	man playing water polo	People & Body	man|man playing water polo|water polo
+fluent_man_police_officer	man police officer	People & Body	cop|man|officer|police
+fluent_man_pouting	man pouting	People & Body	gesture|man|pouting
+fluent_man_raising_hand	man raising hand	People & Body	gesture|man|man raising hand|raising hand
+fluent_man_rowing_boat	man rowing boat	People & Body	boat|man|man rowing boat|rowboat
+fluent_man_running	man running	People & Body	man|marathon|racing|running
+fluent_man_running_facing_right	man running facing right	People & Body	man|marathon|racing|running
+fluent_man_scientist	man scientist	People & Body	biologist|chemist|engineer|man|physicist|scientist
+fluent_man_shrugging	man shrugging	People & Body	doubt|ignorance|indifference|man|man shrugging|shrug
+fluent_man_singer	man singer	People & Body	actor|entertainer|man|rock|singer|star
+fluent_man_standing	man standing	People & Body	man|standing
+fluent_man_student	man student	People & Body	graduate|man|student
+fluent_man_superhero	man superhero	People & Body	good|hero|man|man superhero|superpower
+fluent_man_supervillain	man supervillain	People & Body	criminal|evil|man|man supervillain|superpower|villain
+fluent_man_surfing	man surfing	People & Body	man|surfing
+fluent_man_swimming	man swimming	People & Body	man|man swimming|swim
+fluent_man_teacher	man teacher	People & Body	instructor|man|professor|teacher
+fluent_man_technologist	man technologist	People & Body	coder|developer|inventor|man|software|technologist
+fluent_man_tipping_hand	man tipping hand	People & Body	man|man tipping hand|sassy|tipping hand
+fluent_man_vampire	man vampire	People & Body	Dracula|man vampire|undead
+fluent_man_walking	man walking	People & Body	hike|man|man walking|walk
+fluent_man_walking_facing_right	man walking facing right	People & Body	hike|man|man walking|walk
+fluent_man_wearing_turban	man wearing turban	People & Body	man|man wearing turban|turban
+fluent_man_with_veil	man with veil	People & Body	man|man with veil|veil
+fluent_man_with_white_cane	man with white cane	People & Body	accessibility|blind|man|man with white cane
+fluent_man_with_white_cane_facing_right	man with white cane facing right	People & Body	accessibility|blind|man|man with white cane
+fluent_man_zombie	man zombie	People & Body	man zombie|undead|walking dead
+fluent_man_bald	man: bald	People & Body	adult|bald|man
+fluent_man_beard	man: beard	People & Body	beard|man|man: beard
+fluent_man_blonde_hair	man: blond hair	People & Body	blond|blond-haired man|hair|man|man: blond hair
+fluent_man_curly_hair	man: curly hair	People & Body	adult|curly hair|man
+fluent_man_red_hair	man: red hair	People & Body	adult|man|red hair
+fluent_man_white_hair	man: white hair	People & Body	adult|man|white hair
+fluent_mechanic	mechanic	People & Body	electrician|mechanic|plumber|tradesperson
+fluent_mechanical_arm	mechanical arm	People & Body	accessibility|mechanical arm|prosthetic
+fluent_mechanical_leg	mechanical leg	People & Body	accessibility|mechanical leg|prosthetic
+fluent_man_with_bunny_ears	men with bunny ears	People & Body	bunny ear|dancer|men|men with bunny ears|partying
+fluent_man_wrestling	men wrestling	People & Body	men|men wrestling|wrestle
+fluent_woman_merpeople	mermaid	People & Body	mermaid|merwoman
+fluent_man_merpeople	merman	People & Body	merman|Triton
+fluent_person_merpeople	merperson	People & Body	mermaid|merman|merperson|merwoman
+fluent_middle_finger	middle finger	People & Body	finger|hand|middle finger
+fluent_mouth	mouth	People & Body	lips|mouth
+fluent_mx_claus	mx claus	People & Body	Claus, christmas|mx claus
+fluent_nail_polish	nail polish	People & Body	care|cosmetics|manicure|nail|polish
+fluent_ninja	ninja	People & Body	fighter|hidden|ninja|stealth
+fluent_nose	nose	People & Body	body|nose
+fluent_office_worker	office worker	People & Body	architect|business|manager|office worker|white-collar
+fluent_old_man	old man	People & Body	adult|man|old
+fluent_old_woman	old woman	People & Body	adult|old|woman
+fluent_older_person	older person	People & Body	adult|gender-neutral|old|older person|unspecified gender
+fluent_oncoming_fist	oncoming fist	People & Body	clenched|fist|hand|oncoming fist|punch
+fluent_open_hands	open hands	People & Body	hand|open|open hands
+fluent_palm_down_hand	palm down hand	People & Body	dismiss|drop|palm down hand|shoo
+fluent_palm_up_hand	palm up hand	People & Body	beckon|catch|come|offer|palm up hand
+fluent_palms_up_together	palms up together	People & Body	palms up together|prayer
+fluent_people_hugging	people hugging	People & Body	goodbye|hello|hug|people hugging|thanks
+fluent_person_with_bunny_ears	people with bunny ears	People & Body	bunny ear|dancer|partying|people with bunny ears
+fluent_person_wrestling	people wrestling	People & Body	people wrestling|wrestle|wrestler
+fluent_person	person	People & Body	adult|gender-neutral|person|unspecified gender
+fluent_person_biking	person biking	People & Body	bicycle|biking|cyclist|person biking
+fluent_person_bouncing_ball	person bouncing ball	People & Body	ball|person bouncing ball
+fluent_person_bowing	person bowing	People & Body	apology|bow|gesture|person bowing|sorry
+fluent_person_cartwheeling	person cartwheeling	People & Body	cartwheel|gymnastics|person cartwheeling
+fluent_person_climbing	person climbing	People & Body	climber|person climbing
+fluent_person_facepalming	person facepalming	People & Body	disbelief|exasperation|face|palm|person facepalming
+fluent_person_feeding_baby	person feeding baby	People & Body	baby|feeding|nursing|person
+fluent_person_fencing	person fencing	People & Body	fencer|fencing|person fencing|sword
+fluent_person_frowning	person frowning	People & Body	frown|gesture|person frowning
+fluent_person_gesturing_no	person gesturing NO	People & Body	forbidden|gesture|hand|person gesturing NO|prohibited
+fluent_person_gesturing_ok	person gesturing OK	People & Body	gesture|hand|OK|person gesturing OK
+fluent_person_getting_haircut	person getting haircut	People & Body	barber|beauty|haircut|parlor|person getting haircut
+fluent_person_getting_massage	person getting massage	People & Body	face|massage|person getting massage|salon
+fluent_person_golfing	person golfing	People & Body	ball|golf|person golfing
+fluent_person_in_bed	person in bed	People & Body	hotel|person in bed|sleep
+fluent_person_in_lotus_position	person in lotus position	People & Body	meditation|person in lotus position|yoga
+fluent_person_in_manual_wheelchair	person in manual wheelchair	People & Body	accessibility|person in manual wheelchair|wheelchair
+fluent_person_in_manual_wheelchair_facing_right	person in manual wheelchair facing right	People & Body	accessibility|person in manual wheelchair|wheelchair
+fluent_person_in_motorized_wheelchair	person in motorized wheelchair	People & Body	accessibility|person in motorized wheelchair|wheelchair
+fluent_person_in_motorized_wheelchair_facing_right	person in motorized wheelchair facing right	People & Body	accessibility|person in motorized wheelchair|wheelchair
+fluent_person_in_steamy_room	person in steamy room	People & Body	person in steamy room|sauna|steam room
+fluent_person_in_suit_levitating	person in suit levitating	People & Body	business|person|person in suit levitating|suit
+fluent_person_in_tuxedo	person in tuxedo	People & Body	groom|person|person in tuxedo|tuxedo
+fluent_person_juggling	person juggling	People & Body	balance|juggle|multitask|person juggling|skill
+fluent_person_kneeling	person kneeling	People & Body	kneel|kneeling|person kneeling
+fluent_person_kneeling_facing_right	person kneeling facing right	People & Body	kneel|kneeling|person kneeling
+fluent_person_lifting_weights	person lifting weights	People & Body	lifter|person lifting weights|weight
+fluent_person_mountain_biking	person mountain biking	People & Body	bicycle|bicyclist|bike|cyclist|mountain|person mountain biking
+fluent_person_playing_handball	person playing handball	People & Body	ball|handball|person playing handball
+fluent_person_playing_water_polo	person playing water polo	People & Body	person playing water polo|polo|water
+fluent_person_pouting	person pouting	People & Body	gesture|person pouting|pouting
+fluent_person_raising_hand	person raising hand	People & Body	gesture|hand|happy|person raising hand|raised
+fluent_person_rowing_boat	person rowing boat	People & Body	boat|person rowing boat|rowboat
+fluent_person_running	person running	People & Body	marathon|person running|running
+fluent_person_running_facing_right	person running facing right	People & Body	marathon|person running|running
+fluent_person_shrugging	person shrugging	People & Body	doubt|ignorance|indifference|person shrugging|shrug
+fluent_person_standing	person standing	People & Body	person standing|stand|standing
+fluent_person_surfing	person surfing	People & Body	person surfing|surfing
+fluent_person_swimming	person swimming	People & Body	person swimming|swim
+fluent_person_taking_bath	person taking bath	People & Body	bath|bathtub|person taking bath
+fluent_person_tipping_hand	person tipping hand	People & Body	hand|help|information|person tipping hand|sassy|tipping
+fluent_person_walking	person walking	People & Body	hike|person walking|walk|walking
+fluent_person_walking_facing_right	person walking facing right	People & Body	hike|person walking|walk|walking
+fluent_person_wearing_turban	person wearing turban	People & Body	person wearing turban|turban
+fluent_person_with_crown	person with crown	People & Body	monarch|noble|person with crown|regal|royalty
+fluent_person_with_skullcap	person with skullcap	People & Body	cap|gua pi mao|hat|person|person with skullcap|skullcap
+fluent_person_with_veil	person with veil	People & Body	bride|person|person with veil|veil|wedding
+fluent_person_with_white_cane	person with white cane	People & Body	accessibility|blind|person with white cane
+fluent_person_with_white_cane_facing_right	person with white cane facing right	People & Body	accessibility|blind|person with white cane
+fluent_person_bald	person: bald	People & Body	adult|bald|gender-neutral|person|unspecified gender
+fluent_person_beard	person: beard	People & Body	beard|person|person: beard
+fluent_person_blonde_hair	person: blond hair	People & Body	blond|blond-haired person|hair|person: blond hair
+fluent_person_curly_hair	person: curly hair	People & Body	adult|curly hair|gender-neutral|person|unspecified gender
+fluent_person_red_hair	person: red hair	People & Body	adult|gender-neutral|person|red hair|unspecified gender
+fluent_person_white_hair	person: white hair	People & Body	adult|gender-neutral|person|unspecified gender|white hair
+fluent_pilot	pilot	People & Body	pilot|plane
+fluent_pinched_fingers	pinched fingers	People & Body	fingers|hand gesture|interrogation|pinched|sarcastic
+fluent_pinching_hand	pinching hand	People & Body	pinching hand|small amount
+fluent_police_officer	police officer	People & Body	cop|officer|police
+fluent_pregnant_man	pregnant man	People & Body	belly|bloated|full|pregnant|pregnant man
+fluent_pregnant_person	pregnant person	People & Body	belly|bloated|full|pregnant|pregnant person
+fluent_pregnant_woman	pregnant woman	People & Body	pregnant|woman
+fluent_prince	prince	People & Body	prince
+fluent_princess	princess	People & Body	fairy tale|fantasy|princess
+fluent_raised_back_of_hand	raised back of hand	People & Body	backhand|raised|raised back of hand
+fluent_raised_fist	raised fist	People & Body	clenched|fist|hand|punch|raised fist
+fluent_raised_hand	raised hand	People & Body	hand|high 5|high five|raised hand
+fluent_raising_hands	raising hands	People & Body	celebration|gesture|hand|hooray|raised|raising hands
+fluent_right_facing_fist	right-facing fist	People & Body	fist|right-facing fist|rightwards
+fluent_rightwards_hand	rightwards hand	People & Body	hand|right|rightward|rightwards hand
+fluent_rightwards_pushing_hand	rightwards pushing hand	People & Body	high five|push|refuse|rightward|rightwards pushing hand|stop|wait
+fluent_scientist	scientist	People & Body	biologist|chemist|engineer|physicist|scientist
+fluent_selfie	selfie	People & Body	camera|phone|selfie
+fluent_sign_of_the_horns	sign of the horns	People & Body	finger|hand|horns|rock-on|sign of the horns
+fluent_singer	singer	People & Body	actor|entertainer|rock|singer|star
+fluent_skier	skier	People & Body	ski|skier|snow
+fluent_snowboarder	snowboarder	People & Body	ski|snow|snowboard|snowboarder
+fluent_speaking_head	speaking head	People & Body	face|head|silhouette|speak|speaking
+fluent_student	student	People & Body	graduate|student
+fluent_person_superhero	superhero	People & Body	good|hero|heroine|superhero|superpower
+fluent_person_supervillain	supervillain	People & Body	criminal|evil|superpower|supervillain|villain
+fluent_teacher	teacher	People & Body	instructor|professor|teacher
+fluent_technologist	technologist	People & Body	coder|developer|inventor|software|technologist
+fluent_thumbs_down	thumbs down	People & Body	-1|down|hand|thumb|thumbs down
+fluent_thumbs_up	thumbs up	People & Body	+1|hand|thumb|thumbs up|up
+fluent_tongue	tongue	People & Body	body|tongue
+fluent_tooth	tooth	People & Body	dentist|tooth
+fluent_troll	troll	People & Body	fairy tale|fantasy|monster|troll
+fluent_person_vampire	vampire	People & Body	Dracula|undead|vampire
+fluent_victory_hand	victory hand	People & Body	hand|v|victory
+fluent_vulcan_salute	vulcan salute	People & Body	finger|hand|spock|vulcan|vulcan salute
+fluent_waving_hand	waving hand	People & Body	hand|wave|waving
+fluent_woman	woman	People & Body	adult|woman
+fluent_woman_artist	woman artist	People & Body	artist|palette|woman
+fluent_woman_astronaut	woman astronaut	People & Body	astronaut|rocket|woman
+fluent_woman_biking	woman biking	People & Body	bicycle|biking|cyclist|woman
+fluent_woman_bouncing_ball	woman bouncing ball	People & Body	ball|woman|woman bouncing ball
+fluent_woman_bowing	woman bowing	People & Body	apology|bowing|favor|gesture|sorry|woman
+fluent_woman_cartwheeling	woman cartwheeling	People & Body	cartwheel|gymnastics|woman|woman cartwheeling
+fluent_woman_climbing	woman climbing	People & Body	climber|woman climbing
+fluent_woman_construction_worker	woman construction worker	People & Body	construction|woman|worker
+fluent_woman_cook	woman cook	People & Body	chef|cook|woman
+fluent_woman_dancing	woman dancing	People & Body	dance|dancing|woman
+fluent_woman_detective	woman detective	People & Body	detective|sleuth|spy|woman
+fluent_woman_elf	woman elf	People & Body	magical|woman elf
+fluent_woman_facepalming	woman facepalming	People & Body	disbelief|exasperation|facepalm|woman|woman facepalming
+fluent_woman_factory_worker	woman factory worker	People & Body	assembly|factory|industrial|woman|worker
+fluent_woman_fairy	woman fairy	People & Body	Titania|woman fairy
+fluent_woman_farmer	woman farmer	People & Body	farmer|gardener|rancher|woman
+fluent_woman_feeding_baby	woman feeding baby	People & Body	baby|feeding|nursing|woman
+fluent_woman_firefighter	woman firefighter	People & Body	firefighter|firetruck|woman
+fluent_woman_frowning	woman frowning	People & Body	frowning|gesture|woman
+fluent_woman_genie	woman genie	People & Body	djinn|woman genie
+fluent_woman_gesturing_no	woman gesturing NO	People & Body	forbidden|gesture|hand|prohibited|woman|woman gesturing NO
+fluent_woman_gesturing_ok	woman gesturing OK	People & Body	gesture|hand|OK|woman|woman gesturing OK
+fluent_woman_getting_haircut	woman getting haircut	People & Body	haircut|woman|woman getting haircut
+fluent_woman_getting_massage	woman getting massage	People & Body	face|massage|woman|woman getting massage
+fluent_woman_golfing	woman golfing	People & Body	golf|woman|woman golfing
+fluent_woman_guard	woman guard	People & Body	guard|woman
+fluent_woman_health_worker	woman health worker	People & Body	doctor|healthcare|nurse|therapist|woman|woman health worker
+fluent_woman_in_lotus_position	woman in lotus position	People & Body	meditation|woman in lotus position|yoga
+fluent_woman_in_manual_wheelchair	woman in manual wheelchair	People & Body	accessibility|wheelchair|woman|woman in manual wheelchair
+fluent_woman_in_manual_wheelchair_facing_right	woman in manual wheelchair facing right	People & Body	accessibility|wheelchair|woman|woman in manual wheelchair
+fluent_woman_in_motorized_wheelchair	woman in motorized wheelchair	People & Body	accessibility|wheelchair|woman|woman in motorized wheelchair
+fluent_woman_in_motorized_wheelchair_facing_right	woman in motorized wheelchair facing right	People & Body	accessibility|wheelchair|woman|woman in motorized wheelchair
+fluent_woman_in_steamy_room	woman in steamy room	People & Body	sauna|steam room|woman in steamy room
+fluent_woman_in_tuxedo	woman in tuxedo	People & Body	tuxedo|woman|woman in tuxedo
+fluent_woman_judge	woman judge	People & Body	judge|justice|scales|woman
+fluent_woman_juggling	woman juggling	People & Body	juggling|multitask|woman
+fluent_woman_kneeling	woman kneeling	People & Body	kneeling|woman
+fluent_woman_kneeling_facing_right	woman kneeling facing right	People & Body	kneeling|woman
+fluent_woman_lifting_weights	woman lifting weights	People & Body	weight lifter|woman|woman lifting weights
+fluent_woman_mage	woman mage	People & Body	sorceress|witch|woman mage
+fluent_woman_mechanic	woman mechanic	People & Body	electrician|mechanic|plumber|tradesperson|woman
+fluent_woman_mountain_biking	woman mountain biking	People & Body	bicycle|bike|biking|cyclist|mountain|woman
+fluent_woman_office_worker	woman office worker	People & Body	architect|business|manager|white-collar|woman|woman office worker
+fluent_woman_pilot	woman pilot	People & Body	pilot|plane|woman
+fluent_woman_playing_handball	woman playing handball	People & Body	handball|woman|woman playing handball
+fluent_woman_playing_water_polo	woman playing water polo	People & Body	water polo|woman|woman playing water polo
+fluent_woman_police_officer	woman police officer	People & Body	cop|officer|police|woman
+fluent_woman_pouting	woman pouting	People & Body	gesture|pouting|woman
+fluent_woman_raising_hand	woman raising hand	People & Body	gesture|raising hand|woman|woman raising hand
+fluent_woman_rowing_boat	woman rowing boat	People & Body	boat|rowboat|woman|woman rowing boat
+fluent_woman_running	woman running	People & Body	marathon|racing|running|woman
+fluent_woman_running_facing_right	woman running facing right	People & Body	marathon|racing|running|woman
+fluent_woman_scientist	woman scientist	People & Body	biologist|chemist|engineer|physicist|scientist|woman
+fluent_woman_shrugging	woman shrugging	People & Body	doubt|ignorance|indifference|shrug|woman|woman shrugging
+fluent_woman_singer	woman singer	People & Body	actor|entertainer|rock|singer|star|woman
+fluent_woman_standing	woman standing	People & Body	standing|woman
+fluent_woman_student	woman student	People & Body	graduate|student|woman
+fluent_woman_superhero	woman superhero	People & Body	good|hero|heroine|superpower|woman|woman superhero
+fluent_woman_supervillain	woman supervillain	People & Body	criminal|evil|superpower|villain|woman|woman supervillain
+fluent_woman_surfing	woman surfing	People & Body	surfing|woman
+fluent_woman_swimming	woman swimming	People & Body	swim|woman|woman swimming
+fluent_woman_teacher	woman teacher	People & Body	instructor|professor|teacher|woman
+fluent_woman_technologist	woman technologist	People & Body	coder|developer|inventor|software|technologist|woman
+fluent_woman_tipping_hand	woman tipping hand	People & Body	sassy|tipping hand|woman|woman tipping hand
+fluent_woman_vampire	woman vampire	People & Body	undead|woman vampire
+fluent_woman_walking	woman walking	People & Body	hike|walk|woman|woman walking
+fluent_woman_walking_facing_right	woman walking facing right	People & Body	hike|walk|woman|woman walking
+fluent_woman_wearing_turban	woman wearing turban	People & Body	turban|woman|woman wearing turban
+fluent_woman_with_headscarf	woman with headscarf	People & Body	headscarf|hijab|mantilla|tichel|woman with headscarf
+fluent_woman_with_veil	woman with veil	People & Body	veil|woman|woman with veil
+fluent_woman_with_white_cane	woman with white cane	People & Body	accessibility|blind|woman|woman with white cane
+fluent_woman_with_white_cane_facing_right	woman with white cane facing right	People & Body	accessibility|blind|woman|woman with white cane
+fluent_woman_zombie	woman zombie	People & Body	undead|walking dead|woman zombie
+fluent_woman_bald	woman: bald	People & Body	adult|bald|woman
+fluent_woman_beard	woman: beard	People & Body	beard|woman|woman: beard
+fluent_woman_blonde_hair	woman: blond hair	People & Body	blond-haired woman|blonde|hair|woman|woman: blond hair
+fluent_woman_curly_hair	woman: curly hair	People & Body	adult|curly hair|woman
+fluent_woman_red_hair	woman: red hair	People & Body	adult|red hair|woman
+fluent_woman_white_hair	woman: white hair	People & Body	adult|white hair|woman
+fluent_woman_with_bunny_ears	women with bunny ears	People & Body	bunny ear|dancer|partying|women|women with bunny ears
+fluent_woman_wrestling	women wrestling	People & Body	women|women wrestling|wrestle
+fluent_writing_hand	writing hand	People & Body	hand|write|writing hand
+fluent_person_zombie	zombie	People & Body	undead|walking dead|zombie
+fluent_t_rex	T-Rex	Animals & Nature	T-Rex|Tyrannosaurus Rex
+fluent_ant	ant	Animals & Nature	ant|insect
+fluent_baby_chick	baby chick	Animals & Nature	baby|bird|chick
+fluent_badger	badger	Animals & Nature	badger|honey badger|pester
+fluent_bat	bat	Animals & Nature	bat|vampire
+fluent_bear	bear	Animals & Nature	bear|face
+fluent_beaver	beaver	Animals & Nature	beaver|dam
+fluent_beetle	beetle	Animals & Nature	beetle|bug|insect
+fluent_bird	bird	Animals & Nature	bird
+fluent_bison	bison	Animals & Nature	bison|buffalo|herd|wisent
+fluent_blackbird	black bird	Animals & Nature	bird|black|crow|raven|rook
+fluent_black_cat	black cat	Animals & Nature	black|cat|unlucky
+fluent_blossom	blossom	Animals & Nature	blossom|flower
+fluent_blowfish	blowfish	Animals & Nature	blowfish|fish
+fluent_boar	boar	Animals & Nature	boar|pig
+fluent_bouquet	bouquet	Animals & Nature	bouquet|flower
+fluent_bug	bug	Animals & Nature	bug|insect
+fluent_butterfly	butterfly	Animals & Nature	butterfly|insect|pretty
+fluent_cactus	cactus	Animals & Nature	cactus|plant
+fluent_camel	camel	Animals & Nature	camel|dromedary|hump
+fluent_cat	cat	Animals & Nature	cat|pet
+fluent_cat_face	cat face	Animals & Nature	cat|face|pet
+fluent_cherry_blossom	cherry blossom	Animals & Nature	blossom|cherry|flower
+fluent_chicken	chicken	Animals & Nature	bird|chicken
+fluent_chipmunk	chipmunk	Animals & Nature	chipmunk|squirrel
+fluent_cockroach	cockroach	Animals & Nature	cockroach|insect|pest|roach
+fluent_coral	coral	Animals & Nature	coral|ocean|reef
+fluent_cow	cow	Animals & Nature	cow
+fluent_cow_face	cow face	Animals & Nature	cow|face
+fluent_cricket	cricket	Animals & Nature	cricket|grasshopper
+fluent_crocodile	crocodile	Animals & Nature	crocodile
+fluent_deciduous_tree	deciduous tree	Animals & Nature	deciduous|shedding|tree
+fluent_deer	deer	Animals & Nature	deer
+fluent_dodo	dodo	Animals & Nature	dodo|extinction|large|Mauritius
+fluent_dog	dog	Animals & Nature	dog|pet
+fluent_dog_face	dog face	Animals & Nature	dog|face|pet
+fluent_dolphin	dolphin	Animals & Nature	dolphin|flipper
+fluent_donkey	donkey	Animals & Nature	animal|ass|burro|donkey|mammal|mule|stubborn
+fluent_dove	dove	Animals & Nature	bird|dove|fly|peace
+fluent_dragon	dragon	Animals & Nature	dragon|fairy tale
+fluent_dragon_face	dragon face	Animals & Nature	dragon|face|fairy tale
+fluent_duck	duck	Animals & Nature	bird|duck
+fluent_eagle	eagle	Animals & Nature	bird|eagle
+fluent_elephant	elephant	Animals & Nature	elephant
+fluent_empty_nest	empty nest	Animals & Nature	empty nest|nesting
+fluent_evergreen_tree	evergreen tree	Animals & Nature	evergreen tree|tree
+fluent_ewe	ewe	Animals & Nature	ewe|female|sheep
+fluent_fallen_leaf	fallen leaf	Animals & Nature	fallen leaf|falling|leaf
+fluent_feather	feather	Animals & Nature	bird|feather|flight|light|plumage
+fluent_fish	fish	Animals & Nature	fish|Pisces|zodiac
+fluent_flamingo	flamingo	Animals & Nature	flamboyant|flamingo|tropical
+fluent_fly	fly	Animals & Nature	disease|fly|maggot|pest|rotting
+fluent_four_leaf_clover	four leaf clover	Animals & Nature	4|clover|four|four-leaf clover|leaf
+fluent_fox	fox	Animals & Nature	face|fox
+fluent_frog	frog	Animals & Nature	face|frog
+fluent_front_facing_baby_chick	front-facing baby chick	Animals & Nature	baby|bird|chick|front-facing baby chick
+fluent_giraffe	giraffe	Animals & Nature	giraffe|spots
+fluent_goat	goat	Animals & Nature	Capricorn|goat|zodiac
+fluent_goose	goose	Animals & Nature	bird|fowl|goose|honk|silly
+fluent_gorilla	gorilla	Animals & Nature	gorilla
+fluent_guide_dog	guide dog	Animals & Nature	accessibility|blind|guide|guide dog
+fluent_hamster	hamster	Animals & Nature	face|hamster|pet
+fluent_hatching_chick	hatching chick	Animals & Nature	baby|bird|chick|hatching
+fluent_hedgehog	hedgehog	Animals & Nature	hedgehog|spiny
+fluent_herb	herb	Animals & Nature	herb|leaf
+fluent_hibiscus	hibiscus	Animals & Nature	flower|hibiscus
+fluent_hippopotamus	hippopotamus	Animals & Nature	hippo|hippopotamus
+fluent_honeybee	honeybee	Animals & Nature	bee|honeybee|insect
+fluent_horse	horse	Animals & Nature	equestrian|horse|racehorse|racing
+fluent_horse_face	horse face	Animals & Nature	face|horse
+fluent_hyacinth	hyacinth	Animals & Nature	bluebonnet|flower|hyacinth|lavender|lupine|snapdragon
+fluent_jellyfish	jellyfish	Animals & Nature	burn|invertebrate|jelly|jellyfish|marine|ouch|stinger
+fluent_kangaroo	kangaroo	Animals & Nature	Australia|joey|jump|kangaroo|marsupial
+fluent_koala	koala	Animals & Nature	koala|face|marsupial
+fluent_lady_beetle	lady beetle	Animals & Nature	beetle|insect|lady beetle|ladybird|ladybug
+fluent_leaf_fluttering_in_wind	leaf fluttering in wind	Animals & Nature	blow|flutter|leaf|leaf fluttering in wind|wind
+fluent_leopard	leopard	Animals & Nature	leopard
+fluent_lion	lion	Animals & Nature	face|Leo|lion|zodiac
+fluent_lizard	lizard	Animals & Nature	lizard|reptile
+fluent_llama	llama	Animals & Nature	alpaca|guanaco|llama|vicuña|wool
+fluent_lotus	lotus	Animals & Nature	Buddhism|flower|Hinduism|India|lotus|purity|Vietnam
+fluent_mammoth	mammoth	Animals & Nature	extinction|large|mammoth|tusk|woolly
+fluent_maple_leaf	maple leaf	Animals & Nature	falling|leaf|maple
+fluent_microbe	microbe	Animals & Nature	amoeba|bacteria|microbe|virus
+fluent_monkey	monkey	Animals & Nature	monkey
+fluent_monkey_face	monkey face	Animals & Nature	face|monkey
+fluent_moose	moose	Animals & Nature	animal|antlers|elk|mammal|moose
+fluent_mosquito	mosquito	Animals & Nature	disease|fever|malaria|mosquito|pest|virus
+fluent_mouse	mouse	Animals & Nature	mouse
+fluent_mouse_face	mouse face	Animals & Nature	face|mouse
+fluent_nest_with_eggs	nest with eggs	Animals & Nature	nest with eggs|nesting
+fluent_octopus	octopus	Animals & Nature	octopus
+fluent_orangutan	orangutan	Animals & Nature	ape|orangutan
+fluent_otter	otter	Animals & Nature	fishing|otter|playful
+fluent_owl	owl	Animals & Nature	bird|owl|wise
+fluent_ox	ox	Animals & Nature	bull|ox|Taurus|zodiac
+fluent_palm_tree	palm tree	Animals & Nature	palm|tree
+fluent_panda	panda	Animals & Nature	face|panda
+fluent_parrot	parrot	Animals & Nature	bird|parrot|pirate|talk
+fluent_paw_prints	paw prints	Animals & Nature	feet|paw|paw prints|print
+fluent_peacock	peacock	Animals & Nature	bird|ostentatious|peacock|peahen|proud
+fluent_penguin	penguin	Animals & Nature	bird|penguin
+fluent_phoenix_bird	phoenix	Animals & Nature	fantasy|firebird|phoenix|rebirth|reincarnation
+fluent_pig	pig	Animals & Nature	pig|sow
+fluent_pig_face	pig face	Animals & Nature	face|pig
+fluent_pig_nose	pig nose	Animals & Nature	face|nose|pig
+fluent_polar_bear	polar bear	Animals & Nature	arctic|bear|polar bear|white
+fluent_poodle	poodle	Animals & Nature	dog|poodle
+fluent_potted_plant	potted plant	Animals & Nature	boring|grow|house|nurturing|plant|potted plant|useless
+fluent_rabbit	rabbit	Animals & Nature	bunny|pet|rabbit
+fluent_rabbit_face	rabbit face	Animals & Nature	bunny|face|pet|rabbit
+fluent_raccoon	raccoon	Animals & Nature	curious|raccoon|sly
+fluent_ram	ram	Animals & Nature	Aries|male|ram|sheep|zodiac
+fluent_rat	rat	Animals & Nature	rat
+fluent_rhinoceros	rhinoceros	Animals & Nature	rhinoceros
+fluent_rooster	rooster	Animals & Nature	bird|rooster
+fluent_rose	rose	Animals & Nature	flower|rose
+fluent_rosette	rosette	Animals & Nature	plant|rosette
+fluent_sauropod	sauropod	Animals & Nature	brachiosaurus|brontosaurus|diplodocus|sauropod
+fluent_scorpion	scorpion	Animals & Nature	scorpio|Scorpio|scorpion|zodiac
+fluent_seal	seal	Animals & Nature	sea lion|seal
+fluent_seedling	seedling	Animals & Nature	seedling|young
+fluent_service_dog	service dog	Animals & Nature	accessibility|assistance|dog|service
+fluent_shamrock	shamrock	Animals & Nature	plant|shamrock
+fluent_shark	shark	Animals & Nature	fish|shark
+fluent_sheaf_of_rice	sheaf of rice	Animals & Nature	ear|grain|rice|sheaf of rice
+fluent_skunk	skunk	Animals & Nature	skunk|stink
+fluent_sloth	sloth	Animals & Nature	lazy|sloth|slow
+fluent_snail	snail	Animals & Nature	snail
+fluent_snake	snake	Animals & Nature	bearer|Ophiuchus|serpent|snake|zodiac
+fluent_spider	spider	Animals & Nature	insect|spider
+fluent_spider_web	spider web	Animals & Nature	spider|web
+fluent_spiral_shell	spiral shell	Animals & Nature	shell|spiral
+fluent_spouting_whale	spouting whale	Animals & Nature	face|spouting|whale
+fluent_sunflower	sunflower	Animals & Nature	flower|sun|sunflower
+fluent_swan	swan	Animals & Nature	bird|cygnet|swan|ugly duckling
+fluent_tiger	tiger	Animals & Nature	tiger
+fluent_tiger_face	tiger face	Animals & Nature	face|tiger
+fluent_tropical_fish	tropical fish	Animals & Nature	fish|tropical
+fluent_tulip	tulip	Animals & Nature	flower|tulip
+fluent_turkey	turkey	Animals & Nature	bird|turkey
+fluent_turtle	turtle	Animals & Nature	terrapin|tortoise|turtle
+fluent_two_hump_camel	two-hump camel	Animals & Nature	bactrian|camel|hump|two-hump camel
+fluent_unicorn	unicorn	Animals & Nature	face|unicorn
+fluent_water_buffalo	water buffalo	Animals & Nature	buffalo|water
+fluent_whale	whale	Animals & Nature	whale
+fluent_white_flower	white flower	Animals & Nature	flower|white flower
+fluent_wilted_flower	wilted flower	Animals & Nature	flower|wilted
+fluent_wing	wing	Animals & Nature	angelic|aviation|bird|flying|mythology|wing
+fluent_wolf	wolf	Animals & Nature	face|wolf
+fluent_worm	worm	Animals & Nature	annelid|earthworm|parasite|worm
+fluent_zebra	zebra	Animals & Nature	stripe|zebra
+fluent_amphora	amphora	Food & Drink	amphora|Aquarius|cooking|drink|jug|zodiac
+fluent_avocado	avocado	Food & Drink	avocado|food|fruit
+fluent_baby_bottle	baby bottle	Food & Drink	baby|bottle|drink|milk
+fluent_bacon	bacon	Food & Drink	bacon|breakfast|food|meat
+fluent_bagel	bagel	Food & Drink	bagel|bakery|breakfast|schmear
+fluent_baguette_bread	baguette bread	Food & Drink	baguette|bread|food|french
+fluent_banana	banana	Food & Drink	banana|fruit
+fluent_beans	beans	Food & Drink	beans|food|kidney|legume
+fluent_beer_mug	beer mug	Food & Drink	bar|beer|drink|mug
+fluent_bell_pepper	bell pepper	Food & Drink	bell pepper|capsicum|pepper|vegetable
+fluent_bento_box	bento box	Food & Drink	bento|box
+fluent_beverage_box	beverage box	Food & Drink	beverage|box|juice|straw|sweet
+fluent_birthday_cake	birthday cake	Food & Drink	birthday|cake|celebration|dessert|pastry|sweet
+fluent_blueberries	blueberries	Food & Drink	berry|bilberry|blue|blueberries|blueberry
+fluent_bottle_with_popping_cork	bottle with popping cork	Food & Drink	bar|bottle|bottle with popping cork|cork|drink|popping
+fluent_bowl_with_spoon	bowl with spoon	Food & Drink	bowl with spoon|breakfast|cereal|congee
+fluent_bread	bread	Food & Drink	bread|loaf
+fluent_broccoli	broccoli	Food & Drink	broccoli|wild cabbage
+fluent_brown_mushroom	brown mushroom	Food & Drink	brown mushroom|food|fungus|nature|vegetable
+fluent_bubble_tea	bubble tea	Food & Drink	bubble|milk|pearl|tea
+fluent_burrito	burrito	Food & Drink	burrito|mexican|wrap
+fluent_butter	butter	Food & Drink	butter|dairy
+fluent_candy	candy	Food & Drink	candy|dessert|sweet
+fluent_canned_food	canned food	Food & Drink	can|canned food
+fluent_carrot	carrot	Food & Drink	carrot|food|vegetable
+fluent_cheese_wedge	cheese wedge	Food & Drink	cheese|cheese wedge
+fluent_cherries	cherries	Food & Drink	berries|cherries|cherry|fruit|red
+fluent_chestnut	chestnut	Food & Drink	chestnut|plant
+fluent_chocolate_bar	chocolate bar	Food & Drink	bar|chocolate|dessert|sweet
+fluent_chopsticks	chopsticks	Food & Drink	chopsticks|hashi
+fluent_clinking_beer_mugs	clinking beer mugs	Food & Drink	bar|beer|clink|clinking beer mugs|drink|mug
+fluent_clinking_glasses	clinking glasses	Food & Drink	celebrate|clink|clinking glasses|drink|glass
+fluent_cocktail_glass	cocktail glass	Food & Drink	bar|cocktail|drink|glass
+fluent_coconut	coconut	Food & Drink	coconut|palm|piña colada
+fluent_cooked_rice	cooked rice	Food & Drink	cooked|rice
+fluent_cookie	cookie	Food & Drink	cookie|dessert|sweet
+fluent_cooking	cooking	Food & Drink	breakfast|cooking|egg|frying|pan
+fluent_crab	crab	Food & Drink	Cancer|crab|zodiac
+fluent_croissant	croissant	Food & Drink	bread|breakfast|croissant|food|french|roll
+fluent_cucumber	cucumber	Food & Drink	cucumber|food|pickle|vegetable
+fluent_cup_with_straw	cup with straw	Food & Drink	cup with straw|juice|soda
+fluent_cupcake	cupcake	Food & Drink	bakery|cupcake|sweet
+fluent_curry_rice	curry rice	Food & Drink	curry|rice
+fluent_custard	custard	Food & Drink	custard|dessert|pudding|sweet
+fluent_cut_of_meat	cut of meat	Food & Drink	chop|cut of meat|lambchop|porkchop|steak
+fluent_dango	dango	Food & Drink	dango|dessert|Japanese|skewer|stick|sweet
+fluent_doughnut	doughnut	Food & Drink	breakfast|dessert|donut|doughnut|sweet
+fluent_dumpling	dumpling	Food & Drink	dumpling|empanada|gyōza|jiaozi|pierogi|potsticker
+fluent_ear_of_corn	ear of corn	Food & Drink	corn|ear|ear of corn|maize|maze
+fluent_egg	egg	Food & Drink	breakfast|egg|food
+fluent_eggplant	eggplant	Food & Drink	aubergine|eggplant|vegetable
+fluent_falafel	falafel	Food & Drink	chickpea|falafel|meatball
+fluent_fish_cake_with_swirl	fish cake with swirl	Food & Drink	cake|fish|fish cake with swirl|pastry|swirl
+fluent_flatbread	flatbread	Food & Drink	arepa|flatbread|lavash|naan|pita
+fluent_fondue	fondue	Food & Drink	cheese|chocolate|fondue|melted|pot|Swiss
+fluent_fork_and_knife	fork and knife	Food & Drink	cooking|cutlery|fork|fork and knife|knife
+fluent_fork_and_knife_with_plate	fork and knife with plate	Food & Drink	cooking|fork|fork and knife with plate|knife|plate
+fluent_fortune_cookie	fortune cookie	Food & Drink	fortune cookie|prophecy
+fluent_french_fries	french fries	Food & Drink	french|fries
+fluent_fried_shrimp	fried shrimp	Food & Drink	fried|prawn|shrimp|tempura
+fluent_garlic	garlic	Food & Drink	flavoring|garlic
+fluent_ginger_root	ginger root	Food & Drink	beer|ginger root|root|spice
+fluent_glass_of_milk	glass of milk	Food & Drink	drink|glass|glass of milk|milk
+fluent_grapes	grapes	Food & Drink	fruit|grape|grapes
+fluent_green_apple	green apple	Food & Drink	apple|fruit|green
+fluent_green_salad	green salad	Food & Drink	food|green|salad
+fluent_hamburger	hamburger	Food & Drink	burger|hamburger
+fluent_honey_pot	honey pot	Food & Drink	honey|honeypot|pot|sweet
+fluent_hot_beverage	hot beverage	Food & Drink	beverage|coffee|drink|hot|steaming|tea
+fluent_hot_dog	hot dog	Food & Drink	frankfurter|hot dog|hotdog|sausage
+fluent_hot_pepper	hot pepper	Food & Drink	hot|pepper
+fluent_ice	ice	Food & Drink	cold|ice|ice cube|iceberg
+fluent_ice_cream	ice cream	Food & Drink	cream|dessert|ice|sweet
+fluent_jar	jar	Food & Drink	condiment|container|empty|jar|sauce|store
+fluent_kitchen_knife	kitchen knife	Food & Drink	cooking|hocho|kitchen knife|knife|tool|weapon
+fluent_kiwi_fruit	kiwi fruit	Food & Drink	food|fruit|kiwi
+fluent_leafy_green	leafy green	Food & Drink	bok choy|cabbage|kale|leafy green|lettuce
+fluent_lemon	lemon	Food & Drink	citrus|fruit|lemon
+fluent_lime	lime	Food & Drink	citrus|fruit|lime|tropical
+fluent_lobster	lobster	Food & Drink	bisque|claws|lobster|seafood
+fluent_lollipop	lollipop	Food & Drink	candy|dessert|lollipop|sweet
+fluent_mango	mango	Food & Drink	fruit|mango|tropical
+fluent_mate	mate	Food & Drink	drink|mate
+fluent_meat_on_bone	meat on bone	Food & Drink	bone|meat|meat on bone
+fluent_melon	melon	Food & Drink	fruit|melon
+fluent_moon_cake	moon cake	Food & Drink	autumn|festival|moon cake|yuèbǐng
+fluent_mushroom	mushroom	Food & Drink	mushroom|toadstool
+fluent_oden	oden	Food & Drink	kebab|oden|seafood|skewer|stick
+fluent_olive	olive	Food & Drink	food|olive
+fluent_onion	onion	Food & Drink	flavoring|onion
+fluent_oyster	oyster	Food & Drink	diving|oyster|pearl
+fluent_pancakes	pancakes	Food & Drink	breakfast|crêpe|food|hotcake|pancake|pancakes
+fluent_pea_pod	pea pod	Food & Drink	beans|edamame|legume|pea|pod|vegetable
+fluent_peach	peach	Food & Drink	fruit|peach
+fluent_peanuts	peanuts	Food & Drink	food|nut|peanut|peanuts|vegetable
+fluent_pear	pear	Food & Drink	fruit|pear
+fluent_pie	pie	Food & Drink	filling|pastry|pie
+fluent_pineapple	pineapple	Food & Drink	fruit|pineapple
+fluent_pizza	pizza	Food & Drink	cheese|pizza|slice
+fluent_popcorn	popcorn	Food & Drink	popcorn
+fluent_pot_of_food	pot of food	Food & Drink	pot|pot of food|stew
+fluent_potato	potato	Food & Drink	food|potato|vegetable
+fluent_poultry_leg	poultry leg	Food & Drink	bone|chicken|drumstick|leg|poultry
+fluent_pouring_liquid	pouring liquid	Food & Drink	drink|empty|glass|pouring liquid|spill
+fluent_pretzel	pretzel	Food & Drink	pretzel|twisted
+fluent_red_apple	red apple	Food & Drink	apple|fruit|red
+fluent_rice_ball	rice ball	Food & Drink	ball|Japanese|rice
+fluent_rice_cracker	rice cracker	Food & Drink	cracker|rice
+fluent_roasted_sweet_potato	roasted sweet potato	Food & Drink	potato|roasted|sweet
+fluent_sake	sake	Food & Drink	bar|beverage|bottle|cup|drink|sake
+fluent_salt	salt	Food & Drink	condiment|salt|shaker
+fluent_sandwich	sandwich	Food & Drink	bread|sandwich
+fluent_shallow_pan_of_food	shallow pan of food	Food & Drink	casserole|food|paella|pan|shallow|shallow pan of food
+fluent_shaved_ice	shaved ice	Food & Drink	dessert|ice|shaved|sweet
+fluent_shortcake	shortcake	Food & Drink	cake|dessert|pastry|shortcake|slice|sweet
+fluent_shrimp	shrimp	Food & Drink	food|shellfish|shrimp|small
+fluent_soft_ice_cream	soft ice cream	Food & Drink	cream|dessert|ice|icecream|soft|sweet
+fluent_spaghetti	spaghetti	Food & Drink	pasta|spaghetti
+fluent_spoon	spoon	Food & Drink	spoon|tableware
+fluent_squid	squid	Food & Drink	food|molusc|squid
+fluent_steaming_bowl	steaming bowl	Food & Drink	bowl|noodle|ramen|steaming
+fluent_strawberry	strawberry	Food & Drink	berry|fruit|strawberry
+fluent_stuffed_flatbread	stuffed flatbread	Food & Drink	falafel|flatbread|food|gyro|kebab|stuffed
+fluent_sushi	sushi	Food & Drink	sushi
+fluent_taco	taco	Food & Drink	mexican|taco
+fluent_takeout_box	takeout box	Food & Drink	oyster pail|takeout box
+fluent_tamale	tamale	Food & Drink	mexican|tamale|wrapped
+fluent_tangerine	tangerine	Food & Drink	fruit|orange|tangerine
+fluent_teacup_without_handle	teacup without handle	Food & Drink	beverage|cup|drink|tea|teacup|teacup without handle
+fluent_teapot	teapot	Food & Drink	drink|pot|tea|teapot
+fluent_tomato	tomato	Food & Drink	fruit|tomato|vegetable
+fluent_tropical_drink	tropical drink	Food & Drink	bar|drink|tropical
+fluent_tumbler_glass	tumbler glass	Food & Drink	glass|liquor|shot|tumbler|whisky
+fluent_waffle	waffle	Food & Drink	breakfast|indecisive|iron|waffle
+fluent_watermelon	watermelon	Food & Drink	fruit|watermelon
+fluent_wine_glass	wine glass	Food & Drink	bar|beverage|drink|glass|wine
+fluent_japanese_castle	Japanese castle	Travel & Places	castle|Japanese
+fluent_japanese_post_office	Japanese post office	Travel & Places	Japanese|Japanese post office|post
+fluent_statue_of_liberty	Statue of Liberty	Travel & Places	liberty|statue|Statue of Liberty
+fluent_tokyo_tower	Tokyo tower	Travel & Places	Tokyo|tower
+fluent_aerial_tramway	aerial tramway	Travel & Places	aerial|cable|car|gondola|tramway
+fluent_airplane	airplane	Travel & Places	aeroplane|airplane
+fluent_airplane_arrival	airplane arrival	Travel & Places	aeroplane|airplane|airplane arrival|arrivals|arriving|landing
+fluent_airplane_departure	airplane departure	Travel & Places	aeroplane|airplane|check-in|departure|departures
+fluent_alarm_clock	alarm clock	Travel & Places	alarm|clock
+fluent_ambulance	ambulance	Travel & Places	ambulance|vehicle
+fluent_anchor	anchor	Travel & Places	anchor|ship|tool
+fluent_articulated_lorry	articulated lorry	Travel & Places	articulated lorry|lorry|semi|truck
+fluent_auto_rickshaw	auto rickshaw	Travel & Places	auto rickshaw|tuk tuk
+fluent_automobile	automobile	Travel & Places	automobile|car
+fluent_bank	bank	Travel & Places	bank|building
+fluent_barber_pole	barber pole	Travel & Places	barber|haircut|pole
+fluent_beach_with_umbrella	beach with umbrella	Travel & Places	beach|beach with umbrella|umbrella
+fluent_bellhop_bell	bellhop bell	Travel & Places	bell|bellhop|hotel
+fluent_bicycle	bicycle	Travel & Places	bicycle|bike
+fluent_brick	brick	Travel & Places	brick|bricks|clay|mortar|wall
+fluent_bridge_at_night	bridge at night	Travel & Places	bridge|bridge at night|night
+fluent_building_construction	building construction	Travel & Places	building construction|construction
+fluent_bullet_train	bullet train	Travel & Places	bullet|railway|shinkansen|speed|train
+fluent_bus	bus	Travel & Places	bus|vehicle
+fluent_bus_stop	bus stop	Travel & Places	bus|stop
+fluent_camping	camping	Travel & Places	camping
+fluent_canoe	canoe	Travel & Places	boat|canoe
+fluent_carousel_horse	carousel horse	Travel & Places	carousel|horse
+fluent_castle	castle	Travel & Places	castle|European
+fluent_church	church	Travel & Places	Christian|church|cross|religion
+fluent_circus_tent	circus tent	Travel & Places	circus|tent
+fluent_cityscape	cityscape	Travel & Places	city|cityscape
+fluent_cityscape_at_dusk	cityscape at dusk	Travel & Places	city|cityscape at dusk|dusk|evening|landscape|sunset
+fluent_classical_building	classical building	Travel & Places	classical|classical building
+fluent_closed_umbrella	closed umbrella	Travel & Places	closed umbrella|clothing|rain|umbrella
+fluent_cloud	cloud	Travel & Places	cloud|weather
+fluent_cloud_with_lightning	cloud with lightning	Travel & Places	cloud|cloud with lightning|lightning
+fluent_cloud_with_lightning_and_rain	cloud with lightning and rain	Travel & Places	cloud|cloud with lightning and rain|rain|thunder
+fluent_cloud_with_rain	cloud with rain	Travel & Places	cloud|cloud with rain|rain
+fluent_cloud_with_snow	cloud with snow	Travel & Places	cloud|cloud with snow|cold|snow
+fluent_comet	comet	Travel & Places	comet|space
+fluent_compass	compass	Travel & Places	compass|magnetic|navigation|orienteering
+fluent_construction	construction	Travel & Places	barrier|construction
+fluent_convenience_store	convenience store	Travel & Places	convenience|store
+fluent_crescent_moon	crescent moon	Travel & Places	crescent|moon
+fluent_cyclone	cyclone	Travel & Places	cyclone|dizzy|hurricane|twister|typhoon
+fluent_delivery_truck	delivery truck	Travel & Places	delivery|truck
+fluent_department_store	department store	Travel & Places	department|store
+fluent_derelict_house	derelict house	Travel & Places	derelict|house
+fluent_desert	desert	Travel & Places	desert
+fluent_desert_island	desert island	Travel & Places	desert|island
+fluent_droplet	droplet	Travel & Places	cold|comic|drop|droplet|sweat
+fluent_eight_oclock	eight o’clock	Travel & Places	00|8|8:00|clock|eight|o’clock
+fluent_eight_thirty	eight-thirty	Travel & Places	8|8:30|clock|eight|eight-thirty|thirty
+fluent_eleven_oclock	eleven o’clock	Travel & Places	00|11|11:00|clock|eleven|o’clock
+fluent_eleven_thirty	eleven-thirty	Travel & Places	11|11:30|clock|eleven|eleven-thirty|thirty
+fluent_factory	factory	Travel & Places	building|factory
+fluent_ferris_wheel	ferris wheel	Travel & Places	amusement park|ferris|wheel
+fluent_ferry	ferry	Travel & Places	boat|ferry|passenger
+fluent_fire	fire	Travel & Places	fire|flame|tool
+fluent_fire_engine	fire engine	Travel & Places	engine|fire|truck
+fluent_first_quarter_moon	first quarter moon	Travel & Places	first quarter moon|moon|quarter
+fluent_first_quarter_moon_face	first quarter moon face	Travel & Places	face|first quarter moon face|moon|quarter
+fluent_five_oclock	five o’clock	Travel & Places	00|5|5:00|clock|five|o’clock
+fluent_five_thirty	five-thirty	Travel & Places	5|5:30|clock|five|five-thirty|thirty
+fluent_flying_saucer	flying saucer	Travel & Places	flying saucer|UFO
+fluent_fog	fog	Travel & Places	cloud|fog
+fluent_foggy	foggy	Travel & Places	fog|foggy
+fluent_fountain	fountain	Travel & Places	fountain
+fluent_four_oclock	four o’clock	Travel & Places	00|4|4:00|clock|four|o’clock
+fluent_four_thirty	four-thirty	Travel & Places	4|4:30|clock|four|four-thirty|thirty
+fluent_fuel_pump	fuel pump	Travel & Places	diesel|fuel|fuelpump|gas|pump|station
+fluent_full_moon	full moon	Travel & Places	full|moon
+fluent_full_moon_face	full moon face	Travel & Places	bright|face|full|moon
+fluent_globe_showing_americas	globe showing Americas	Travel & Places	Americas|earth|globe|globe showing Americas|world
+fluent_globe_showing_asia_australia	globe showing Asia-Australia	Travel & Places	Asia|Australia|earth|globe|globe showing Asia-Australia|world
+fluent_globe_showing_europe_africa	globe showing Europe-Africa	Travel & Places	Africa|earth|Europe|globe|globe showing Europe-Africa|world
+fluent_globe_with_meridians	globe with meridians	Travel & Places	earth|globe|globe with meridians|meridians|world
+fluent_glowing_star	glowing star	Travel & Places	glittery|glow|glowing star|shining|sparkle|star
+fluent_helicopter	helicopter	Travel & Places	helicopter|vehicle
+fluent_high_voltage	high voltage	Travel & Places	danger|electric|high voltage|lightning|voltage|zap
+fluent_high_speed_train	high-speed train	Travel & Places	high-speed train|railway|shinkansen|speed|train
+fluent_hindu_temple	hindu temple	Travel & Places	hindu|temple
+fluent_horizontal_traffic_light	horizontal traffic light	Travel & Places	horizontal traffic light|light|signal|traffic
+fluent_hospital	hospital	Travel & Places	doctor|hospital|medicine
+fluent_hot_springs	hot springs	Travel & Places	hot|hotsprings|springs|steaming
+fluent_hotel	hotel	Travel & Places	building|hotel
+fluent_hourglass_done	hourglass done	Travel & Places	hourglass done|sand|timer
+fluent_hourglass_not_done	hourglass not done	Travel & Places	hourglass|hourglass not done|sand|timer
+fluent_house	house	Travel & Places	home|house
+fluent_house_with_garden	house with garden	Travel & Places	garden|home|house|house with garden
+fluent_houses	houses	Travel & Places	houses
+fluent_hut	hut	Travel & Places	house|hut|roundhouse|yurt
+fluent_kaaba	kaaba	Travel & Places	islam|kaaba|Muslim|religion
+fluent_kick_scooter	kick scooter	Travel & Places	kick|scooter
+fluent_last_quarter_moon	last quarter moon	Travel & Places	last quarter moon|moon|quarter
+fluent_last_quarter_moon_face	last quarter moon face	Travel & Places	face|last quarter moon face|moon|quarter
+fluent_light_rail	light rail	Travel & Places	light rail|railway
+fluent_locomotive	locomotive	Travel & Places	engine|locomotive|railway|steam|train
+fluent_love_hotel	love hotel	Travel & Places	hotel|love
+fluent_luggage	luggage	Travel & Places	luggage|packing|travel
+fluent_mantelpiece_clock	mantelpiece clock	Travel & Places	clock|mantelpiece clock
+fluent_manual_wheelchair	manual wheelchair	Travel & Places	accessibility|manual wheelchair
+fluent_map_of_japan	map of Japan	Travel & Places	Japan|map|map of Japan
+fluent_metro	metro	Travel & Places	metro|subway
+fluent_milky_way	milky way	Travel & Places	milky way|space
+fluent_minibus	minibus	Travel & Places	bus|minibus
+fluent_monorail	monorail	Travel & Places	monorail|vehicle
+fluent_mosque	mosque	Travel & Places	islam|mosque|Muslim|religion
+fluent_motor_boat	motor boat	Travel & Places	boat|motor boat|motorboat
+fluent_motor_scooter	motor scooter	Travel & Places	motor|scooter
+fluent_motorcycle	motorcycle	Travel & Places	motorcycle|racing
+fluent_motorized_wheelchair	motorized wheelchair	Travel & Places	accessibility|motorized wheelchair
+fluent_motorway	motorway	Travel & Places	highway|motorway|road
+fluent_mount_fuji	mount fuji	Travel & Places	fuji|mount fuji|mountain
+fluent_mountain	mountain	Travel & Places	mountain
+fluent_mountain_cableway	mountain cableway	Travel & Places	cable|gondola|mountain|mountain cableway
+fluent_mountain_railway	mountain railway	Travel & Places	car|mountain|railway
+fluent_national_park	national park	Travel & Places	national park|park
+fluent_new_moon	new moon	Travel & Places	dark|moon|new moon
+fluent_new_moon_face	new moon face	Travel & Places	face|moon|new moon face
+fluent_night_with_stars	night with stars	Travel & Places	night|night with stars|star
+fluent_nine_oclock	nine o’clock	Travel & Places	00|9|9:00|clock|nine|o’clock
+fluent_nine_thirty	nine-thirty	Travel & Places	9|9:30|clock|nine|nine-thirty|thirty
+fluent_office_building	office building	Travel & Places	building|office building
+fluent_oil_drum	oil drum	Travel & Places	drum|oil
+fluent_oncoming_automobile	oncoming automobile	Travel & Places	automobile|car|oncoming
+fluent_oncoming_bus	oncoming bus	Travel & Places	bus|oncoming
+fluent_oncoming_police_car	oncoming police car	Travel & Places	car|oncoming|police
+fluent_oncoming_taxi	oncoming taxi	Travel & Places	oncoming|taxi
+fluent_one_oclock	one o’clock	Travel & Places	00|1|1:00|clock|o’clock|one
+fluent_one_thirty	one-thirty	Travel & Places	1|1:30|clock|one|one-thirty|thirty
+fluent_parachute	parachute	Travel & Places	hang-glide|parachute|parasail|skydive
+fluent_passenger_ship	passenger ship	Travel & Places	passenger|ship
+fluent_pickup_truck	pickup truck	Travel & Places	pick-up|pickup|truck
+fluent_playground_slide	playground slide	Travel & Places	amusement park|play|playground slide
+fluent_police_car	police car	Travel & Places	car|patrol|police
+fluent_police_car_light	police car light	Travel & Places	beacon|car|light|police|revolving
+fluent_post_office	post office	Travel & Places	European|post|post office
+fluent_racing_car	racing car	Travel & Places	car|racing
+fluent_railway_car	railway car	Travel & Places	car|electric|railway|train|tram|trolleybus
+fluent_railway_track	railway track	Travel & Places	railway|railway track|train
+fluent_rainbow	rainbow	Travel & Places	rain|rainbow
+fluent_ring_buoy	ring buoy	Travel & Places	float|life preserver|life saver|rescue|ring buoy|safety
+fluent_ringed_planet	ringed planet	Travel & Places	ringed planet|saturn|saturnine
+fluent_rock	rock	Travel & Places	boulder|heavy|rock|solid|stone
+fluent_rocket	rocket	Travel & Places	rocket|space
+fluent_roller_coaster	roller coaster	Travel & Places	amusement park|coaster|roller
+fluent_roller_skate	roller skate	Travel & Places	roller|skate
+fluent_sailboat	sailboat	Travel & Places	boat|resort|sailboat|sea|yacht
+fluent_satellite	satellite	Travel & Places	satellite|space
+fluent_school	school	Travel & Places	building|school
+fluent_seat	seat	Travel & Places	chair|seat
+fluent_seven_oclock	seven o’clock	Travel & Places	00|7|7:00|clock|o’clock|seven
+fluent_seven_thirty	seven-thirty	Travel & Places	7|7:30|clock|seven|seven-thirty|thirty
+fluent_shinto_shrine	shinto shrine	Travel & Places	religion|shinto|shrine
+fluent_ship	ship	Travel & Places	boat|passenger|ship
+fluent_shooting_star	shooting star	Travel & Places	falling|shooting|star
+fluent_six_oclock	six o’clock	Travel & Places	00|6|6:00|clock|o’clock|six
+fluent_six_thirty	six-thirty	Travel & Places	6|6:30|clock|six|six-thirty|thirty
+fluent_skateboard	skateboard	Travel & Places	board|skateboard
+fluent_small_airplane	small airplane	Travel & Places	aeroplane|airplane|small airplane
+fluent_snow_capped_mountain	snow-capped mountain	Travel & Places	cold|mountain|snow|snow-capped mountain
+fluent_snowflake	snowflake	Travel & Places	cold|snow|snowflake
+fluent_snowman	snowman	Travel & Places	cold|snow|snowman
+fluent_snowman_without_snow	snowman without snow	Travel & Places	cold|snow|snowman|snowman without snow
+fluent_speedboat	speedboat	Travel & Places	boat|speedboat
+fluent_sport_utility_vehicle	sport utility vehicle	Travel & Places	recreational|sport utility|sport utility vehicle
+fluent_stadium	stadium	Travel & Places	stadium
+fluent_star	star	Travel & Places	star
+fluent_station	station	Travel & Places	railway|station|train
+fluent_stop_sign	stop sign	Travel & Places	octagonal|sign|stop
+fluent_stopwatch	stopwatch	Travel & Places	clock|stopwatch
+fluent_sun	sun	Travel & Places	bright|rays|sun|sunny
+fluent_sun_behind_cloud	sun behind cloud	Travel & Places	cloud|sun|sun behind cloud
+fluent_sun_behind_large_cloud	sun behind large cloud	Travel & Places	cloud|sun|sun behind large cloud
+fluent_sun_behind_rain_cloud	sun behind rain cloud	Travel & Places	cloud|rain|sun|sun behind rain cloud
+fluent_sun_behind_small_cloud	sun behind small cloud	Travel & Places	cloud|sun|sun behind small cloud
+fluent_sun_with_face	sun with face	Travel & Places	bright|face|sun|sun with face
+fluent_sunrise	sunrise	Travel & Places	morning|sun|sunrise
+fluent_sunrise_over_mountains	sunrise over mountains	Travel & Places	morning|mountain|sun|sunrise|sunrise over mountains
+fluent_sunset	sunset	Travel & Places	dusk|sun|sunset
+fluent_suspension_railway	suspension railway	Travel & Places	railway|suspension
+fluent_synagogue	synagogue	Travel & Places	Jew|Jewish|religion|synagogue|temple
+fluent_taxi	taxi	Travel & Places	taxi|vehicle
+fluent_ten_oclock	ten o’clock	Travel & Places	00|10|10:00|clock|o’clock|ten
+fluent_ten_thirty	ten-thirty	Travel & Places	10|10:30|clock|ten|ten-thirty|thirty
+fluent_tent	tent	Travel & Places	camping|tent
+fluent_thermometer	thermometer	Travel & Places	thermometer|weather
+fluent_three_oclock	three o’clock	Travel & Places	00|3|3:00|clock|o’clock|three
+fluent_three_thirty	three-thirty	Travel & Places	3|3:30|clock|thirty|three|three-thirty
+fluent_timer_clock	timer clock	Travel & Places	clock|timer
+fluent_tornado	tornado	Travel & Places	cloud|tornado|whirlwind
+fluent_tractor	tractor	Travel & Places	tractor|vehicle
+fluent_train	train	Travel & Places	railway|train
+fluent_tram	tram	Travel & Places	tram|trolleybus
+fluent_tram_car	tram car	Travel & Places	car|tram|trolleybus
+fluent_trolleybus	trolleybus	Travel & Places	bus|tram|trolley|trolleybus
+fluent_twelve_oclock	twelve o’clock	Travel & Places	00|12|12:00|clock|o’clock|twelve
+fluent_twelve_thirty	twelve-thirty	Travel & Places	12|12:30|clock|thirty|twelve|twelve-thirty
+fluent_two_oclock	two o’clock	Travel & Places	00|2|2:00|clock|o’clock|two
+fluent_two_thirty	two-thirty	Travel & Places	2|2:30|clock|thirty|two|two-thirty
+fluent_umbrella	umbrella	Travel & Places	clothing|rain|umbrella
+fluent_umbrella_on_ground	umbrella on ground	Travel & Places	rain|sun|umbrella|umbrella on ground
+fluent_umbrella_with_rain_drops	umbrella with rain drops	Travel & Places	clothing|drop|rain|umbrella|umbrella with rain drops
+fluent_vertical_traffic_light	vertical traffic light	Travel & Places	light|signal|traffic|vertical traffic light
+fluent_volcano	volcano	Travel & Places	eruption|mountain|volcano
+fluent_waning_crescent_moon	waning crescent moon	Travel & Places	crescent|moon|waning
+fluent_waning_gibbous_moon	waning gibbous moon	Travel & Places	gibbous|moon|waning
+fluent_watch	watch	Travel & Places	clock|watch
+fluent_water_wave	water wave	Travel & Places	ocean|water|wave
+fluent_waxing_crescent_moon	waxing crescent moon	Travel & Places	crescent|moon|waxing
+fluent_waxing_gibbous_moon	waxing gibbous moon	Travel & Places	gibbous|moon|waxing
+fluent_wedding	wedding	Travel & Places	chapel|romance|wedding
+fluent_wheel	wheel	Travel & Places	circle|tire|turn|wheel
+fluent_wind_face	wind face	Travel & Places	blow|cloud|face|wind
+fluent_wood	wood	Travel & Places	log|lumber|timber|wood
+fluent_world_map	world map	Travel & Places	map|world
+fluent_1st_place_medal	1st place medal	Activities	1st place medal|first|gold|medal
+fluent_2nd_place_medal	2nd place medal	Activities	2nd place medal|medal|second|silver
+fluent_3rd_place_medal	3rd place medal	Activities	3rd place medal|bronze|medal|third
+fluent_christmas_tree	Christmas tree	Activities	celebration|Christmas|tree
+fluent_japanese_dolls	Japanese dolls	Activities	celebration|doll|festival|Japanese|Japanese dolls
+fluent_admission_tickets	admission tickets	Activities	admission|admission tickets|ticket
+fluent_american_football	american football	Activities	american|ball|football
+fluent_artist_palette	artist palette	Activities	art|artist palette|museum|painting|palette
+fluent_badminton	badminton	Activities	badminton|birdie|game|racquet|shuttlecock
+fluent_balloon	balloon	Activities	balloon|celebration
+fluent_baseball	baseball	Activities	ball|baseball
+fluent_basketball	basketball	Activities	ball|basketball|hoop
+fluent_bowling	bowling	Activities	ball|bowling|game
+fluent_boxing_glove	boxing glove	Activities	boxing|glove
+fluent_bullseye	bullseye	Activities	bullseye|dart|direct hit|game|hit|target
+fluent_carp_streamer	carp streamer	Activities	carp|celebration|streamer
+fluent_chess_pawn	chess pawn	Activities	chess|chess pawn|dupe|expendable
+fluent_club_suit	club suit	Activities	card|club suit|game
+fluent_confetti_ball	confetti ball	Activities	ball|celebration|confetti
+fluent_cricket_game	cricket game	Activities	ball|bat|cricket game|game
+fluent_crystal_ball	crystal ball	Activities	ball|crystal|fairy tale|fantasy|fortune|tool
+fluent_curling_stone	curling stone	Activities	curling stone|game|rock
+fluent_diamond_suit	diamond suit	Activities	card|diamond suit|game
+fluent_diving_mask	diving mask	Activities	diving|diving mask|scuba|snorkeling
+fluent_field_hockey	field hockey	Activities	ball|field|game|hockey|stick
+fluent_firecracker	firecracker	Activities	dynamite|explosive|firecracker|fireworks
+fluent_fireworks	fireworks	Activities	celebration|fireworks
+fluent_fishing_pole	fishing pole	Activities	fish|fishing pole|pole
+fluent_flag_in_hole	flag in hole	Activities	flag in hole|golf|hole
+fluent_flower_playing_cards	flower playing cards	Activities	card|flower|flower playing cards|game|Japanese|playing
+fluent_flying_disc	flying disc	Activities	flying disc|ultimate
+fluent_framed_picture	framed picture	Activities	art|frame|framed picture|museum|painting|picture
+fluent_game_die	game die	Activities	dice|die|game
+fluent_goal_net	goal net	Activities	goal|net
+fluent_hamsa	hamsa	Activities	amulet|Fatima|hamsa|hand|Mary|Miriam|protection
+fluent_heart_suit	heart suit	Activities	card|game|heart suit
+fluent_ice_hockey	ice hockey	Activities	game|hockey|ice|puck|stick
+fluent_ice_skate	ice skate	Activities	ice|skate
+fluent_jack_o_lantern	jack-o-lantern	Activities	celebration|halloween|jack|jack-o-lantern|lantern
+fluent_joker	joker	Activities	card|game|joker|wildcard
+fluent_joystick	joystick	Activities	game|joystick|video game
+fluent_kite	kite	Activities	fly|kite|soar
+fluent_knot	knot	Activities	knot|rope|tangled|tie|twine|twist
+fluent_lacrosse	lacrosse	Activities	ball|goal|lacrosse|stick
+fluent_magic_wand	magic wand	Activities	magic|magic wand|witch|wizard
+fluent_mahjong_red_dragon	mahjong red dragon	Activities	game|mahjong|mahjong red dragon|red
+fluent_martial_arts_uniform	martial arts uniform	Activities	judo|karate|martial arts|martial arts uniform|taekwondo|uniform
+fluent_military_medal	military medal	Activities	celebration|medal|military
+fluent_mirror_ball	mirror ball	Activities	dance|disco|glitter|mirror ball|party
+fluent_moon_viewing_ceremony	moon viewing ceremony	Activities	celebration|ceremony|moon|moon viewing ceremony
+fluent_nazar_amulet	nazar amulet	Activities	bead|charm|evil-eye|nazar|nazar amulet|talisman
+fluent_nesting_dolls	nesting dolls	Activities	doll|nesting|nesting dolls|russia
+fluent_party_popper	party popper	Activities	celebration|party|popper|tada
+fluent_performing_arts	performing arts	Activities	art|mask|performing|performing arts|theater|theatre
+fluent_pine_decoration	pine decoration	Activities	bamboo|celebration|Japanese|pine|pine decoration
+fluent_ping_pong	ping pong	Activities	ball|bat|game|paddle|ping pong|table tennis
+fluent_pi_ata	piñata	Activities	celebration|party|piñata
+fluent_pool_8_ball	pool 8 ball	Activities	8|ball|billiard|eight|game|pool 8 ball
+fluent_puzzle_piece	puzzle piece	Activities	clue|interlocking|jigsaw|piece|puzzle
+fluent_red_envelope	red envelope	Activities	gift|good luck|hóngbāo|lai see|money|red envelope
+fluent_reminder_ribbon	reminder ribbon	Activities	celebration|reminder|ribbon
+fluent_ribbon	ribbon	Activities	celebration|ribbon
+fluent_rugby_football	rugby football	Activities	ball|football|rugby
+fluent_running_shirt	running shirt	Activities	athletics|running|sash|shirt
+fluent_sewing_needle	sewing needle	Activities	embroidery|needle|sewing|stitches|sutures|tailoring
+fluent_skis	skis	Activities	ski|skis|snow
+fluent_sled	sled	Activities	sled|sledge|sleigh
+fluent_slot_machine	slot machine	Activities	game|slot|slot machine
+fluent_soccer_ball	soccer ball	Activities	ball|football|soccer
+fluent_softball	softball	Activities	ball|glove|softball|underarm
+fluent_spade_suit	spade suit	Activities	card|game|spade suit
+fluent_sparkler	sparkler	Activities	celebration|fireworks|sparkle|sparkler
+fluent_sparkles	sparkles	Activities	*|sparkle|sparkles|star
+fluent_sports_medal	sports medal	Activities	medal|sports medal
+fluent_tanabata_tree	tanabata tree	Activities	banner|celebration|Japanese|tanabata tree|tree
+fluent_teddy_bear	teddy bear	Activities	plaything|plush|stuffed|teddy bear|toy
+fluent_tennis	tennis	Activities	ball|racquet|tennis
+fluent_thread	thread	Activities	needle|sewing|spool|string|thread
+fluent_ticket	ticket	Activities	admission|ticket
+fluent_trophy	trophy	Activities	prize|trophy
+fluent_video_game	video game	Activities	controller|game|video game
+fluent_volleyball	volleyball	Activities	ball|game|volleyball
+fluent_wind_chime	wind chime	Activities	bell|celebration|chime|wind
+fluent_wrapped_gift	wrapped gift	Activities	box|celebration|gift|present|wrapped
+fluent_yarn	yarn	Activities	ball|crochet|knit|yarn
+fluent_yo_yo	yo-yo	Activities	fluctuate|toy|yo-yo
+fluent_abacus	abacus	Objects	abacus|calculation
+fluent_accordion	accordion	Objects	accordion|concertina|squeeze box
+fluent_adhesive_bandage	adhesive bandage	Objects	adhesive bandage|bandage
+fluent_alembic	alembic	Objects	alembic|chemistry|tool
+fluent_axe	axe	Objects	axe|chop|hatchet|split|wood
+fluent_backpack	backpack	Objects	backpack|bag|rucksack|satchel|school
+fluent_balance_scale	balance scale	Objects	balance|justice|Libra|scale|zodiac
+fluent_ballet_shoes	ballet shoes	Objects	ballet|ballet shoes|dance
+fluent_ballot_box_with_ballot	ballot box with ballot	Objects	ballot|ballot box with ballot|box
+fluent_banjo	banjo	Objects	banjo|music|stringed
+fluent_bar_chart	bar chart	Objects	bar|chart|graph
+fluent_basket	basket	Objects	basket|farming|laundry|picnic
+fluent_bathtub	bathtub	Objects	bath|bathtub
+fluent_battery	battery	Objects	battery
+fluent_bed	bed	Objects	bed|hotel|sleep
+fluent_bell	bell	Objects	bell
+fluent_bell_with_slash	bell with slash	Objects	bell|bell with slash|forbidden|mute|quiet|silent
+fluent_bikini	bikini	Objects	bikini|clothing|swim
+fluent_billed_cap	billed cap	Objects	baseball cap|billed cap
+fluent_black_nib	black nib	Objects	black nib|nib|pen
+fluent_blue_book	blue book	Objects	blue|book
+fluent_bookmark	bookmark	Objects	bookmark|mark
+fluent_bookmark_tabs	bookmark tabs	Objects	bookmark|mark|marker|tabs
+fluent_books	books	Objects	book|books
+fluent_boomerang	boomerang	Objects	australia|boomerang|rebound|repercussion
+fluent_bow_and_arrow	bow and arrow	Objects	archer|arrow|bow|bow and arrow|Sagittarius|zodiac
+fluent_briefcase	briefcase	Objects	briefcase
+fluent_briefs	briefs	Objects	bathing suit|briefs|one-piece|swimsuit|underwear
+fluent_broken_chain	broken chain	Objects	break|breaking|broken chain|chain|cuffs|freedom
+fluent_broom	broom	Objects	broom|cleaning|sweeping|witch
+fluent_bubbles	bubbles	Objects	bubbles|burp|clean|soap|underwater
+fluent_bucket	bucket	Objects	bucket|cask|pail|vat
+fluent_calendar	calendar	Objects	calendar|date
+fluent_camera	camera	Objects	camera|video
+fluent_camera_with_flash	camera with flash	Objects	camera|camera with flash|flash|video
+fluent_candle	candle	Objects	candle|light
+fluent_card_file_box	card file box	Objects	box|card|file
+fluent_card_index	card index	Objects	card|index|rolodex
+fluent_card_index_dividers	card index dividers	Objects	card|dividers|index
+fluent_carpentry_saw	carpentry saw	Objects	carpenter|carpentry saw|lumber|saw|tool
+fluent_chains	chains	Objects	chain|chains
+fluent_chair	chair	Objects	chair|seat|sit
+fluent_chart_decreasing	chart decreasing	Objects	chart|chart decreasing|down|graph|trend
+fluent_chart_increasing	chart increasing	Objects	chart|chart increasing|graph|growth|trend|upward
+fluent_chart_increasing_with_yen	chart increasing with yen	Objects	chart|chart increasing with yen|graph|growth|money|yen
+fluent_cigarette	cigarette	Objects	cigarette|smoking
+fluent_clamp	clamp	Objects	clamp|compress|tool|vice
+fluent_clapper_board	clapper board	Objects	clapper|clapper board|movie
+fluent_clipboard	clipboard	Objects	clipboard
+fluent_closed_book	closed book	Objects	book|closed
+fluent_closed_mailbox_with_lowered_flag	closed mailbox with lowered flag	Objects	closed|closed mailbox with lowered flag|lowered|mail|mailbox|postbox
+fluent_closed_mailbox_with_raised_flag	closed mailbox with raised flag	Objects	closed|closed mailbox with raised flag|mail|mailbox|postbox
+fluent_clutch_bag	clutch bag	Objects	bag|clothing|clutch bag|pouch
+fluent_coat	coat	Objects	coat|jacket
+fluent_coffin	coffin	Objects	coffin|death
+fluent_coin	coin	Objects	coin|gold|metal|money|silver|treasure
+fluent_computer_disk	computer disk	Objects	computer|disk|minidisk|optical
+fluent_computer_mouse	computer mouse	Objects	computer|computer mouse
+fluent_control_knobs	control knobs	Objects	control|knobs|music
+fluent_couch_and_lamp	couch and lamp	Objects	couch|couch and lamp|hotel|lamp
+fluent_crayon	crayon	Objects	crayon
+fluent_credit_card	credit card	Objects	card|credit|money
+fluent_crossed_swords	crossed swords	Objects	crossed|swords|weapon
+fluent_crown	crown	Objects	clothing|crown|king|queen
+fluent_crutch	crutch	Objects	cane|crutch|disability|hurt|mobility aid|stick
+fluent_dagger	dagger	Objects	dagger|knife|weapon
+fluent_desktop_computer	desktop computer	Objects	computer|desktop
+fluent_diya_lamp	diya lamp	Objects	diya|lamp|oil
+fluent_dna	dna	Objects	biologist|dna|evolution|gene|genetics|life
+fluent_dollar_banknote	dollar banknote	Objects	banknote|bill|currency|dollar|money|note
+fluent_door	door	Objects	door
+fluent_dress	dress	Objects	clothing|dress
+fluent_drop_of_blood	drop of blood	Objects	bleed|blood donation|drop of blood|injury|medicine|menstruation
+fluent_drum	drum	Objects	drum|drumsticks|music
+fluent_dvd	dvd	Objects	blu-ray|computer|disk|dvd|optical
+fluent_e_mail	e-mail	Objects	e-mail|email|letter|mail
+fluent_electric_plug	electric plug	Objects	electric|electricity|plug
+fluent_elevator	elevator	Objects	accessibility|elevator|hoist|lift
+fluent_envelope	envelope	Objects	email|envelope|letter
+fluent_envelope_with_arrow	envelope with arrow	Objects	arrow|e-mail|email|envelope|envelope with arrow|outgoing
+fluent_euro_banknote	euro banknote	Objects	banknote|bill|currency|euro|money|note
+fluent_fax_machine	fax machine	Objects	fax|fax machine
+fluent_file_cabinet	file cabinet	Objects	cabinet|file|filing
+fluent_file_folder	file folder	Objects	file|folder
+fluent_film_frames	film frames	Objects	cinema|film|frames|movie
+fluent_film_projector	film projector	Objects	cinema|film|movie|projector|video
+fluent_fire_extinguisher	fire extinguisher	Objects	extinguish|fire|fire extinguisher|quench
+fluent_flashlight	flashlight	Objects	electric|flashlight|light|tool|torch
+fluent_flat_shoe	flat shoe	Objects	ballet flat|flat shoe|slip-on|slipper
+fluent_floppy_disk	floppy disk	Objects	computer|disk|floppy
+fluent_flute	flute	Objects	fife|flute|music|pipe|recorder|woodwind
+fluent_folding_hand_fan	folding hand fan	Objects	cooling|dance|fan|flutter|folding hand fan|hot|shy
+fluent_fountain_pen	fountain pen	Objects	fountain|pen
+fluent_funeral_urn	funeral urn	Objects	ashes|death|funeral|urn
+fluent_gear	gear	Objects	cog|cogwheel|gear|tool
+fluent_gem_stone	gem stone	Objects	diamond|gem|gem stone|jewel
+fluent_glasses	glasses	Objects	clothing|eye|eyeglasses|eyewear|glasses
+fluent_gloves	gloves	Objects	gloves|hand
+fluent_goggles	goggles	Objects	eye protection|goggles|swimming|welding
+fluent_graduation_cap	graduation cap	Objects	cap|celebration|clothing|graduation|hat
+fluent_green_book	green book	Objects	book|green
+fluent_guitar	guitar	Objects	guitar|instrument|music
+fluent_hair_pick	hair pick	Objects	Afro|comb|hair|pick
+fluent_hammer	hammer	Objects	hammer|tool
+fluent_hammer_and_pick	hammer and pick	Objects	hammer|hammer and pick|pick|tool
+fluent_hammer_and_wrench	hammer and wrench	Objects	hammer|hammer and wrench|spanner|tool|wrench
+fluent_handbag	handbag	Objects	bag|clothing|handbag|purse
+fluent_headphone	headphone	Objects	earbud|headphone
+fluent_headstone	headstone	Objects	cemetery|grave|graveyard|headstone|tombstone
+fluent_high_heeled_shoe	high-heeled shoe	Objects	clothing|heel|high-heeled shoe|shoe|woman
+fluent_hiking_boot	hiking boot	Objects	backpacking|boot|camping|hiking
+fluent_hook	hook	Objects	catch|crook|curve|ensnare|hook|selling point
+fluent_identification_card	identification card	Objects	credentials|ID|identification card|license|security
+fluent_inbox_tray	inbox tray	Objects	box|inbox|letter|mail|receive|tray
+fluent_incoming_envelope	incoming envelope	Objects	e-mail|email|envelope|incoming|letter|receive
+fluent_jeans	jeans	Objects	clothing|jeans|pants|trousers
+fluent_key	key	Objects	key|lock|password
+fluent_keyboard	keyboard	Objects	computer|keyboard
+fluent_kimono	kimono	Objects	clothing|kimono
+fluent_lab_coat	lab coat	Objects	doctor|experiment|lab coat|scientist
+fluent_label	label	Objects	label
+fluent_ladder	ladder	Objects	climb|ladder|rung|step
+fluent_laptop	laptop	Objects	computer|laptop|pc|personal
+fluent_ledger	ledger	Objects	ledger|notebook
+fluent_level_slider	level slider	Objects	level|music|slider
+fluent_light_bulb	light bulb	Objects	bulb|comic|electric|idea|light
+fluent_link	link	Objects	link
+fluent_linked_paperclips	linked paperclips	Objects	link|linked paperclips|paperclip
+fluent_lipstick	lipstick	Objects	cosmetics|lipstick|makeup
+fluent_locked	locked	Objects	closed|locked
+fluent_locked_with_key	locked with key	Objects	closed|key|lock|locked with key|secure
+fluent_locked_with_pen	locked with pen	Objects	ink|lock|locked with pen|nib|pen|privacy
+fluent_long_drum	long drum	Objects	beat|conga|drum|long drum|rhythm
+fluent_lotion_bottle	lotion bottle	Objects	lotion|lotion bottle|moisturizer|shampoo|sunscreen
+fluent_loudspeaker	loudspeaker	Objects	loud|loudspeaker|public address
+fluent_low_battery	low battery	Objects	electronic|low battery|low energy
+fluent_magnet	magnet	Objects	attraction|horseshoe|magnet|magnetic
+fluent_magnifying_glass_tilted_left	magnifying glass tilted left	Objects	glass|magnifying|magnifying glass tilted left|search|tool
+fluent_magnifying_glass_tilted_right	magnifying glass tilted right	Objects	glass|magnifying|magnifying glass tilted right|search|tool
+fluent_mans_shoe	man’s shoe	Objects	clothing|man|man’s shoe|shoe
+fluent_maracas	maracas	Objects	instrument|maracas|music|percussion|rattle|shake
+fluent_megaphone	megaphone	Objects	cheering|megaphone
+fluent_memo	memo	Objects	memo|pencil
+fluent_microphone	microphone	Objects	karaoke|mic|microphone
+fluent_microscope	microscope	Objects	microscope|science|tool
+fluent_military_helmet	military helmet	Objects	army|helmet|military|soldier|warrior
+fluent_mirror	mirror	Objects	mirror|reflection|reflector|speculum
+fluent_moai	moai	Objects	face|moai|moyai|statue
+fluent_mobile_phone	mobile phone	Objects	cell|mobile|phone|telephone
+fluent_mobile_phone_with_arrow	mobile phone with arrow	Objects	arrow|cell|mobile|mobile phone with arrow|phone|receive
+fluent_money_bag	money bag	Objects	bag|dollar|money|moneybag
+fluent_money_with_wings	money with wings	Objects	banknote|bill|fly|money|money with wings|wings
+fluent_mouse_trap	mouse trap	Objects	bait|mouse trap|mousetrap|snare|trap
+fluent_movie_camera	movie camera	Objects	camera|cinema|movie
+fluent_musical_keyboard	musical keyboard	Objects	instrument|keyboard|music|musical keyboard|piano
+fluent_musical_note	musical note	Objects	music|musical note|note
+fluent_musical_notes	musical notes	Objects	music|musical notes|note|notes
+fluent_musical_score	musical score	Objects	music|musical score|score
+fluent_muted_speaker	muted speaker	Objects	mute|muted speaker|quiet|silent|speaker
+fluent_necktie	necktie	Objects	clothing|necktie|tie
+fluent_newspaper	newspaper	Objects	news|newspaper|paper
+fluent_notebook	notebook	Objects	notebook
+fluent_notebook_with_decorative_cover	notebook with decorative cover	Objects	book|cover|decorated|notebook|notebook with decorative cover
+fluent_nut_and_bolt	nut and bolt	Objects	bolt|nut|nut and bolt|tool
+fluent_old_key	old key	Objects	clue|key|lock|old
+fluent_one_piece_swimsuit	one-piece swimsuit	Objects	bathing suit|one-piece swimsuit
+fluent_open_book	open book	Objects	book|open
+fluent_open_file_folder	open file folder	Objects	file|folder|open
+fluent_open_mailbox_with_lowered_flag	open mailbox with lowered flag	Objects	lowered|mail|mailbox|open|open mailbox with lowered flag|postbox
+fluent_open_mailbox_with_raised_flag	open mailbox with raised flag	Objects	mail|mailbox|open|open mailbox with raised flag|postbox
+fluent_optical_disk	optical disk	Objects	cd|computer|disk|optical
+fluent_orange_book	orange book	Objects	book|orange
+fluent_outbox_tray	outbox tray	Objects	box|letter|mail|outbox|sent|tray
+fluent_package	package	Objects	box|package|parcel
+fluent_page_facing_up	page facing up	Objects	document|page|page facing up
+fluent_page_with_curl	page with curl	Objects	curl|document|page|page with curl
+fluent_pager	pager	Objects	pager
+fluent_paintbrush	paintbrush	Objects	paintbrush|painting
+fluent_paperclip	paperclip	Objects	paperclip
+fluent_pen	pen	Objects	ballpoint|pen
+fluent_pencil	pencil	Objects	pencil
+fluent_petri_dish	petri dish	Objects	bacteria|biologist|biology|culture|lab|petri dish
+fluent_pick	pick	Objects	mining|pick|tool
+fluent_pill	pill	Objects	doctor|medicine|pill|sick
+fluent_placard	placard	Objects	demonstration|picket|placard|protest|sign
+fluent_plunger	plunger	Objects	force cup|plumber|plunger|suction|toilet
+fluent_postal_horn	postal horn	Objects	horn|post|postal
+fluent_postbox	postbox	Objects	mail|mailbox|postbox
+fluent_pound_banknote	pound banknote	Objects	banknote|bill|currency|money|note|pound
+fluent_prayer_beads	prayer beads	Objects	beads|clothing|necklace|prayer|religion
+fluent_printer	printer	Objects	computer|printer
+fluent_purse	purse	Objects	clothing|coin|purse
+fluent_pushpin	pushpin	Objects	pin|pushpin
+fluent_radio	radio	Objects	radio|video
+fluent_razor	razor	Objects	razor|sharp|shave
+fluent_receipt	receipt	Objects	accounting|bookkeeping|evidence|proof|receipt
+fluent_red_paper_lantern	red paper lantern	Objects	bar|lantern|light|red|red paper lantern
+fluent_rescue_workers_helmet	rescue worker’s helmet	Objects	aid|cross|face|hat|helmet|rescue worker’s helmet
+fluent_ring	ring	Objects	diamond|ring
+fluent_roll_of_paper	roll of paper	Objects	paper towels|roll of paper|toilet paper
+fluent_rolled_up_newspaper	rolled-up newspaper	Objects	news|newspaper|paper|rolled|rolled-up newspaper
+fluent_round_pushpin	round pushpin	Objects	pin|pushpin|round pushpin
+fluent_running_shoe	running shoe	Objects	athletic|clothing|running shoe|shoe|sneaker
+fluent_safety_pin	safety pin	Objects	diaper|punk rock|safety pin
+fluent_safety_vest	safety vest	Objects	emergency|safety|vest
+fluent_sari	sari	Objects	clothing|dress|sari
+fluent_satellite_antenna	satellite antenna	Objects	antenna|dish|satellite
+fluent_saxophone	saxophone	Objects	instrument|music|sax|saxophone
+fluent_scarf	scarf	Objects	neck|scarf
+fluent_scissors	scissors	Objects	cutting|scissors|tool
+fluent_screwdriver	screwdriver	Objects	screw|screwdriver|tool
+fluent_scroll	scroll	Objects	paper|scroll
+fluent_shield	shield	Objects	shield|weapon
+fluent_shopping_bags	shopping bags	Objects	bag|hotel|shopping|shopping bags
+fluent_shopping_cart	shopping cart	Objects	cart|shopping|trolley
+fluent_shorts	shorts	Objects	bathing suit|pants|shorts|underwear
+fluent_shower	shower	Objects	shower|water
+fluent_soap	soap	Objects	bar|bathing|cleaning|lather|soap|soapdish
+fluent_socks	socks	Objects	socks|stocking
+fluent_speaker_high_volume	speaker high volume	Objects	loud|speaker high volume
+fluent_speaker_low_volume	speaker low volume	Objects	soft|speaker low volume
+fluent_speaker_medium_volume	speaker medium volume	Objects	medium|speaker medium volume
+fluent_spiral_calendar	spiral calendar	Objects	calendar|pad|spiral
+fluent_spiral_notepad	spiral notepad	Objects	note|pad|spiral|spiral notepad
+fluent_sponge	sponge	Objects	absorbing|cleaning|porous|sponge
+fluent_stethoscope	stethoscope	Objects	doctor|heart|medicine|stethoscope
+fluent_straight_ruler	straight ruler	Objects	ruler|straight edge|straight ruler
+fluent_studio_microphone	studio microphone	Objects	mic|microphone|music|studio
+fluent_sunglasses	sunglasses	Objects	dark|eye|eyewear|glasses|sunglasses
+fluent_syringe	syringe	Objects	medicine|needle|shot|sick|syringe
+fluent_t_shirt	t-shirt	Objects	clothing|shirt|t-shirt|tshirt
+fluent_tear_off_calendar	tear-off calendar	Objects	calendar|tear-off calendar
+fluent_telephone	telephone	Objects	phone|telephone
+fluent_telephone_receiver	telephone receiver	Objects	phone|receiver|telephone
+fluent_telescope	telescope	Objects	science|telescope|tool
+fluent_television	television	Objects	television|tv|video
+fluent_test_tube	test tube	Objects	chemist|chemistry|experiment|lab|science|test tube
+fluent_thong_sandal	thong sandal	Objects	beach sandals|sandals|thong sandal|thong sandals|thongs|zōri
+fluent_toilet	toilet	Objects	toilet
+fluent_toolbox	toolbox	Objects	chest|mechanic|tool|toolbox
+fluent_toothbrush	toothbrush	Objects	bathroom|brush|clean|dental|hygiene|teeth|toothbrush
+fluent_top_hat	top hat	Objects	clothing|hat|top|tophat
+fluent_trackball	trackball	Objects	computer|trackball
+fluent_triangular_ruler	triangular ruler	Objects	ruler|set|triangle|triangular ruler
+fluent_trumpet	trumpet	Objects	instrument|music|trumpet
+fluent_unlocked	unlocked	Objects	lock|open|unlock|unlocked
+fluent_video_camera	video camera	Objects	camera|video
+fluent_videocassette	videocassette	Objects	tape|vhs|video|videocassette
+fluent_violin	violin	Objects	instrument|music|violin
+fluent_wastebasket	wastebasket	Objects	wastebasket
+fluent_water_pistol	water pistol	Objects	gun|handgun|pistol|revolver|tool|water|weapon
+fluent_white_cane	white cane	Objects	accessibility|blind|white cane
+fluent_window	window	Objects	frame|fresh air|opening|transparent|view|window
+fluent_womans_boot	woman’s boot	Objects	boot|clothing|shoe|woman|woman’s boot
+fluent_womans_clothes	woman’s clothes	Objects	clothing|woman|woman’s clothes
+fluent_womans_hat	woman’s hat	Objects	clothing|hat|woman|woman’s hat
+fluent_womans_sandal	woman’s sandal	Objects	clothing|sandal|shoe|woman|woman’s sandal
+fluent_wrench	wrench	Objects	spanner|tool|wrench
+fluent_x_ray	x-ray	Objects	bones|doctor|medical|skeleton|x-ray
+fluent_yen_banknote	yen banknote	Objects	banknote|bill|currency|money|note|yen
+fluent_a_button_blood_type	A button (blood type)	Symbols	a|A button (blood type)|blood type
+fluent_ab_button_blood_type	AB button (blood type)	Symbols	ab|AB button (blood type)|blood type
+fluent_atm_sign	ATM sign	Symbols	atm|ATM sign|automated|bank|teller
+fluent_aquarius	Aquarius	Symbols	Aquarius|bearer|water|zodiac
+fluent_aries	Aries	Symbols	Aries|ram|zodiac
+fluent_b_button_blood_type	B button (blood type)	Symbols	b|B button (blood type)|blood type
+fluent_back_arrow	BACK arrow	Symbols	arrow|back|BACK arrow
+fluent_cl_button	CL button	Symbols	cl|CL button
+fluent_cool_button	COOL button	Symbols	cool|COOL button
+fluent_cancer	Cancer	Symbols	Cancer|crab|zodiac
+fluent_capricorn	Capricorn	Symbols	Capricorn|goat|zodiac
+fluent_end_arrow	END arrow	Symbols	arrow|end|END arrow
+fluent_free_button	FREE button	Symbols	free|FREE button
+fluent_gemini	Gemini	Symbols	Gemini|twins|zodiac
+fluent_id_button	ID button	Symbols	id|ID button|identity
+fluent_japanese_symbol_for_beginner	Japanese symbol for beginner	Symbols	beginner|chevron|Japanese|Japanese symbol for beginner|leaf
+fluent_japanese_acceptable_button	Japanese “acceptable” button	Symbols	“acceptable”|ideograph|Japanese|Japanese “acceptable” button|可
+fluent_japanese_application_button	Japanese “application” button	Symbols	“application”|ideograph|Japanese|Japanese “application” button|申
+fluent_japanese_bargain_button	Japanese “bargain” button	Symbols	“bargain”|ideograph|Japanese|Japanese “bargain” button|得
+fluent_japanese_congratulations_button	Japanese “congratulations” button	Symbols	“congratulations”|ideograph|Japanese|Japanese “congratulations” button|祝
+fluent_japanese_discount_button	Japanese “discount” button	Symbols	“discount”|ideograph|Japanese|Japanese “discount” button|割
+fluent_japanese_free_of_charge_button	Japanese “free of charge” button	Symbols	“free of charge”|ideograph|Japanese|Japanese “free of charge” button|無
+fluent_japanese_here_button	Japanese “here” button	Symbols	“here”|Japanese|Japanese “here” button|katakana|ココ
+fluent_japanese_monthly_amount_button	Japanese “monthly amount” button	Symbols	“monthly amount”|ideograph|Japanese|Japanese “monthly amount” button|月
+fluent_japanese_no_vacancy_button	Japanese “no vacancy” button	Symbols	“no vacancy”|ideograph|Japanese|Japanese “no vacancy” button|満
+fluent_japanese_not_free_of_charge_button	Japanese “not free of charge” button	Symbols	“not free of charge”|ideograph|Japanese|Japanese “not free of charge” button|有
+fluent_japanese_open_for_business_button	Japanese “open for business” button	Symbols	“open for business”|ideograph|Japanese|Japanese “open for business” button|営
+fluent_japanese_passing_grade_button	Japanese “passing grade” button	Symbols	“passing grade”|ideograph|Japanese|Japanese “passing grade” button|合
+fluent_japanese_prohibited_button	Japanese “prohibited” button	Symbols	“prohibited”|ideograph|Japanese|Japanese “prohibited” button|禁
+fluent_japanese_reserved_button	Japanese “reserved” button	Symbols	“reserved”|ideograph|Japanese|Japanese “reserved” button|指
+fluent_japanese_secret_button	Japanese “secret” button	Symbols	“secret”|ideograph|Japanese|Japanese “secret” button|秘
+fluent_japanese_service_charge_button	Japanese “service charge” button	Symbols	“service charge”|Japanese|Japanese “service charge” button|katakana|サ
+fluent_japanese_vacancy_button	Japanese “vacancy” button	Symbols	“vacancy”|ideograph|Japanese|Japanese “vacancy” button|空
+fluent_leo	Leo	Symbols	Leo|lion|zodiac
+fluent_libra	Libra	Symbols	balance|justice|Libra|scales|zodiac
+fluent_new_button	NEW button	Symbols	new|NEW button
+fluent_ng_button	NG button	Symbols	ng|NG button
+fluent_o_button_blood_type	O button (blood type)	Symbols	blood type|o|O button (blood type)
+fluent_ok_button	OK button	Symbols	OK|OK button
+fluent_on_arrow	ON! arrow	Symbols	arrow|mark|on|ON! arrow
+fluent_ophiuchus	Ophiuchus	Symbols	bearer|Ophiuchus|serpent|snake|zodiac
+fluent_p_button	P button	Symbols	P button|parking
+fluent_pisces	Pisces	Symbols	fish|Pisces|zodiac
+fluent_soon_arrow	SOON arrow	Symbols	arrow|soon|SOON arrow
+fluent_sos_button	SOS button	Symbols	help|sos|SOS button
+fluent_sagittarius	Sagittarius	Symbols	archer|Sagittarius|zodiac
+fluent_scorpio	Scorpio	Symbols	Scorpio|scorpion|scorpius|zodiac
+fluent_top_arrow	TOP arrow	Symbols	arrow|top|TOP arrow|up
+fluent_taurus	Taurus	Symbols	bull|ox|Taurus|zodiac
+fluent_up_button	UP! button	Symbols	mark|up|UP! button
+fluent_vs_button	VS button	Symbols	versus|vs|VS button
+fluent_virgo	Virgo	Symbols	Virgo|zodiac
+fluent_antenna_bars	antenna bars	Symbols	antenna|antenna bars|bar|cell|mobile|phone
+fluent_atom_symbol	atom symbol	Symbols	atheist|atom|atom symbol
+fluent_baby_symbol	baby symbol	Symbols	baby|baby symbol|changing
+fluent_baggage_claim	baggage claim	Symbols	baggage|claim
+fluent_biohazard	biohazard	Symbols	biohazard|sign
+fluent_black_circle	black circle	Symbols	black circle|circle|geometric
+fluent_black_large_square	black large square	Symbols	black large square|geometric|square
+fluent_black_medium_square	black medium square	Symbols	black medium square|geometric|square
+fluent_black_medium_small_square	black medium-small square	Symbols	black medium-small square|geometric|square
+fluent_black_small_square	black small square	Symbols	black small square|geometric|square
+fluent_black_square_button	black square button	Symbols	black square button|button|geometric|square
+fluent_blue_circle	blue circle	Symbols	blue|circle|geometric
+fluent_blue_square	blue square	Symbols	blue|square
+fluent_bright_button	bright button	Symbols	bright|bright button|brightness
+fluent_brown_circle	brown circle	Symbols	brown|circle
+fluent_brown_square	brown square	Symbols	brown|square
+fluent_check_box_with_check	check box with check	Symbols	✓|box|check|check box with check
+fluent_check_mark	check mark	Symbols	✓|check|mark
+fluent_check_mark_button	check mark button	Symbols	✓|button|check|mark
+fluent_children_crossing	children crossing	Symbols	child|children crossing|crossing|pedestrian|traffic
+fluent_cinema	cinema	Symbols	camera|cinema|film|movie
+fluent_circled_m	circled M	Symbols	circle|circled M|m
+fluent_clockwise_vertical_arrows	clockwise vertical arrows	Symbols	arrow|clockwise|clockwise vertical arrows|reload
+fluent_copyright	copyright	Symbols	c|copyright
+fluent_counterclockwise_arrows_button	counterclockwise arrows button	Symbols	anticlockwise|arrow|counterclockwise|counterclockwise arrows button|withershins
+fluent_cross_mark	cross mark	Symbols	×|cancel|cross|mark|multiplication|multiply|x
+fluent_cross_mark_button	cross mark button	Symbols	×|cross mark button|mark|square|x
+fluent_curly_loop	curly loop	Symbols	curl|curly loop|loop
+fluent_currency_exchange	currency exchange	Symbols	bank|currency|exchange|money
+fluent_customs	customs	Symbols	customs
+fluent_diamond_with_a_dot	diamond with a dot	Symbols	comic|diamond|diamond with a dot|geometric|inside
+fluent_dim_button	dim button	Symbols	brightness|dim|dim button|low
+fluent_divide	divide	Symbols	÷|divide|division|math|sign
+fluent_dotted_six_pointed_star	dotted six-pointed star	Symbols	dotted six-pointed star|fortune|star
+fluent_double_curly_loop	double curly loop	Symbols	curl|double|double curly loop|loop
+fluent_double_exclamation_mark	double exclamation mark	Symbols	!|!!|bangbang|double exclamation mark|exclamation|mark
+fluent_down_arrow	down arrow	Symbols	arrow|cardinal|direction|down|south
+fluent_down_left_arrow	down-left arrow	Symbols	arrow|direction|down-left arrow|intercardinal|southwest
+fluent_down_right_arrow	down-right arrow	Symbols	arrow|direction|down-right arrow|intercardinal|southeast
+fluent_downwards_button	downwards button	Symbols	arrow|button|down|downwards button|red
+fluent_eight_pointed_star	eight-pointed star	Symbols	*|eight-pointed star|star
+fluent_eight_spoked_asterisk	eight-spoked asterisk	Symbols	*|asterisk|eight-spoked asterisk
+fluent_eject_button	eject button	Symbols	eject|eject button
+fluent_exclamation_question_mark	exclamation question mark	Symbols	!|!?|?|exclamation|interrobang|mark|punctuation|question
+fluent_fast_down_button	fast down button	Symbols	arrow|double|down|fast down button
+fluent_fast_reverse_button	fast reverse button	Symbols	arrow|double|fast reverse button|rewind
+fluent_fast_up_button	fast up button	Symbols	arrow|double|fast up button
+fluent_fast_forward_button	fast-forward button	Symbols	arrow|double|fast|fast-forward button|forward
+fluent_female_sign	female sign	Symbols	female sign|woman
+fluent_fleur_de_lis	fleur-de-lis	Symbols	fleur-de-lis
+fluent_green_circle	green circle	Symbols	circle|green
+fluent_green_square	green square	Symbols	green|square
+fluent_heavy_dollar_sign	heavy dollar sign	Symbols	currency|dollar|heavy dollar sign|money
+fluent_heavy_equals_sign	heavy equals sign	Symbols	equality|heavy equals sign|math
+fluent_hollow_red_circle	hollow red circle	Symbols	circle|hollow red circle|large|o|red
+fluent_infinity	infinity	Symbols	forever|infinity|unbounded|universal
+fluent_information	information	Symbols	i|information
+fluent_input_latin_letters	input latin letters	Symbols	abc|alphabet|input|latin|letters
+fluent_input_latin_lowercase	input latin lowercase	Symbols	abcd|input|latin|letters|lowercase
+fluent_input_latin_uppercase	input latin uppercase	Symbols	ABCD|input|latin|letters|uppercase
+fluent_input_numbers	input numbers	Symbols	1234|input|numbers
+fluent_input_symbols	input symbols	Symbols	〒♪&%|input|input symbols
+fluent_keycap_0	keycap: 0	Symbols	keycap|zero
+fluent_keycap_1	keycap: 1	Symbols	keycap|one
+fluent_keycap_10	keycap: 10	Symbols	keycap|ten
+fluent_keycap_2	keycap: 2	Symbols	keycap|two
+fluent_keycap_3	keycap: 3	Symbols	keycap|three
+fluent_keycap_4	keycap: 4	Symbols	keycap|four
+fluent_keycap_5	keycap: 5	Symbols	keycap|five
+fluent_keycap_6	keycap: 6	Symbols	keycap|six
+fluent_keycap_7	keycap: 7	Symbols	keycap|seven
+fluent_keycap_8	keycap: 8	Symbols	keycap|eight
+fluent_keycap_9	keycap: 9	Symbols	keycap|nine
+fluent_keycap_asterisk	keycap: asterisk	Symbols	keycap|asterisk
+fluent_keycap_hashtag	keycap: hash	Symbols	keycap|hash
+fluent_khanda	khanda	Symbols	khanda|religion|Sikh
+fluent_large_blue_diamond	large blue diamond	Symbols	blue|diamond|geometric|large blue diamond
+fluent_large_orange_diamond	large orange diamond	Symbols	diamond|geometric|large orange diamond|orange
+fluent_last_track_button	last track button	Symbols	arrow|last track button|previous scene|previous track|triangle
+fluent_latin_cross	latin cross	Symbols	Christian|cross|latin cross|religion
+fluent_left_arrow	left arrow	Symbols	arrow|cardinal|direction|left arrow|west
+fluent_left_arrow_curving_right	left arrow curving right	Symbols	arrow|left arrow curving right
+fluent_left_luggage	left luggage	Symbols	baggage|left luggage|locker|luggage
+fluent_left_right_arrow	left-right arrow	Symbols	arrow|left-right arrow
+fluent_litter_in_bin_sign	litter in bin sign	Symbols	litter|litter bin|litter in bin sign
+fluent_male_sign	male sign	Symbols	male sign|man
+fluent_medical_symbol	medical symbol	Symbols	aesculapius|medical symbol|medicine|staff
+fluent_menorah	menorah	Symbols	candelabrum|candlestick|menorah|religion
+fluent_mens_room	men’s room	Symbols	lavatory|man|men’s room|restroom|wc
+fluent_minus	minus	Symbols	-|−|math|minus|sign
+fluent_mobile_phone_off	mobile phone off	Symbols	cell|mobile|off|phone|telephone
+fluent_multiply	multiply	Symbols	×|cancel|multiplication|multiply|sign|x
+fluent_name_badge	name badge	Symbols	badge|name
+fluent_next_track_button	next track button	Symbols	arrow|next scene|next track|next track button|triangle
+fluent_no_bicycles	no bicycles	Symbols	bicycle|bike|forbidden|no|no bicycles|prohibited
+fluent_no_entry	no entry	Symbols	entry|forbidden|no|not|prohibited|traffic
+fluent_no_littering	no littering	Symbols	forbidden|litter|no|no littering|not|prohibited
+fluent_no_mobile_phones	no mobile phones	Symbols	cell|forbidden|mobile|no|no mobile phones|phone
+fluent_no_one_under_eighteen	no one under eighteen	Symbols	18|age restriction|eighteen|no one under eighteen|prohibited|underage
+fluent_no_pedestrians	no pedestrians	Symbols	forbidden|no|no pedestrians|not|pedestrian|prohibited
+fluent_no_smoking	no smoking	Symbols	forbidden|no|not|prohibited|smoking
+fluent_non_potable_water	non-potable water	Symbols	non-drinking|non-potable|water
+fluent_om	om	Symbols	Hindu|om|religion
+fluent_orange_circle	orange circle	Symbols	circle|orange
+fluent_orange_square	orange square	Symbols	orange|square
+fluent_orthodox_cross	orthodox cross	Symbols	Christian|cross|orthodox cross|religion
+fluent_part_alternation_mark	part alternation mark	Symbols	mark|part|part alternation mark
+fluent_passport_control	passport control	Symbols	control|passport
+fluent_pause_button	pause button	Symbols	bar|double|pause|pause button|vertical
+fluent_peace_symbol	peace symbol	Symbols	peace|peace symbol
+fluent_place_of_worship	place of worship	Symbols	place of worship|religion|worship
+fluent_play_button	play button	Symbols	arrow|play|play button|right|triangle
+fluent_play_or_pause_button	play or pause button	Symbols	arrow|pause|play|play or pause button|right|triangle
+fluent_plus	plus	Symbols	+|math|plus|sign
+fluent_potable_water	potable water	Symbols	drinking|potable|water
+fluent_prohibited	prohibited	Symbols	entry|forbidden|no|not|prohibited
+fluent_purple_circle	purple circle	Symbols	circle|purple
+fluent_purple_square	purple square	Symbols	purple|square
+fluent_radio_button	radio button	Symbols	button|geometric|radio
+fluent_radioactive	radioactive	Symbols	radioactive|sign
+fluent_record_button	record button	Symbols	circle|record|record button
+fluent_recycling_symbol	recycling symbol	Symbols	recycle|recycling symbol
+fluent_red_circle	red circle	Symbols	circle|geometric|red
+fluent_red_exclamation_mark	red exclamation mark	Symbols	!|exclamation|mark|punctuation|red exclamation mark
+fluent_red_question_mark	red question mark	Symbols	?|mark|punctuation|question|red question mark
+fluent_red_square	red square	Symbols	red|square
+fluent_red_triangle_pointed_down	red triangle pointed down	Symbols	down|geometric|red|red triangle pointed down
+fluent_red_triangle	red triangle pointed up	Symbols	geometric|red|red triangle pointed up
+fluent_registered	registered	Symbols	r|registered
+fluent_repeat_button	repeat button	Symbols	arrow|clockwise|repeat|repeat button
+fluent_repeat_single_button	repeat single button	Symbols	arrow|clockwise|once|repeat single button
+fluent_restroom	restroom	Symbols	lavatory|restroom|WC
+fluent_reverse_button	reverse button	Symbols	arrow|left|reverse|reverse button|triangle
+fluent_right_arrow	right arrow	Symbols	arrow|cardinal|direction|east|right arrow
+fluent_right_arrow_curving_down	right arrow curving down	Symbols	arrow|down|right arrow curving down
+fluent_right_arrow_curving_left	right arrow curving left	Symbols	arrow|right arrow curving left
+fluent_right_arrow_curving_up	right arrow curving up	Symbols	arrow|right arrow curving up
+fluent_shuffle_tracks_button	shuffle tracks button	Symbols	arrow|crossed|shuffle tracks button
+fluent_small_blue_diamond	small blue diamond	Symbols	blue|diamond|geometric|small blue diamond
+fluent_small_orange_diamond	small orange diamond	Symbols	diamond|geometric|orange|small orange diamond
+fluent_sparkle	sparkle	Symbols	*|sparkle
+fluent_star_and_crescent	star and crescent	Symbols	islam|Muslim|religion|star and crescent
+fluent_star_of_david	star of David	Symbols	David|Jew|Jewish|religion|star|star of David
+fluent_stop_button	stop button	Symbols	square|stop|stop button
+fluent_trade_mark	trade mark	Symbols	mark|tm|trade mark|trademark
+fluent_transgender_symbol	transgender symbol	Symbols	transgender|transgender symbol
+fluent_trident_emblem	trident emblem	Symbols	anchor|emblem|ship|tool|trident
+fluent_up_arrow	up arrow	Symbols	arrow|cardinal|direction|north|up arrow
+fluent_up_down_arrow	up-down arrow	Symbols	arrow|up-down arrow
+fluent_up_left_arrow	up-left arrow	Symbols	arrow|direction|intercardinal|northwest|up-left arrow
+fluent_up_right_arrow	up-right arrow	Symbols	arrow|direction|intercardinal|northeast|up-right arrow
+fluent_upwards_button	upwards button	Symbols	arrow|button|red|upwards button
+fluent_vibration_mode	vibration mode	Symbols	cell|mobile|mode|phone|telephone|vibration
+fluent_warning	warning	Symbols	warning
+fluent_water_closet	water closet	Symbols	closet|lavatory|restroom|water|wc
+fluent_wavy_dash	wavy dash	Symbols	dash|punctuation|wavy
+fluent_wheel_of_dharma	wheel of dharma	Symbols	Buddhist|dharma|religion|wheel|wheel of dharma
+fluent_wheelchair_symbol	wheelchair symbol	Symbols	access|wheelchair symbol
+fluent_white_circle	white circle	Symbols	circle|geometric|white circle
+fluent_white_exclamation_mark	white exclamation mark	Symbols	!|exclamation|mark|outlined|punctuation|white exclamation mark
+fluent_white_large_square	white large square	Symbols	geometric|square|white large square
+fluent_white_medium_square	white medium square	Symbols	geometric|square|white medium square
+fluent_white_medium_small_square	white medium-small square	Symbols	geometric|square|white medium-small square
+fluent_white_question_mark	white question mark	Symbols	?|mark|outlined|punctuation|question|white question mark
+fluent_white_small_square	white small square	Symbols	geometric|square|white small square
+fluent_white_square_button	white square button	Symbols	button|geometric|outlined|square|white square button
+fluent_wireless	wireless	Symbols	computer|internet|network|wireless
+fluent_womens_room	women’s room	Symbols	lavatory|restroom|wc|woman|women’s room
+fluent_yellow_circle	yellow circle	Symbols	circle|yellow
+fluent_yellow_square	yellow square	Symbols	square|yellow
+fluent_yin_yang	yin yang	Symbols	religion|tao|taoist|yang|yin
+fluent_black_flag	black flag	Flags	black flag|waving
+fluent_chequered_flag	chequered flag	Flags	checkered|chequered|chequered flag|racing
+fluent_crossed_flags	crossed flags	Flags	celebration|cross|crossed|crossed flags|Japanese
+fluent_pirate_flag	pirate flag	Flags	Jolly Roger|pirate|pirate flag|plunder|treasure
+fluent_rainbow_flag	rainbow flag	Flags	pride|rainbow|rainbow flag
+fluent_transgender_flag	transgender flag	Flags	flag|light blue|pink|transgender|white
+fluent_triangular_flag	triangular flag	Flags	post|triangular flag
+fluent_white_flag	white flag	Flags	waving|white flag

@@ -6,10 +6,15 @@ the generated lookup FluentIcons.kt and the licence. Re-running gives identical 
 Requires: pip install pillow
 """
 import io
+import json
 import pathlib
+import re
 import sys
+import time
+import urllib.error
 import urllib.parse
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor
 
 from PIL import Image
 
@@ -52,11 +57,24 @@ ROOT = pathlib.Path(__file__).resolve().parents[2]
 RES = ROOT / "app/src/main/res/drawable-nodpi"
 KOTLIN = ROOT / "app/src/main/java/com/ledga/app/ui/design/icons/FluentIcons.kt"
 LICENSE = ROOT / "app/src/main/assets/licenses/fluentui-emoji-MIT.txt"
+CATALOG = ROOT / "app/src/main/assets/icons3d"
+CATALOG_QUALITY = 90  # R86: lossy q90, alpha exact; the 60 drawables stay lossless
+GROUPS = ["Smileys & Emotion", "People & Body", "Animals & Nature", "Food & Drink", "Travel & Places",
+          "Activities", "Objects", "Symbols", "Flags"]
+PNG = re.compile(r"assets/([^/]+)/(?:Default/)?3D/(.+?)_3d(?:_default)?\.png")
 
 
 def fetch(url: str) -> bytes:
-    with urllib.request.urlopen(url) as response:
-        return response.read()
+    """GitHub's raw host drops the odd request (503) across ~3,000 downloads: a few tries, then give up loudly."""
+    for attempt in range(5):
+        try:
+            with urllib.request.urlopen(url, timeout=60) as response:
+                return response.read()
+        except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError) as e:
+            if attempt == 4 or (isinstance(e, urllib.error.HTTPError) and e.code < 500):
+                raise
+            time.sleep(2 ** attempt)
+    raise AssertionError("unreachable")
 
 
 def main() -> None:
@@ -97,5 +115,51 @@ def main() -> None:
     print(f"{len(icons)} icons, {total} bytes")
 
 
+def key_of(name: str) -> str:
+    """The file name's words as an icon key: "face_with_head-bandage" → "face_with_head_bandage"."""
+    return re.sub(r"_+", "_", re.sub(r"[^a-z0-9]+", "_", name.lower())).strip("_")
+
+
+def catalog() -> None:
+    """Every 3D icon at SHA: assets/icons3d/<key>.webp (skipping keys bundled as drawables) and index.tsv."""
+    tree = json.loads(fetch(f"https://api.github.com/repos/microsoft/fluentui-emoji/git/trees/{SHA}?recursive=1"))
+    if tree.get("truncated"):
+        sys.exit("the tree listing is truncated")
+    found = {}
+    for entry in tree["tree"]:
+        m = PNG.fullmatch(entry["path"])
+        if m:
+            found[m.group(1)] = (key_of(m.group(2)), entry["path"])
+    keys = [k for k, _ in found.values()]
+    if len(keys) != len(set(keys)):
+        sys.exit("two icons share a key")
+    bundled = set(CATEGORY) | set(CHROME) | set(USER_CHOICE)
+    CATALOG.mkdir(parents=True, exist_ok=True)
+    for old in CATALOG.glob("*.webp"):
+        old.unlink()
+
+    def one(folder: str):
+        key, path = found[folder]
+        meta = json.loads(fetch(f"{RAW}/assets/{urllib.parse.quote(folder)}/metadata.json"))
+        if meta["group"] not in GROUPS:
+            sys.exit(f"{folder}: unknown group {meta['group']}")
+        size = 0
+        if key not in bundled:
+            source = Image.open(io.BytesIO(fetch(f"{RAW}/{urllib.parse.quote(path)}"))).convert("RGBA")
+            out = io.BytesIO()
+            source.resize((SIZE, SIZE), Image.LANCZOS).save(out, "WEBP", quality=CATALOG_QUALITY, alpha_quality=100, method=6)
+            (CATALOG / f"{key}.webp").write_bytes(out.getvalue())
+            size = len(out.getvalue())
+        words = "|".join(w.replace("|", " ").replace("\t", " ") for w in meta.get("keywords", []))
+        return key, meta.get("cldr") or folder, meta["group"], words, size
+
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        rows = list(pool.map(one, sorted(found)))
+    rows.sort(key=lambda r: (GROUPS.index(r[2]), r[1], r[0]))
+    lines = ["key\tname\tgroup\tkeywords"] + [f"fluent_{k}\t{n}\t{g}\t{w}" for k, n, g, w, _ in rows]
+    (CATALOG / "index.tsv").write_text("\n".join(lines) + "\n")
+    print(f"{len(rows)} icons, {sum(r[4] for r in rows)} bytes of assets")
+
+
 if __name__ == "__main__":
-    main()
+    catalog() if sys.argv[1:] == ["--catalog"] else main()
