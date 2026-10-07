@@ -208,4 +208,13 @@ The v1 export can't prove inbox-wide coverage: v1 never stored the messages its 
 
 Investigate any rise before shipping a beta.
 
-R99: it runs in 5b's S26 check, after bulk line assignment, so the History check covers every payment.
+Recorded 2026-10-07 in 5b's S26 check (R99), after bulk line assignment and a full rescan of the inbox (10,846
+messages read, nothing new):
+- `UNREADABLE`: 0. The target is met.
+- History check per line: the main line has 677 payments checked, 4 of which don't add up; the second line has 11
+  checked, all of which add up. The export audit, for comparison, has 449 breaks over one chain of about 7.4k payments.
+- R99 wanted every payment checked, and that wasn't reached. Bulk assignment placed 141 payments; 7,866 are still not
+  on a line, because the placer stops at the first gap before its anchors. So the whole history (8,556 payments) was
+  compared offline, counts only. Read as one chain, the unplaced payments break 573 times. Explained as two lines, the
+  whole history needs 62 missing messages. There's no rise over the audit, so nothing needs investigating. A placer
+  that reaches the older, interleaved years is future work.
