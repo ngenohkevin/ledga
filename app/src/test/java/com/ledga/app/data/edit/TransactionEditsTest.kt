@@ -414,23 +414,37 @@ class TransactionEditsTest {
     }
 
     @Test
-    fun `only categories of your own take an offered icon, a swatch or the archive (R68, R72, R74)`() = runTest {
+    fun `any category takes any well-formed icon and any swatch, and a built-in one can go back to its seed (D6)`() = runTest {
         val wedding = edits.createCategory("Wedding", CategoryGroup.EVERYDAY)
-        assertTrue(edits.setCategoryIcon(wedding, "fluent_church"))
-        assertFalse(edits.setCategoryIcon(wedding, "fluent_high_voltage"), "Electricity's icon isn't offered")
-        assertFalse(edits.setCategoryIcon(Categories.GROCERIES, "fluent_church"))
         val sky = CategoryLooks.SWATCHES.first { it.name == "Sky" }
-        assertTrue(edits.setCategoryColor(wedding, sky))
-        assertFalse(edits.setCategoryColor(Categories.GROCERIES, sky))
-        assertFalse(edits.setArchived(Categories.GROCERIES, true))
-        val row = db.categoriesDao().get(wedding)!!
-        assertEquals("fluent_church", row.icon3d)
-        assertEquals(sky.light, row.color)
-        assertEquals(sky.dark, row.colorDark)
+        assertTrue(edits.setCategoryIcon(Categories.GROCERIES, "fluent_teapot"), "a built-in category takes a catalog icon")
+        assertTrue(edits.setCategoryColor(Categories.GROCERIES, sky))
+        assertTrue(edits.setCategoryIcon(wedding, "fluent_high_voltage"), "icons may repeat (D7)")
+        assertTrue(edits.setCategoryIcon(wedding, "fluent_from_a_newer_catalog"), "a key the app can't draw is kept (R91)")
+        assertFalse(edits.setCategoryIcon(wedding, "teapot"), "not an icon key")
+        assertFalse(edits.setCategoryIcon(wedding, "fluent_Teapot!"), "not an icon key")
+        assertFalse(edits.setCategoryIcon("no_such_category", "fluent_teapot"))
+        assertFalse(edits.setCategoryColor("no_such_category", sky))
         val groceries = db.categoriesDao().get(Categories.GROCERIES)!!
-        assertEquals(Categories.seed(Categories.GROCERIES)!!.icon3d, groceries.icon3d)
-        assertNull(groceries.color)
-        assertFalse(groceries.archived)
+        assertEquals("fluent_teapot", groceries.icon3d)
+        assertEquals(sky.light to sky.dark, groceries.color to groceries.colorDark)
+
+        assertTrue(edits.resetCategoryLooks(Categories.GROCERIES))
+        val reset = db.categoriesDao().get(Categories.GROCERIES)!!
+        assertEquals(Categories.seed(Categories.GROCERIES)!!.icon3d, reset.icon3d)
+        assertNull(reset.color)
+        assertNull(reset.colorDark)
+        assertFalse(edits.resetCategoryLooks(wedding), "your own category has no seed to go back to")
+        assertEquals("fluent_from_a_newer_catalog", db.categoriesDao().get(wedding)!!.icon3d)
+    }
+
+    @Test
+    fun `only categories of your own can be archived (R72)`() = runTest {
+        val wedding = edits.createCategory("Wedding", CategoryGroup.EVERYDAY)
+        assertFalse(edits.setArchived(Categories.GROCERIES, true))
+        assertFalse(db.categoriesDao().get(Categories.GROCERIES)!!.archived)
+        assertTrue(edits.setArchived(wedding, true))
+        assertTrue(db.categoriesDao().get(wedding)!!.archived)
     }
 
     @Test

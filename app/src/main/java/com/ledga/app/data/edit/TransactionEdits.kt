@@ -18,6 +18,7 @@ import com.ledga.core.derive.RuleEngine
 import com.ledga.core.derive.RuleField
 import com.ledga.core.derive.RuleOrigin
 import com.ledga.core.model.CategoryGroup
+import com.ledga.core.model.Categories
 import com.ledga.core.model.FlowKind
 import com.ledga.core.model.TxKind
 import com.ledga.core.parse.Counterparty
@@ -241,17 +242,25 @@ class TransactionEdits(private val db: LedgaDatabase, private val deriver: Deriv
         true
     }
 
-    /** R68: an icon from [CategoryLooks.ICONS] for a category of the person's own. False for a built-in category or another icon. */
+    /** D6, R91: any well-formed icon key for any category. The picker offers the set's keys; one the app can't draw shows Other's. */
     suspend fun setCategoryIcon(categoryKey: String, icon: String): Boolean = serial {
-        if (icon !in CategoryLooks.ICONS || ownCategory(categoryKey) == null) return@serial false
+        if (!CategoryLooks.ICON_KEY.matches(icon) || db.categoriesDao().get(categoryKey) == null) return@serial false
         db.categoriesDao().setIcon(categoryKey, icon)
         true
     }
 
-    /** R74: one of [CategoryLooks.SWATCHES], both themes' colours, for a category of the person's own. */
+    /** D6, R74: one of [CategoryLooks.SWATCHES], both themes' colours, for any category. */
     suspend fun setCategoryColor(categoryKey: String, swatch: CategoryLooks.Swatch): Boolean = serial {
-        if (swatch !in CategoryLooks.SWATCHES || ownCategory(categoryKey) == null) return@serial false
+        if (swatch !in CategoryLooks.SWATCHES || db.categoriesDao().get(categoryKey) == null) return@serial false
         db.categoriesDao().setColor(categoryKey, swatch.light, swatch.dark)
+        true
+    }
+
+    /** D6: a built-in category's seeded icon and palette colour again. False for a category of the person's own. */
+    suspend fun resetCategoryLooks(categoryKey: String): Boolean = serial {
+        val seed = Categories.seed(categoryKey) ?: return@serial false
+        if (db.categoriesDao().get(categoryKey)?.origin != CategoryOrigin.SYSTEM) return@serial false
+        db.categoriesDao().resetLooks(categoryKey, seed.icon3d)
         true
     }
 

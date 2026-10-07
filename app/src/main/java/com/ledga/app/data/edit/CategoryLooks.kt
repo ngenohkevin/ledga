@@ -1,8 +1,11 @@
 package com.ledga.app.data.edit
 
+import com.ledga.app.data.room.CategoryRow
+import com.ledga.core.model.Categories
+
 /**
- * What a category of the person's own can look like (R68, R74). Built-in categories keep their seeded icon and colour
- * token (spec §7.3). `TransactionEdits` accepts only these; the category screen draws them.
+ * What a category can look like. Since 4e (D6) every category, built-in ones too, takes any icon of the set and any of
+ * the swatches; [ICONS] is the picker's "Suggested" row. `TransactionEdits` checks the key's form (R91).
  */
 object CategoryLooks {
     /** R43: what a new category starts with. */
@@ -34,4 +37,13 @@ object CategoryLooks {
         Swatch("Brown", "#795548", "#C9A493"),
         Swatch("Violet", "#6A1B9A", "#C792EA"),
     )
+
+    /** R91: what an icon key looks like; the picker offers only the set's keys. */
+    val ICON_KEY = Regex("fluent_[a-z0-9_]+")
+
+    /** D6: a built-in category whose icon or colour is no longer its seed's ("Reset to default" has work). False for your own. */
+    fun differsFromSeed(row: CategoryRow): Boolean {
+        val seed = Categories.seed(row.key) ?: return false
+        return row.icon3d != seed.icon3d || row.color != null || row.colorDark != null
+    }
 }
