@@ -11,6 +11,7 @@ import com.ledga.app.testing.FakePrefsStore
 import com.ledga.app.testing.MutableClock
 import com.ledga.app.testing.Sms
 import com.ledga.app.testing.TestDb
+import java.time.Duration
 import java.time.Instant
 import kotlin.test.assertEquals
 import kotlinx.coroutines.flow.first
@@ -108,5 +109,17 @@ class PaymentAlertsTest {
         ingest(Sms.PURCHASE) // the payment's own SMS, after its companion's job had run
         assertEquals(1, alerts.check(listOf("TJK4AB12EA")))
         assertEquals("Ksh 2,500 to Sample Supermarket", logged().single { it.key == "large:TJK4AB12EA" }.title)
+    }
+
+    @Test
+    fun `a job Android held for hours still alerts for a payment that was new when its SMS arrived (final review I4)`() = runTest {
+        settings.setNotifyLarge(true)
+        settings.setLargeThreshold(10_000) // Ksh 100
+        val arrived = clock.instant // 12:30 UTC: the Ksh 1,000 KPLC payment (12:00) is half an hour old
+        ingest(Sms.KPLC)
+        clock.instant = arrived.plus(Duration.ofHours(3)) // the idle phone held the 30-second job for three hours
+        assertEquals(1, alerts.check(listOf("TJK4AB12FA"), receivedAt = arrived))
+        ingest(Sms.SEND) // a Ksh 500 send from 10:30 UTC, delivered only now: old when it arrived
+        assertEquals(0, alerts.check(listOf("TJK4AB12FB"), receivedAt = clock.instant))
     }
 }

@@ -7,6 +7,7 @@ import com.ledga.core.model.FlowKind
 import com.ledga.core.model.TxKind
 import java.time.Clock
 import java.time.Duration
+import java.time.Instant
 
 /**
  * The receiver's alerts (spec §7.2 step 4, §11, R103, R104): for each new code, a large payment and a Fuliza draw, each
@@ -19,11 +20,14 @@ class PaymentAlerts(
     private val notifier: Notifier,
     private val clock: Clock,
 ) {
-    /** How many alerts were written. */
-    suspend fun check(codes: Collection<String>): Int {
+    /**
+     * How many alerts were written. [receivedAt] is when the receiver got the SMS: the 2 hours run from then, so a job
+     * Android held while the phone was idle still alerts, late rather than never (final review I4, owner 2026-10-07).
+     */
+    suspend fun check(codes: Collection<String>, receivedAt: Instant? = null): Int {
         val s = settings.current()
         if (!s.notifyLarge && !s.notifyFuliza) return 0
-        val oldest = clock.instant().minus(WINDOW)
+        val oldest = (receivedAt ?: clock.instant()).minus(WINDOW)
         var sent = 0
         for (code in codes.distinct()) {
             val tx = db.transactionsDao().get(code) ?: continue
@@ -39,7 +43,7 @@ class PaymentAlerts(
     }
 
     companion object {
-        /** Spec §7.2 step 4: only payments from the last 2 hours. */
+        /** Spec §7.2 step 4: only payments at most 2 hours old when their SMS arrived. */
         val WINDOW: Duration = Duration.ofHours(2)
 
         /**

@@ -9,6 +9,7 @@ import androidx.work.WorkManager
 import com.ledga.app.data.capture.ScanMode
 import com.ledga.app.data.settings.Settings
 import java.time.Clock
+import java.time.Instant
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
@@ -77,8 +78,8 @@ interface BackgroundWork {
     /** Onboarding's Import and You → Rescan: the whole inbox. */
     fun importInbox()
 
-    /** Spec §7.2 step 4 (R103): the receiver's new codes get their alerts a little later. */
-    fun alertsFor(codes: Set<String>)
+    /** Spec §7.2 step 4 (R103): the receiver's new codes get their alerts a little later; [receivedAt]: the SMS's arrival. */
+    fun alertsFor(codes: Set<String>, receivedAt: Instant)
 
     /** R107: [kind]'s next run, or none while it is switched off. [replace] moves a queued one; otherwise it stays. */
     fun schedule(kind: Scheduled, settings: Settings, replace: Boolean)
@@ -120,9 +121,9 @@ class WorkManagerBackgroundWork(private val wm: WorkManager, private val clock: 
         wm.enqueueUniqueWork(IMPORT, ExistingWorkPolicy.KEEP, InboxScanWorker.request(ScanMode.FULL))
     }
 
-    override fun alertsFor(codes: Set<String>) {
+    override fun alertsFor(codes: Set<String>, receivedAt: Instant) {
         if (codes.isEmpty()) return
-        wm.enqueue(PaymentAlertWorker.request(codes))
+        wm.enqueue(PaymentAlertWorker.request(codes, receivedAt))
     }
 
     override fun schedule(kind: Scheduled, settings: Settings, replace: Boolean) {

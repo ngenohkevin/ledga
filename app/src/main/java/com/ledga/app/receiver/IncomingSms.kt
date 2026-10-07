@@ -23,7 +23,7 @@ class IncomingSms(
         val lineId = lines.lineFor(lines.resolve(subscriptionId))
         val now = clock.instant()
         val result = ingestor.ingestAll(messages.map { RawSms(it.sender, it.body, now, subscriptionId, lineId, SmsSource.RECEIVER) })
-        if (result.newCodes.isNotEmpty()) work.alertsFor(result.newCodes)
+        if (result.newCodes.isNotEmpty()) work.alertsFor(result.newCodes, now)
         return result
     }
 }

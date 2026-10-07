@@ -154,14 +154,16 @@ class BackgroundWorkTest {
 
     @Test
     fun `the receiver's codes get one alert job, 30 seconds later (R103)`() {
-        WorkManagerBackgroundWork(wm).alertsFor(setOf("TJK4AB12FA", "TJK4AB12FB"))
+        val arrived = Instant.parse("2026-03-21T12:00:30Z")
+        WorkManagerBackgroundWork(wm).alertsFor(setOf("TJK4AB12FA", "TJK4AB12FB"), arrived)
         val info = wm.getWorkInfosByTag(PaymentAlertWorker::class.java.name).get().single()
         assertEquals(WorkInfo.State.ENQUEUED, info.state)
         assertEquals(30_000L, info.initialDelayMillis)
-        WorkManagerBackgroundWork(wm).alertsFor(emptySet())
+        WorkManagerBackgroundWork(wm).alertsFor(emptySet(), arrived)
         assertEquals(1, wm.getWorkInfosByTag(PaymentAlertWorker::class.java.name).get().size, "no codes, no job")
-        val codes = PaymentAlertWorker.request(setOf("TJK4AB12FA", "TJK4AB12FB")).workSpec.input.getStringArray(PaymentAlertWorker.KEY_CODES)
-        assertEquals(setOf("TJK4AB12FA", "TJK4AB12FB"), codes?.toSet())
+        val input = PaymentAlertWorker.request(setOf("TJK4AB12FA", "TJK4AB12FB"), arrived).workSpec.input
+        assertEquals(setOf("TJK4AB12FA", "TJK4AB12FB"), input.getStringArray(PaymentAlertWorker.KEY_CODES)?.toSet())
+        assertEquals(arrived.toEpochMilli(), input.getLong(PaymentAlertWorker.KEY_RECEIVED, 0L), "the 2 hours run from the arrival (I4)")
     }
 
     @Test

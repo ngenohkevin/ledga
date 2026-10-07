@@ -5,6 +5,7 @@ import com.ledga.app.work.BackgroundWork
 import com.ledga.app.work.HistoryProgress
 import com.ledga.app.work.ImportProgress
 import com.ledga.app.work.Scheduled
+import java.time.Instant
 import kotlinx.coroutines.flow.MutableStateFlow
 
 /** Records what was asked of WorkManager; tests drive the progress flows by hand. */
@@ -36,7 +37,7 @@ class FakeBackgroundWork : BackgroundWork {
 
     override suspend fun migrationChainRunning() = chainRunning
 
-    override fun alertsFor(codes: Set<String>) {
+    override fun alertsFor(codes: Set<String>, receivedAt: Instant) {
         scheduled += "alertsFor ${codes.sorted().joinToString(",")}"
     }
 
