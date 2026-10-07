@@ -9,6 +9,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -44,7 +45,8 @@ fun CategoryIcon(iconKey: String, contentDescription: String?, modifier: Modifie
     ) {
         val inner = Modifier.size(size.box * 0.66f)
         val drawable = FluentIcons.byKey[iconKey]
-        if (drawable != null) Image(painterResource(drawable), contentDescription, inner) else CatalogImage(iconKey, contentDescription, inner)
+        // The catalog image keeps per-key state (decoding, ready, missing): keyed, so a new key starts afresh (final review C1).
+        if (drawable != null) Image(painterResource(drawable), contentDescription, inner) else key(iconKey) { CatalogImage(iconKey, contentDescription, inner) }
     }
 }
 
