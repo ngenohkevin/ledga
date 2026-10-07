@@ -31,12 +31,15 @@ object BackupFiles {
 
     fun read(file: File): Incoming {
         val head = file.inputStream().use { input -> ByteArray(2).also { if (input.readFully(it) < 2) throw BackupFileError.NotLedga() } }
-        return when {
+        val incoming = when {
             head[0] == 0x1F.toByte() && head[1] == 0x8B.toByte() ->
                 Incoming(BackupOrigin.SNAPSHOT, file.inputStream().buffered().use(SnapshotStore::decode))
             head[0] == 'P'.code.toByte() && head[1] == 'K'.code.toByte() -> readZip(file)
             else -> throw BackupFileError.NotLedga()
         }
+        // Final review I2: with no messages there is nothing to restore; Replace would empty the phone.
+        if (incoming.data.sms.isEmpty()) throw BackupFileError.Empty()
+        return incoming
     }
 
     private fun readZip(file: File): Incoming {

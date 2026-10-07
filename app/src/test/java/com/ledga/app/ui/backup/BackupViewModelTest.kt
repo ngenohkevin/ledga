@@ -179,7 +179,8 @@ class BackupViewModelTest {
         vm.dismiss()
         assertFalse(copy.exists())
         val store = SnapshotStore(dirs.snapshots)
-        store.write(store.earlier, BackupData(writtenAt = 5, appVersion = "old", counts = BackupCounts(0, 0)))
+        val sms = SmsEntry("MPESA", Sms.SEND, Sms.at("2026-03-21T10:30:00Z").toEpochMilli(), source = "INBOX")
+        store.write(store.earlier, BackupData(writtenAt = 5, appVersion = "old", counts = BackupCounts(1, 1), sms = listOf(sms)))
         vm.refresh()
         vm.pickSource(vm.ui.first { it.sources.isNotEmpty() }.sources.single())
         vm.ui.first { it.draft != null }

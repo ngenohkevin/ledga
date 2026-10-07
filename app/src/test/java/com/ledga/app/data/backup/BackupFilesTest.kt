@@ -1,5 +1,9 @@
 package com.ledga.app.data.backup
 
+import com.ledga.app.data.derive.Deriver
+import com.ledga.app.data.ingest.RawSms
+import com.ledga.app.data.ingest.SmsIngestor
+import com.ledga.app.data.room.SmsSource
 import com.ledga.app.data.settings.SettingsStore
 import com.ledga.app.testing.FakePrefsStore
 import com.ledga.app.testing.MutableClock
@@ -62,7 +66,7 @@ class BackupFilesTest {
     @Test
     fun `a ledga file reads back what was exported`() = runTest {
         twoLines(db)
-        db.transactionsDao().upsertAll(listOf(txRow()))
+        SmsIngestor(db, Deriver(db, clock)).ingest(RawSms("MPESA", Sms.SEND, Sms.at("2026-03-21T10:30:00Z"), null, null, SmsSource.INBOX))
         val file = tmp.newFile("ledga-2026-10-07.ledga")
         Exporter(reader, db).write(file.outputStream())
         val incoming = BackupFiles.read(file)
@@ -74,7 +78,8 @@ class BackupFilesTest {
     @Test
     fun `a snapshot reads as one`() {
         val store = SnapshotStore(tmp.root)
-        store.write(store.current, BackupData(writtenAt = 9, appVersion = "2.0.0-test", counts = BackupCounts(0, 0)))
+        val sms = SmsEntry("MPESA", Sms.SEND, Sms.at("2026-03-21T10:30:00Z").toEpochMilli(), source = "INBOX")
+        store.write(store.current, BackupData(writtenAt = 9, appVersion = "2.0.0-test", counts = BackupCounts(1, 1), sms = listOf(sms)))
         assertEquals(BackupOrigin.SNAPSHOT, BackupFiles.read(store.current).origin)
     }
 
@@ -116,5 +121,14 @@ class BackupFilesTest {
             "data.json" to """{"format":2,"writtenAt":1,"appVersion":"3.0.0","counts":{"sms":0,"payments":0}}""",
         )
         assertFailsWith<BackupFileError.Newer> { BackupFiles.read(newer) }
+    }
+
+    @Test
+    fun `a backup with no messages says there is nothing to restore (final review I2)`() = runTest {
+        // Restored with Replace it would empty the phone; merged it would add only lines and rules.
+        val file = tmp.newFile("empty-history.ledga")
+        Exporter(reader, db).write(file.outputStream())
+        val e = assertFailsWith<BackupFileError.Empty> { BackupFiles.read(file) }
+        assertEquals("This backup holds no messages, so there's nothing to restore.", e.message)
     }
 }

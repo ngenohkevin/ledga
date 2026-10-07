@@ -138,4 +138,7 @@ sealed class BackupFileError(message: String, cause: Throwable? = null) : Except
     class Newer : BackupFileError("This backup was made by a newer Ledga. Update Ledga, then try again.")
 
     class Damaged(cause: Throwable?) : BackupFileError("This backup file is damaged and can't be read.", cause)
+
+    /** Final review I2: a valid backup with no messages; restoring it could only empty or muddle this phone. */
+    class Empty : BackupFileError("This backup holds no messages, so there's nothing to restore.")
 }
