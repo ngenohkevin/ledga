@@ -147,7 +147,8 @@ fun LedgaNavHost(
                     ),
                 )
             }
-            composable<LinesRoute> { screens.Lines(onBack = back) }
+            composable<LinesRoute> { screens.Lines(onBack = back, onUnassigned = { push(UnassignedRoute) }) }
+            composable<UnassignedRoute> { screens.Unassigned(onBack = back) }
             composable<BackupRoute> { screens.Backup(onBack = back) }
             composable<CategoryRoute> {
                 screens.Category(
@@ -160,7 +161,9 @@ fun LedgaNavHost(
             composable<NotificationsRoute> { screens.NotificationSettings(onBack = back) }
             composable<AppearanceRoute> { screens.AppearanceSettings(onBack = back) }
             composable<UnreadableRoute> { screens.Unreadable(onBack = back) }
-            composable<HistoryCheckRoute> { screens.HistoryCheck(onBack = back, onOpenCategory = { openCategory(it) }) }
+            composable<HistoryCheckRoute> {
+                screens.HistoryCheck(onBack = back, onOpenCategory = { openCategory(it) }, onUnassigned = { push(UnassignedRoute) })
+            }
             composable<LicencesRoute> { screens.Licences(onBack = back, onOpen = { push(LicenceRoute(it)) }) }
             composable<LicenceRoute> { entry -> screens.Licence(entry.toRoute<LicenceRoute>().asset, onBack = back) }
             composable<AlertsRoute> { entry ->

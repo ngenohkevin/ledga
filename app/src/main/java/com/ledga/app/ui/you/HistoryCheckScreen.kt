@@ -34,6 +34,7 @@ import com.ledga.app.ui.app.grouped
 import com.ledga.app.ui.design.components.CategoryIcon
 import com.ledga.app.ui.design.components.EmptyState
 import com.ledga.app.ui.design.components.LedgaCard
+import com.ledga.app.ui.design.components.LinkButton
 import com.ledga.app.ui.design.components.ListRow
 import com.ledga.app.ui.design.components.PrimaryPill
 import com.ledga.app.ui.design.components.RowDivider
@@ -57,7 +58,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.semantics.hideFromAccessibility
 import androidx.compose.ui.semantics.semantics
 
-data class HistoryCheckActions(val onBack: () -> Unit = {}, val onRescan: () -> Unit = {}, val onOpenTx: (String) -> Unit = {})
+data class HistoryCheckActions(
+    val onBack: () -> Unit = {},
+    val onRescan: () -> Unit = {},
+    val onOpenTx: (String) -> Unit = {},
+    val onUnassigned: () -> Unit = {},
+)
 
 /** History check (R79): the verdict, each line's result, then every break, newest first. */
 @Composable
@@ -124,6 +130,7 @@ fun HistoryCheckContent(ui: HistoryCheckUi, actions: HistoryCheckActions, modifi
                                 style = LedgaType.caption,
                                 color = c.muted,
                             )
+                            LinkButton("Put them on a line", actions.onUnassigned, Modifier.padding(start = Spacing.xs))
                         }
                     }
                 }
@@ -168,7 +175,7 @@ fun HistoryCheckContent(ui: HistoryCheckUi, actions: HistoryCheckActions, modifi
 
 /** History check (route): Rescan, and the payment sheet with Undo after Hide. */
 @Composable
-fun HistoryCheckScreen(onBack: () -> Unit, onOpenCategory: (String) -> Unit, vm: HistoryCheckViewModel = hiltViewModel()) {
+fun HistoryCheckScreen(onBack: () -> Unit, onOpenCategory: (String) -> Unit, onUnassigned: () -> Unit, vm: HistoryCheckViewModel = hiltViewModel()) {
     val ui by vm.ui.collectAsStateWithLifecycle()
     var sheets by rememberSaveable(stateSaver = OpenSheets.Saver) { mutableStateOf(OpenSheets()) }
     val snackbar = remember { SnackbarHostState() }
@@ -183,6 +190,7 @@ fun HistoryCheckScreen(onBack: () -> Unit, onOpenCategory: (String) -> Unit, vm:
                     scope.launch { snackbar.showSnackbar("Rescanning your inbox. The check runs again when it's done.", duration = SnackbarDuration.Short) }
                 },
                 onOpenTx = { sheets = sheets.copy(payment = it) },
+                onUnassigned = onUnassigned,
             ),
         )
         SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter).windowInsetsPadding(WindowInsets.navigationBars).padding(Spacing.l))

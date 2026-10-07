@@ -5,6 +5,7 @@ import com.ledga.app.ui.activity.ActivityTab
 import com.ledga.app.ui.alerts.AlertsScreen
 import com.ledga.app.ui.backup.BackupScreen
 import com.ledga.app.ui.home.HomeNav
+import com.ledga.app.ui.lines.UnassignedScreen
 import com.ledga.app.ui.home.HomeRoute as HomeScreenRoute
 import com.ledga.app.ui.onboarding.OnboardingRoute as OnboardingScreenRoute
 import com.ledga.app.ui.categories.CategoriesTab
@@ -32,7 +33,9 @@ interface LedgaScreens {
 
     @Composable fun You(nav: YouNav)
 
-    @Composable fun Lines(onBack: () -> Unit)
+    @Composable fun Lines(onBack: () -> Unit, onUnassigned: () -> Unit)
+
+    @Composable fun Unassigned(onBack: () -> Unit)
 
     @Composable fun Backup(onBack: () -> Unit)
 
@@ -46,7 +49,7 @@ interface LedgaScreens {
 
     @Composable fun Unreadable(onBack: () -> Unit)
 
-    @Composable fun HistoryCheck(onBack: () -> Unit, onOpenCategory: (String) -> Unit)
+    @Composable fun HistoryCheck(onBack: () -> Unit, onOpenCategory: (String) -> Unit, onUnassigned: () -> Unit)
 
     @Composable fun Licences(onBack: () -> Unit, onOpen: (String) -> Unit)
 
@@ -65,7 +68,9 @@ object AppScreens : LedgaScreens {
 
     @Composable override fun You(nav: YouNav) = YouScreen(nav)
 
-    @Composable override fun Lines(onBack: () -> Unit) = LinesScreen(onBack = onBack)
+    @Composable override fun Lines(onBack: () -> Unit, onUnassigned: () -> Unit) = LinesScreen(onBack = onBack, onUnassigned = onUnassigned)
+
+    @Composable override fun Unassigned(onBack: () -> Unit) = UnassignedScreen(onBack = onBack)
 
     @Composable override fun Backup(onBack: () -> Unit) = BackupScreen(onBack = onBack)
 
@@ -79,7 +84,8 @@ object AppScreens : LedgaScreens {
 
     @Composable override fun Unreadable(onBack: () -> Unit) = UnreadableScreen(onBack = onBack)
 
-    @Composable override fun HistoryCheck(onBack: () -> Unit, onOpenCategory: (String) -> Unit) = HistoryCheckScreen(onBack = onBack, onOpenCategory = onOpenCategory)
+    @Composable override fun HistoryCheck(onBack: () -> Unit, onOpenCategory: (String) -> Unit, onUnassigned: () -> Unit) =
+        HistoryCheckScreen(onBack = onBack, onOpenCategory = onOpenCategory, onUnassigned = onUnassigned)
 
     @Composable override fun Licences(onBack: () -> Unit, onOpen: (String) -> Unit) = LicencesContent(onBack = onBack, onOpen = onOpen)
 

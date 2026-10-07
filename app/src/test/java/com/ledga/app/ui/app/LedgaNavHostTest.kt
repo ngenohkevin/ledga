@@ -78,7 +78,12 @@ class LedgaNavHostTest {
             Button(onClick = nav.openBackup) { Text("You backup") }
         }
 
-        @Composable override fun Lines(onBack: () -> Unit) = Text("Lines screen")
+        @Composable override fun Lines(onBack: () -> Unit, onUnassigned: () -> Unit) = Column {
+            Text("Lines screen")
+            Button(onClick = onUnassigned) { Text("Lines unassigned") }
+        }
+
+        @Composable override fun Unassigned(onBack: () -> Unit) = Text("Unassigned screen")
 
         @Composable override fun Backup(onBack: () -> Unit) = Text("Backup screen")
 
@@ -97,9 +102,10 @@ class LedgaNavHostTest {
 
         @Composable override fun Unreadable(onBack: () -> Unit) = Text("Unreadable screen")
 
-        @Composable override fun HistoryCheck(onBack: () -> Unit, onOpenCategory: (String) -> Unit) = Column {
+        @Composable override fun HistoryCheck(onBack: () -> Unit, onOpenCategory: (String) -> Unit, onUnassigned: () -> Unit) = Column {
             Text("History check screen")
             Button(onClick = { onOpenCategory("fuel") }) { Text("History view category") }
+            Button(onClick = onUnassigned) { Text("History unassigned") }
         }
 
         @Composable override fun Licences(onBack: () -> Unit, onOpen: (String) -> Unit) = Column {
@@ -401,5 +407,22 @@ class LedgaNavHostTest {
         compose.onNodeWithText("Backup screen").assertIsDisplayed()
         back()
         compose.onNodeWithText("You screen").assertIsDisplayed()
+    }
+
+    @Test
+    fun `Not on a line opens from M-Pesa lines and from History check, and Back returns to each (R129)`() {
+        show()
+        tap("You")
+        tap("You lines")
+        tap("Lines unassigned")
+        compose.onNodeWithText("Unassigned screen").assertIsDisplayed()
+        back()
+        compose.onNodeWithText("Lines screen").assertIsDisplayed()
+        back()
+        tap("You history")
+        tap("History unassigned")
+        compose.onNodeWithText("Unassigned screen").assertIsDisplayed()
+        back()
+        compose.onNodeWithText("History check screen").assertIsDisplayed()
     }
 }

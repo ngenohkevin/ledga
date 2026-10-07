@@ -33,6 +33,9 @@ import kotlinx.serialization.Serializable
 
 @Serializable data object HistoryCheckRoute
 
+/** Not on a line (R129). */
+@Serializable data object UnassignedRoute
+
 @Serializable data object LicencesRoute
 
 /** You → Export & restore (R124, R125). */

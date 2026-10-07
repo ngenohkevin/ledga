@@ -38,18 +38,20 @@ import com.ledga.app.ui.design.components.ListRow
 import com.ledga.app.ui.design.components.PrimaryPill
 import com.ledga.app.ui.design.components.RowDivider
 import com.ledga.app.ui.design.icons.Ph
-import com.ledga.app.ui.design.theme.LedgaTheme
 import com.ledga.app.ui.design.tokens.Spacing
-import com.ledga.app.ui.design.type.LedgaType
 
-data class LinesActions(val onBack: () -> Unit = {}, val onRename: (LineUi) -> Unit = {}, val onAllowPhone: () -> Unit = {})
+data class LinesActions(
+    val onBack: () -> Unit = {},
+    val onRename: (LineUi) -> Unit = {},
+    val onAllowPhone: () -> Unit = {},
+    val onUnassigned: () -> Unit = {},
+)
 
 private const val PHONE_ACCESS_TEXT = "Allow phone access so Ledga can read your SIMs' numbers and file messages that arrive without a SIM tag."
 
 /** You → M-Pesa lines (R65). */
 @Composable
 fun LinesContent(ui: LinesUi, actions: LinesActions, modifier: Modifier = Modifier) {
-    val c = LedgaTheme.colors
     DetailFrame("M-Pesa lines", onBack = actions.onBack, modifier = modifier) {
         Column(
             Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = Spacing.screen).padding(bottom = Spacing.xxl),
@@ -71,12 +73,15 @@ fun LinesContent(ui: LinesUi, actions: LinesActions, modifier: Modifier = Modifi
                     }
                 }
             }
-            if (ui.unattributed > 0) {
-                Text(
-                    "${grouped(ui.unattributed)} ${if (ui.unattributed == 1) "payment isn't" else "payments aren't"} on a line: Ledga couldn't tell which SIM ${if (ui.unattributed == 1) "it" else "they"} came from.",
-                    style = LedgaType.caption,
-                    color = c.muted,
-                )
+            if (ui.unattributed > 0 && ui.lines.isNotEmpty()) {
+                LedgaCard(Modifier.fillMaxWidth(), contentPadding = PaddingValues(vertical = Spacing.xs)) {
+                    ListRow(
+                        "Not on a line",
+                        subtitle = "${grouped(ui.unattributed)} ${if (ui.unattributed == 1) "payment" else "payments"} · Ledga couldn't tell which SIM",
+                        iconKey = "fluent_label",
+                        onClick = actions.onUnassigned,
+                    )
+                }
             }
         }
     }
@@ -102,7 +107,7 @@ fun LineNameContent(name: String, refused: Boolean, onName: (String) -> Unit, on
 /** You → M-Pesa lines (route): the rename sheet, and phone access (4a M3: ask first, Settings once Android won't ask). */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LinesScreen(onBack: () -> Unit, vm: LinesViewModel = hiltViewModel()) {
+fun LinesScreen(onBack: () -> Unit, onUnassigned: () -> Unit, vm: LinesViewModel = hiltViewModel()) {
     val ui by vm.ui.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var renaming by rememberSaveable { mutableStateOf<Long?>(null) }
@@ -119,6 +124,7 @@ fun LinesScreen(onBack: () -> Unit, vm: LinesViewModel = hiltViewModel()) {
             onBack = onBack,
             onRename = { renaming = it.line.id },
             onAllowPhone = { if (ui.toSettings) context.openAppSettings() else ask.launch(Manifest.permission.READ_PHONE_STATE) },
+            onUnassigned = onUnassigned,
         ),
     )
     val line = ui.lines.firstOrNull { it.line.id == renaming } ?: return

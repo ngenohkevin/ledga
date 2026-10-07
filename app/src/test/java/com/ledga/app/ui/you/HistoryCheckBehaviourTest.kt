@@ -15,6 +15,8 @@ import java.time.LocalDate
 import kotlin.test.assertFalse
 import androidx.compose.ui.test.assertIsDisplayed
 import org.junit.Rule
+import androidx.compose.ui.test.performClick
+import kotlin.test.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -63,5 +65,25 @@ class HistoryCheckBehaviourTest {
         compose.onNodeWithText("Your history adds up").assertIsDisplayed()
         compose.onNodeWithText("Left out · could be either line").assertIsDisplayed()
         compose.onNodeWithText("Payments not on a line could be from either line, so their balances can't be compared. They're left out of the check.").assertIsDisplayed()
+    }
+
+    @Test
+    fun `the left-out note offers to put those payments on a line (R129)`() {
+        var opened = 0
+        compose.setContent {
+            LedgaTheme(Appearance.LIGHT, reducedMotion = true) {
+                HistoryCheckContent(
+                    HistoryCheckUi(
+                        loaded = true,
+                        checked = 12,
+                        lines = listOf(LineCheckUi("Personal ··11", 12, 0), LineCheckUi("Not on a line", 40, 9, mixed = true)),
+                        today = LocalDate.parse("2026-10-06"),
+                    ),
+                    HistoryCheckActions(onUnassigned = { opened++ }),
+                )
+            }
+        }
+        compose.onNodeWithText("Put them on a line").performClick()
+        assertEquals(1, opened)
     }
 }
