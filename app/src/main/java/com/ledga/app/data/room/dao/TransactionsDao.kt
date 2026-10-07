@@ -55,6 +55,10 @@ interface TransactionsDao {
     @Query("SELECT COUNT(*) FROM transactions")
     suspend fun count(): Int
 
+    /** Payments that show (spec §12.1: a snapshot's "N payments"). */
+    @Query("SELECT COUNT(*) FROM transactions WHERE isHidden = 0")
+    suspend fun countShown(): Int
+
     /** You → M-Pesa lines (R65): payments that show, per line. */
     @Query("SELECT lineId, COUNT(*) AS count FROM transactions WHERE isHidden = 0 GROUP BY lineId")
     fun observeCountsByLine(): Flow<List<LineCount>>

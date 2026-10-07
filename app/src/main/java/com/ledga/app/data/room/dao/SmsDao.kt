@@ -43,6 +43,10 @@ interface SmsDao {
     @Query("SELECT COUNT(*) FROM sms WHERE status = :status")
     suspend fun countByStatus(status: SmsStatus): Int
 
+    /** Every stored message (R119: no snapshot is written while there are none). */
+    @Query("SELECT COUNT(*) FROM sms")
+    suspend fun count(): Int
+
     /** R78: Messages Ledga couldn't read, newest first. */
     @Query("SELECT * FROM sms WHERE status = 'UNREADABLE' ORDER BY receivedAt DESC, id DESC")
     fun observeUnreadable(): Flow<List<SmsRow>>

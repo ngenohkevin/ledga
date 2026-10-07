@@ -1,5 +1,12 @@
 package com.ledga.app.di
 
+import com.ledga.app.BuildConfig
+import com.ledga.app.data.backup.AndroidDeviceId
+import com.ledga.app.data.backup.BackupDirs
+import com.ledga.app.data.backup.BackupReader
+import com.ledga.app.data.backup.DeviceId
+import com.ledga.app.data.backup.SnapshotStore
+import com.ledga.app.data.backup.Snapshots
 import com.ledga.app.data.trackers.Trackers
 import com.ledga.app.data.lines.SelectedLine
 import android.content.ContentResolver
@@ -133,6 +140,30 @@ object DataModule {
     /** The 9 AM Fuliza check (spec §11, R105). */
     @Provides
     fun fulizaCheck(db: LedgaDatabase, notifier: Notifier, clock: Clock): FulizaCheck = FulizaCheck(db, notifier, clock)
+
+    /** R115: the hashed per-app device id. */
+    @Provides
+    @Singleton
+    fun deviceId(@ApplicationContext context: Context): DeviceId = AndroidDeviceId(context)
+
+    @Provides
+    @Singleton
+    fun backupDirs(@ApplicationContext context: Context): BackupDirs = BackupDirs.of(context)
+
+    @Provides
+    @Singleton
+    fun snapshotStore(dirs: BackupDirs): SnapshotStore = SnapshotStore(dirs.snapshots)
+
+    @Provides
+    @Singleton
+    fun backupReader(db: LedgaDatabase, settings: SettingsStore, device: DeviceId, clock: Clock): BackupReader =
+        BackupReader(db, settings, device, BuildConfig.VERSION_NAME, clock)
+
+    /** Spec §12.1, R119: the one decider of when the snapshot is written. */
+    @Provides
+    @Singleton
+    fun snapshots(store: SnapshotStore, reader: BackupReader, db: LedgaDatabase, settings: SettingsStore, clock: Clock): Snapshots =
+        Snapshots(store, reader, db, settings, clock)
 
     @Provides
     fun startup(
