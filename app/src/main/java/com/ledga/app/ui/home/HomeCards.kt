@@ -1,5 +1,16 @@
 package com.ledga.app.ui.home
 
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.layout.layout
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.Image
@@ -16,8 +27,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
@@ -256,34 +265,73 @@ private fun BarLabels(labels: List<String>, shortLabels: List<String>, emphasize
     }
 }
 
-/** The trackers strip (spec §10.4): one tile per tracked category, scrolling sideways. */
+/**
+ * The trackers strip (spec §10.4, 4e D8): one tile per tracked category, then See all. It runs to the screen's right
+ * edge with the next tile cut there (R88), so it reads as scrolling; a change in what is tracked brings it back to the start.
+ */
 @Composable
 internal fun TrackersStrip(trackers: List<TrackerSummary>, actions: HomeActions) {
+    val scroll = rememberScrollState()
+    val keys = trackers.joinToString("|") { it.category.key }
+    var shown by rememberSaveable { mutableStateOf(keys) }
+    LaunchedEffect(keys) {
+        if (keys != shown) {
+            shown = keys
+            scroll.animateScrollTo(0)
+        }
+    }
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
         SectionHeader("Trackers", actionLabel = "See all", onAction = actions.onAllTrackers)
-        LazyRow(horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
-            items(trackers, key = { it.category.key }) { s -> TrackerTile(s) { actions.onTracker(s.category.key) } }
+        BoxWithConstraints(Modifier.toRightEdge(Spacing.screen)) {
+            val min = with(LocalDensity.current) { LedgaType.caption.fontSize.toDp() } * TILE_EMS
+            val width = StripLayout.tileWidth(maxWidth - Spacing.screen, min, Spacing.s)
+            Row(
+                Modifier.horizontalScroll(scroll).height(IntrinsicSize.Min).padding(end = Spacing.screen),
+                horizontalArrangement = Arrangement.spacedBy(Spacing.s),
+            ) {
+                trackers.forEach { s -> TrackerTile(s, width) { actions.onTracker(s.category.key) } }
+                SeeAllTile(width, actions.onAllTrackers)
+            }
         }
     }
 }
 
+/** Widens a row into the gutter on its right, inside a column padded by [gutter] (D8: the next tile shows cut at the edge). */
+private fun Modifier.toRightEdge(gutter: Dp): Modifier = layout { measurable, constraints ->
+    val extra = gutter.roundToPx()
+    val placeable = measurable.measure(constraints.copy(minWidth = constraints.minWidth + extra, maxWidth = constraints.maxWidth + extra))
+    layout(constraints.maxWidth, placeable.height) { placeable.place(0, 0) }
+}
+
 /**
- * A tile is 13 caption font sizes wide: 156 dp at normal text. Android 14 grows a large dp length far less than 12 sp
- * text, so a fixed width cut "usually by the 12th" at 1.3×; a width in the caption's own size grows with it.
+ * A tile is at least 13 caption font sizes wide: 156 dp at normal text. Android 14 grows a large dp length far less than
+ * 12 sp text, so a fixed width cut "usually by the 12th" at 1.3×; a minimum in the caption's own size grows with it.
  */
 private const val TILE_EMS = 13f
 
 @Composable
-private fun TrackerTile(s: TrackerSummary, onClick: () -> Unit) {
+private fun TrackerTile(s: TrackerSummary, width: Dp, onClick: () -> Unit) {
     val c = LedgaTheme.colors
     val color = CategoryPalette.resolve(s.category.key, s.category.color, s.category.colorDark).pick(c.isDark)
-    val width = with(LocalDensity.current) { LedgaType.caption.fontSize.toDp() } * TILE_EMS
-    LedgaTile(Modifier.width(width), onClick = onClick) {
+    LedgaTile(Modifier.width(width).fillMaxHeight(), onClick = onClick) {
         CategoryIcon(s.category.icon3d, contentDescription = null, size = WellSize.Small)
         Text(s.category.name, Modifier.padding(top = Spacing.s), style = LedgaType.caption, color = c.muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
         Text(TrackerText.ksh(s.thisMonth.total.cents), style = LedgaType.amountM, color = c.ink, maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis)
         Text(TrackerText.tileCaption(s), style = LedgaType.caption, color = c.muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
         SparkBars(s.months.takeLast(6).map { it.total.cents }, color, Modifier.padding(top = Spacing.s))
+    }
+}
+
+/** D8: the strip's last tile opens the Categories tab. */
+@Composable
+private fun SeeAllTile(width: Dp, onClick: () -> Unit) {
+    val c = LedgaTheme.colors
+    LedgaTile(Modifier.width(width).fillMaxHeight().semantics(mergeDescendants = true) { contentDescription = "See all trackers" }, onClick = onClick) {
+        Box(Modifier.size(WellSize.Small.box).clip(CircleShape).background(c.plate), contentAlignment = Alignment.Center) {
+            Icon(Ph.ArrowRight, contentDescription = null, tint = c.ink2, modifier = Modifier.size(Sizes.iconSmall))
+        }
+        Text("See all", Modifier.padding(top = Spacing.s), style = LedgaType.bodyStrong, color = c.ink)
+        Text("Every category", style = LedgaType.caption, color = c.muted)
     }
 }
 

@@ -28,6 +28,15 @@ import com.ledga.core.time.PeriodType
 import java.time.Instant
 import java.time.LocalDate
 import kotlin.test.assertEquals
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.assertIsNotDisplayed
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.semantics.SemanticsProperties
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -149,5 +158,32 @@ class HomeBehaviourTest {
         show(ui.copy(unreadAlerts = 12), HomeActions(onAlerts = { alerts++ }))
         compose.onNodeWithContentDescription("Alerts, 12 unread").performClick()
         assertEquals(1, alerts)
+    }
+
+    private fun tracker(key: String) = TrackerSummary(
+        categories.getValue(key),
+        Periods.lastN(PeriodType.MONTH, Instant.parse("2026-10-06T06:00:00Z"), 13).map { Bucket(it, Money(50_000), 1) },
+        50_000, null, null,
+    )
+
+    @Test
+    fun `the strip ends in a See all tile`() {
+        var all = 0
+        show(ui.copy(trackers = listOf(Categories.ELECTRICITY, Categories.WATER, Categories.FUEL).map(::tracker)), HomeActions(onAllTrackers = { all++ }))
+        compose.onNodeWithContentDescription("See all trackers").performScrollTo().performClick()
+        assertEquals(1, all)
+    }
+
+    @Test
+    fun `the strip goes back to its first tile when the trackers change (D8)`() {
+        var trackers by mutableStateOf(listOf(Categories.ELECTRICITY, Categories.WATER, Categories.FUEL, Categories.CAR_SERVICE).map(::tracker))
+        compose.setContent { LedgaTheme(Appearance.LIGHT, reducedMotion = true) { HomeContent(ui.copy(trackers = trackers), HomeActions()) } }
+        // The tile, not Recent's row of the same name: the text inside the sideways-scrolling strip.
+        val tile = hasText("Electricity") and hasAnyAncestor(SemanticsMatcher.keyIsDefined(SemanticsProperties.HorizontalScrollAxisRange))
+        compose.onNodeWithContentDescription("See all trackers").performScrollTo()
+        compose.onNode(tile).assertIsNotDisplayed()
+        compose.runOnIdle { trackers = listOf(Categories.ELECTRICITY, Categories.FUEL, Categories.CAR_SERVICE).map(::tracker) }
+        compose.waitForIdle()
+        compose.onNode(tile).assertIsDisplayed()
     }
 }
