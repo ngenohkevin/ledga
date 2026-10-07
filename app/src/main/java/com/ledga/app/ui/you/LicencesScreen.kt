@@ -39,7 +39,11 @@ object Licences {
 @Composable
 fun LicencesContent(onBack: () -> Unit, onOpen: (String) -> Unit, modifier: Modifier = Modifier) {
     DetailFrame("Open-source licences", onBack = onBack, modifier = modifier) {
-        LedgaCard(Modifier.padding(horizontal = Spacing.screen).fillMaxWidth(), contentPadding = PaddingValues(vertical = Spacing.xs)) {
+        // Scrolls like every pushed screen: held sideways at large text, the last row is below the fold (M5).
+        LedgaCard(
+            Modifier.verticalScroll(rememberScrollState()).padding(horizontal = Spacing.screen).padding(bottom = Spacing.xxl).fillMaxWidth(),
+            contentPadding = PaddingValues(vertical = Spacing.xs),
+        ) {
             Licences.ALL.forEachIndexed { i, l ->
                 if (i > 0) RowDivider(Modifier.padding(horizontal = Spacing.m))
                 ListRow(l.name, subtitle = l.what, onClick = { onOpen(l.asset) })
