@@ -7,6 +7,7 @@ import com.ledga.app.testing.MainDispatcherRule
 import com.ledga.app.testing.MutableClock
 import com.ledga.app.testing.TestDb
 import com.ledga.app.testing.TestViewModels
+import com.ledga.app.testing.PERSONAL
 import com.ledga.app.testing.twoLines
 import com.ledga.app.testing.txRow
 import com.ledga.app.time.LiveClock
@@ -45,7 +46,7 @@ class HistoryCheckViewModelTest {
         db.close()
     }
 
-    private fun pay(code: String, at: String, amount: Long, balance: Long, line: Long = 1, hidden: Boolean = false) =
+    private fun pay(code: String, at: String, amount: Long, balance: Long, line: Long? = 1, hidden: Boolean = false) =
         txRow(code = code, at = Instant.parse(at), amountCents = amount, balanceCents = balance, lineId = line, hidden = hidden)
 
     @Test
@@ -117,5 +118,37 @@ class HistoryCheckViewModelTest {
         while (vm.ui.value.breaks.isNotEmpty() && tries++ < 100) Thread.sleep(20)
         watching.cancel()
         assertTrue(vm.ui.value.breaks.isEmpty(), "the history was checked again once the rescan finished")
+    }
+
+    @Test
+    fun `with two lines, payments not on a line are left out of the verdict and marked (owner 2026-10-07)`() = runTest {
+        twoLines(db)
+        db.transactionsDao().upsertAll(
+            listOf(
+                pay("TJK4AB12HA", "2026-10-01T06:00:00Z", 100_000, 500_000, line = 1),
+                pay("TJK4AB12HB", "2026-10-02T06:00:00Z", 100_000, 400_000, line = 1),
+                // Not on a line: one from each SIM, so the balances jump and look like a break.
+                pay("TJK4AB12HG", "2026-10-01T08:00:00Z", 100_000, 500_000, line = null),
+                pay("TJK4AB12HH", "2026-10-02T08:00:00Z", 100_000, 900_000, line = null),
+            ),
+        )
+        val ui = vm().ui.first { it.loaded }
+        assertEquals(1, ui.checked)
+        assertTrue(ui.breaks.isEmpty(), "a jump between two SIMs is not a break")
+        assertEquals(listOf(LineCheckUi("Personal ··11", 1, 0), LineCheckUi("Not on a line", 1, 1, mixed = true)), ui.lines)
+    }
+
+    @Test
+    fun `with one line, payments not on a line are still checked`() = runTest {
+        db.linesDao().insert(PERSONAL)
+        db.transactionsDao().upsertAll(
+            listOf(
+                pay("TJK4AB12HG", "2026-10-01T08:00:00Z", 100_000, 500_000, line = null),
+                pay("TJK4AB12HH", "2026-10-02T08:00:00Z", 100_000, 300_000, line = null), // expected 400,000
+            ),
+        )
+        val ui = vm().ui.first { it.loaded }
+        assertEquals(listOf("TJK4AB12HH"), ui.breaks.map { it.tx.code })
+        assertTrue(ui.lines.none { it.mixed })
     }
 }

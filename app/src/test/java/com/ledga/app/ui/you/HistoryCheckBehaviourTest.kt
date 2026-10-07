@@ -13,6 +13,7 @@ import com.ledga.app.ui.design.theme.LedgaTheme
 import java.time.Instant
 import java.time.LocalDate
 import kotlin.test.assertFalse
+import androidx.compose.ui.test.assertIsDisplayed
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -42,5 +43,25 @@ class HistoryCheckBehaviourTest {
         val results = mutableListOf<TextLayoutResult>()
         compose.onNodeWithText(line, useUnmergedTree = true).fetchSemanticsNode().config[SemanticsActions.GetTextLayoutResult].action!!(results)
         assertFalse(results.single().hasVisualOverflow, "\"$line\" is cut")
+    }
+
+    @Test
+    fun `payments not on a line read as left out, with why (owner 2026-10-07)`() {
+        compose.setContent {
+            LedgaTheme(Appearance.LIGHT, reducedMotion = true) {
+                HistoryCheckContent(
+                    HistoryCheckUi(
+                        loaded = true,
+                        checked = 12,
+                        lines = listOf(LineCheckUi("Personal ··11", 12, 0), LineCheckUi("Not on a line", 40, 9, mixed = true)),
+                        today = LocalDate.parse("2026-10-06"),
+                    ),
+                    HistoryCheckActions(),
+                )
+            }
+        }
+        compose.onNodeWithText("Your history adds up").assertIsDisplayed()
+        compose.onNodeWithText("Left out · could be either line").assertIsDisplayed()
+        compose.onNodeWithText("Payments not on a line could be from either line, so their balances can't be compared. They're left out of the check.").assertIsDisplayed()
     }
 }

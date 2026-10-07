@@ -138,7 +138,8 @@ Everything lives in `com.ledga.app.ui.design`. Until Phase 4 uses it, R8 strips 
   first; once Android won't ask again, open Settings) through the shared `Context.showsRationale`.
 - **History check (4d, R79).** A break row's subtitle is its day; "Expected Ksh … · M-Pesa said Ksh …" sits under the row
   in full (it is the point of the row; as a one-line subtitle it was cut to "Expected K…" at 1.3×), hidden from
-  TalkBack because the row's phrase already says it.
+  TalkBack because the row's phrase already says it. With two or more lines, "Not on a line" reads "Left out · could be
+  either line", sits last, and a caption under the lines card says why.
 
 ## Screenshot tests
 

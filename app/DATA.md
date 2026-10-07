@@ -117,7 +117,9 @@
 - **Settings.** The notification setters clamp: `setDailySummaryMinute` keeps 0–1439, `setLargeThreshold` keeps
   Ksh 100 to Ksh 1,000,000 (cents); anything else is ignored. Phase 5 reads them.
 - **Lines.** `LinesRepository.rename` refuses blank and cuts to 24. Granting phone access later runs `syncActive()`.
-- **History check.** `BalanceChain.check` over `TransactionsDao.all()` (hidden rows included: the wallet moved).
+- **History check.** `BalanceChain.check` over `TransactionsDao.all()` (hidden rows included: the wallet moved). With two
+  or more lines the group not on a line is left out of the verdict (`LineCheckUi.mixed`): its payments could be either
+  line's, so its balances jump between SIMs and read as breaks (owner, 2026-10-07).
 
 ## Phase 5 acceptance step (from the 2026-10-05 Phase 1 review)
 

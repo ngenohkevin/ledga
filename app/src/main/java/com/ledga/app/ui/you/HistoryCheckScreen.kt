@@ -104,14 +104,26 @@ fun HistoryCheckContent(ui: HistoryCheckUi, actions: HistoryCheckActions, modifi
                                 if (i > 0) RowDivider(Modifier.padding(horizontal = Spacing.m))
                                 ListRow(
                                     l.label,
-                                    subtitle = "${grouped(l.checked)} checked · " + when (l.breaks) {
-                                        0 -> "all add up"
-                                        1 -> "1 doesn't add up"
-                                        else -> "${l.breaks} don't add up"
+                                    subtitle = if (l.mixed) {
+                                        "Left out · could be either line"
+                                    } else {
+                                        "${grouped(l.checked)} checked · " + when (l.breaks) {
+                                            0 -> "all add up"
+                                            1 -> "1 doesn't add up"
+                                            else -> "${l.breaks} don't add up"
+                                        }
                                     },
                                     trailing = RowTrailing.None,
                                 )
                             }
+                        }
+                        if (ui.lines.any { it.mixed }) {
+                            Text(
+                                "Payments not on a line could be from either line, so their balances can't be compared. They're left out of the check.",
+                                Modifier.padding(top = Spacing.s, start = Spacing.xs, end = Spacing.xs),
+                                style = LedgaType.caption,
+                                color = c.muted,
+                            )
                         }
                     }
                 }

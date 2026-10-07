@@ -31,7 +31,8 @@ import kotlinx.coroutines.withContext
 /** One place a balance doesn't follow (spec §15.1): the payment, and what was expected against what M-Pesa said. */
 data class ChainBreakUi(val tx: TxRow, val expectedCents: Long, val statedCents: Long)
 
-data class LineCheckUi(val label: String, val checked: Int, val breaks: Int)
+/** One line's result. [mixed]: payments not on a line on a phone with two or more lines, left out of the verdict. */
+data class LineCheckUi(val label: String, val checked: Int, val breaks: Int, val mixed: Boolean = false)
 
 data class HistoryCheckUi(
     val loaded: Boolean = false,
@@ -91,14 +92,18 @@ class HistoryCheckViewModel @Inject constructor(
             val report = withContext(Dispatchers.Default) { BalanceChain.check(txs.map { it.toDerived() }) }
             val byCode = txs.associateBy { it.code }
             val lines = db.linesDao().all().associateBy { it.id }
+            // With two or more lines, a payment not on a line could be either line's: its balance jumps between SIMs and
+            // reads as a break, so that group is left out of the verdict (owner 2026-10-07).
+            val mixed = lines.size >= 2
+            val counted = report.lines.filterNot { mixed && it.lineId == null }
             result.value = HistoryCheckUi(
                 loaded = true,
-                checked = report.checked,
-                breaks = report.breaks.sortedByDescending { it.occurredAt }
+                checked = counted.sumOf { it.checked },
+                breaks = counted.flatMap { it.breaks }.sortedByDescending { it.occurredAt }
                     .mapNotNull { b -> byCode[b.code]?.let { ChainBreakUi(it, b.expected.cents, b.actual.cents) } },
                 lines = if (report.lines.size < 2) emptyList() else report.lines.map { l ->
-                    LineCheckUi(l.lineId?.let { lines[it] }?.let(TxText::lineLabel) ?: "Not on a line", l.checked, l.breaks.size)
-                },
+                    LineCheckUi(l.lineId?.let { lines[it] }?.let(TxText::lineLabel) ?: "Not on a line", l.checked, l.breaks.size, mixed && l.lineId == null)
+                }.sortedBy { it.mixed }, // the group left out goes last, beside the note that explains it
             )
         }
     }
