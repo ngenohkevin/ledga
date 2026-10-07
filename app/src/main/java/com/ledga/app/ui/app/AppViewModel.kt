@@ -18,7 +18,11 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class AppViewModel @Inject constructor(settingsStore: SettingsStore, private val startup: Startup) : ViewModel() {
+class AppViewModel @Inject constructor(
+    settingsStore: SettingsStore,
+    private val startup: Startup,
+    private val opens: NotificationOpens,
+) : ViewModel() {
 
     /** Null until DataStore has answered. */
     val settings: StateFlow<Settings?> = settingsStore.settings.stateIn(viewModelScope, SharingStarted.Eagerly, null)
@@ -29,6 +33,11 @@ class AppViewModel @Inject constructor(settingsStore: SettingsStore, private val
     /** The splash screen's condition: the appearance is known and the database is open (or has failed). */
     val ready: StateFlow<Boolean> = combine(settings, opened) { s, st -> s != null && st != StartupState.Opening }
         .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
+    /** R100: the screen a tapped notification asked for, until `LedgaNavHost` has gone there. */
+    val notificationOpens: StateFlow<OpenDestination?> = opens.destination
+
+    fun opened(destination: OpenDestination) = opens.taken(destination)
 
     init {
         open()

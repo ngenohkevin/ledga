@@ -49,7 +49,7 @@ interface LedgaScreens {
 
     @Composable fun Licence(asset: String, onBack: () -> Unit)
 
-    @Composable fun Alerts(onBack: () -> Unit, onOpenCategory: (String) -> Unit)
+    @Composable fun Alerts(onBack: () -> Unit, onOpenCategory: (String) -> Unit, openCode: String?)
 }
 
 /** The real screens, each with its Hilt ViewModel. */
@@ -80,5 +80,6 @@ object AppScreens : LedgaScreens {
 
     @Composable override fun Licence(asset: String, onBack: () -> Unit) = LicenceScreen(asset = asset, onBack = onBack)
 
-    @Composable override fun Alerts(onBack: () -> Unit, onOpenCategory: (String) -> Unit) = AlertsScreen(onBack = onBack, onOpenCategory = onOpenCategory)
+    @Composable override fun Alerts(onBack: () -> Unit, onOpenCategory: (String) -> Unit, openCode: String?) =
+        AlertsScreen(onBack = onBack, onOpenCategory = onOpenCategory, openCode = openCode)
 }

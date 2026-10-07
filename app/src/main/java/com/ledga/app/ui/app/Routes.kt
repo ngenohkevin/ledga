@@ -12,8 +12,8 @@ import kotlinx.serialization.Serializable
 
 @Serializable data object OnboardingRoute
 
-/** Alerts (R71): pushed over Home, no bottom bar. */
-@Serializable data object AlertsRoute
+/** Alerts (R71): pushed over the screen it was opened from, no bottom bar. [openCode]: a notification's payment (R100). */
+@Serializable data class AlertsRoute(val openCode: String? = null)
 
 /** You → M-Pesa lines (R65). */
 @Serializable data object LinesRoute

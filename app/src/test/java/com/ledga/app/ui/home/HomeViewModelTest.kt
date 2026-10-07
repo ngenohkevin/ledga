@@ -54,6 +54,7 @@ class HomeViewModelTest {
     private val prefs = FakePrefsStore()
     private val settings = SettingsStore(prefs)
     private val links = ActivityLinks()
+    private val homeLinks = HomeLinks()
     private var granted = true
     private var notifyAsk = false
     private var notifyAccess: NotificationAccess = NotificationAccess { notifyAsk }
@@ -62,7 +63,7 @@ class HomeViewModelTest {
     private fun vm(live: LiveClock = LiveClock(clock) { awaitCancellation() }) = vms.track(
         HomeViewModel(
             LedgerQueries(db), db, Trackers(db, LedgerQueries(db)), selectedLine(db, prefs), live, work,
-            { granted }, notifyAccess, settings, TransactionEdits(db, deriver, clock), links,
+            { granted }, notifyAccess, settings, TransactionEdits(db, deriver, clock), links, homeLinks,
         ),
     )
 
@@ -243,5 +244,14 @@ class HomeViewModelTest {
         settings.setOnboarded()
         val ui = vm().ui.first { it.loaded && it.notificationsNudge }
         assertTrue(ui.notificationsToSettings)
+    }
+
+    @Test
+    fun `a Fuliza reminder's request waits for Home until it has shown the sheet (R100)`() = runTest {
+        val vm = vm()
+        homeLinks.openFuliza()
+        assertTrue(vm.fulizaAsked.value)
+        vm.fulizaShown()
+        assertFalse(vm.fulizaAsked.value)
     }
 }

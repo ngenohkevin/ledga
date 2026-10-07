@@ -96,6 +96,7 @@ class HomeViewModel @Inject constructor(
     private val settings: SettingsStore,
     private val edits: TransactionEdits,
     private val links: ActivityLinks,
+    private val home: HomeLinks,
 ) : ViewModel() {
 
     private val period = MutableStateFlow(PeriodType.MONTH)
@@ -185,6 +186,11 @@ class HomeViewModel @Inject constructor(
             unreadAlerts = bg.unreadAlerts,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeUi())
+
+    /** R100: a Fuliza reminder's tap asks for the Fuliza sheet; `HomeRoute` takes it while Home is shown. */
+    val fulizaAsked: StateFlow<Boolean> = home.fulizaAsked
+
+    fun fulizaShown() = home.fulizaShown()
 
     /**
      * On resume: access may have changed in Settings, and the greeting re-reads the clock (R60). SMS access that has

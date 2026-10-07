@@ -39,6 +39,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ledga.app.ui.app.SmsPermissions
+import com.ledga.app.ui.app.TakeRequest
 import com.ledga.app.ui.app.openAppSettings
 import com.ledga.app.ui.app.openNotificationSettings
 import com.ledga.app.ui.app.showsRationale
@@ -180,6 +181,10 @@ fun HomeRoute(nav: HomeNav, vm: HomeViewModel = hiltViewModel()) {
     LifecycleResumeEffect(Unit) {
         vm.refresh()
         onPauseOrDispose { }
+    }
+    TakeRequest(vm.fulizaAsked) {
+        sheets = sheets.copy(fuliza = true)
+        vm.fulizaShown()
     }
     val actions = HomeActions(
         onSearch = {

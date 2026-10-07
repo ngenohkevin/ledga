@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -32,6 +33,8 @@ import com.ledga.app.ui.design.theme.LedgaTheme
 import com.ledga.app.ui.home.HomeNav
 import com.ledga.app.ui.you.YouNav
 import java.io.File
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 
 /** The whole app: theme and text size from settings, then startup's verdict (spec §8, §10.4). */
 @Composable
@@ -47,7 +50,7 @@ fun LedgaRoot(app: AppViewModel) {
                 startup = startup,
                 onShare = { file -> context.startActivity(RecoveryShare.intent(context, file)) },
                 onRetry = app::retry,
-            ) { onboarded -> LedgaNavHost(onboarded) }
+            ) { onboarded -> LedgaNavHost(onboarded, opens = app.notificationOpens, onOpened = app::opened) }
         }
     }
 }
@@ -72,9 +75,16 @@ fun LedgaRootContent(
     }
 }
 
-/** The app once started (spec §10.4): onboarding until it's done, then four tabs. */
+private val NO_OPENS = MutableStateFlow<OpenDestination?>(null)
+
+/** The app once started (spec §10.4): onboarding until it's done, then four tabs; a tapped notification's screen (R100). */
 @Composable
-fun LedgaNavHost(onboarded: Boolean, screens: LedgaScreens = AppScreens) {
+fun LedgaNavHost(
+    onboarded: Boolean,
+    screens: LedgaScreens = AppScreens,
+    opens: StateFlow<OpenDestination?> = NO_OPENS,
+    onOpened: (OpenDestination) -> Unit = {},
+) {
     val nav = rememberNavController()
     val entry by nav.currentBackStackEntryAsState()
     val start: Any = remember { if (onboarded) HomeRoute else OnboardingRoute }
@@ -110,7 +120,7 @@ fun LedgaNavHost(onboarded: Boolean, screens: LedgaScreens = AppScreens) {
                         openTrackers = { nav.openTab(Tab.CATEGORIES) },
                         openCategory = { openCategory(it) },
                         openYou = { nav.openTab(Tab.YOU) },
-                        openAlerts = { nav.navigate(AlertsRoute) { launchSingleTop = true } },
+                        openAlerts = { nav.navigate(AlertsRoute()) { launchSingleTop = true } },
                     ),
                 )
             }
@@ -151,8 +161,25 @@ fun LedgaNavHost(onboarded: Boolean, screens: LedgaScreens = AppScreens) {
             composable<HistoryCheckRoute> { screens.HistoryCheck(onBack = back, onOpenCategory = { openCategory(it) }) }
             composable<LicencesRoute> { screens.Licences(onBack = back, onOpen = { push(LicenceRoute(it)) }) }
             composable<LicenceRoute> { entry -> screens.Licence(entry.toRoute<LicenceRoute>().asset, onBack = back) }
-            composable<AlertsRoute> { screens.Alerts(onBack = { nav.popBackStack() }, onOpenCategory = { openCategory(it) }) }
+            composable<AlertsRoute> { entry ->
+                screens.Alerts(onBack = { nav.popBackStack() }, onOpenCategory = { openCategory(it) }, openCode = entry.toRoute<AlertsRoute>().openCode)
+            }
         }
+    }
+    // R100: a tapped notification's screen, once. During onboarding there is no tab yet: it is taken and dropped.
+    val open by opens.collectAsStateWithLifecycle()
+    LaunchedEffect(open) {
+        val destination = open ?: return@LaunchedEffect
+        if (nav.currentBackStack.value.any { Tab.of(it.destination) != null }) {
+            backTo = null
+            when (destination) {
+                // A second payment's tap replaces an Alerts already on top: Back still returns where you were.
+                is OpenDestination.Alerts -> nav.navigate(AlertsRoute(destination.code)) { popUpTo<AlertsRoute> { inclusive = true } }
+                OpenDestination.Home -> nav.openTab(Tab.HOME)
+                OpenDestination.Activity -> nav.openTab(Tab.ACTIVITY)
+            }
+        }
+        onOpened(destination)
     }
 }
 

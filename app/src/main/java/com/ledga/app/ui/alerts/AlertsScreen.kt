@@ -105,11 +105,14 @@ private fun AlertItem(a: AlertUi, today: LocalDate?, modifier: Modifier, onClick
     }
 }
 
-/** Alerts (route): the payment sheet and picker over it, and Undo after Hide in its own snackbar host (R71). */
+/**
+ * Alerts (route): the payment sheet and picker over it, and Undo after Hide in its own snackbar host (R71). [openCode]
+ * opens that payment's sheet on arrival (R100).
+ */
 @Composable
-fun AlertsScreen(onBack: () -> Unit, onOpenCategory: (String) -> Unit, vm: AlertsViewModel = hiltViewModel()) {
+fun AlertsScreen(onBack: () -> Unit, onOpenCategory: (String) -> Unit, openCode: String? = null, vm: AlertsViewModel = hiltViewModel()) {
     val ui by vm.ui.collectAsStateWithLifecycle()
-    var sheets by rememberSaveable(stateSaver = OpenSheets.Saver) { mutableStateOf(OpenSheets()) }
+    var sheets by rememberSaveable(stateSaver = OpenSheets.Saver) { mutableStateOf(OpenSheets(payment = openCode)) }
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     Box(Modifier.fillMaxSize()) {

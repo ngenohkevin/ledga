@@ -23,6 +23,7 @@ import com.ledga.app.ui.design.theme.Appearance
 import com.ledga.app.ui.design.theme.LedgaTheme
 import com.ledga.app.ui.home.HomeNav
 import com.ledga.app.ui.you.YouNav
+import kotlin.test.assertEquals
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Before
 import org.junit.Rule
@@ -105,8 +106,9 @@ class LedgaNavHostTest {
 
         @Composable override fun Licence(asset: String, onBack: () -> Unit) = Text("Licence $asset")
 
-        @Composable override fun Alerts(onBack: () -> Unit, onOpenCategory: (String) -> Unit) = Column {
+        @Composable override fun Alerts(onBack: () -> Unit, onOpenCategory: (String) -> Unit, openCode: String?) = Column {
             Text("Alerts screen")
+            Text("Alerts opens ${openCode ?: "nothing"}")
             Button(onClick = onBack) { Text("Alerts back") }
         }
     }
@@ -136,8 +138,20 @@ class LedgaNavHostTest {
         StandIns.links = ActivityLinks()
     }
 
-    private fun show() = compose.setContent {
-        LedgaTheme(Appearance.LIGHT, reducedMotion = true) { WithTextSize(textSize.value) { LedgaNavHost(onboarded = true, screens = StandIns) } }
+    private val opens = MutableStateFlow<OpenDestination?>(null)
+    private val opened = mutableListOf<OpenDestination>()
+
+    private fun show(onboarded: Boolean = true) = compose.setContent {
+        LedgaTheme(Appearance.LIGHT, reducedMotion = true) {
+            WithTextSize(textSize.value) {
+                LedgaNavHost(onboarded = onboarded, screens = StandIns, opens = opens, onOpened = { opened += it; opens.value = null })
+            }
+        }
+    }
+
+    private fun notificationOpens(destination: OpenDestination) {
+        compose.runOnIdle { opens.value = destination }
+        compose.waitForIdle()
     }
 
     private fun setTextSize(size: TextSize) {
@@ -305,5 +319,53 @@ class LedgaNavHostTest {
         compose.onNodeWithText("Category page").assertIsDisplayed()
         back()
         compose.onNodeWithText("History check screen").assertIsDisplayed()
+    }
+
+    @Test
+    fun `a notification tapped before Ledga was open lands on its payment, and Back returns Home (R100)`() {
+        opens.value = OpenDestination.Alerts("TJK4AB12FA")
+        show()
+        compose.onNodeWithText("Alerts opens TJK4AB12FA").assertIsDisplayed()
+        assertEquals(listOf<OpenDestination>(OpenDestination.Alerts("TJK4AB12FA")), opened)
+        back()
+        compose.onNodeWithText("Home screen").assertIsDisplayed()
+    }
+
+    @Test
+    fun `a second payment's notification replaces the Alerts on top, and Back returns where you were (R100)`() {
+        show()
+        tap("You")
+        notificationOpens(OpenDestination.Alerts("TJK4AB12FA"))
+        compose.onNodeWithText("Alerts opens TJK4AB12FA").assertIsDisplayed()
+        notificationOpens(OpenDestination.Alerts("TJK4AB12FB"))
+        compose.onNodeWithText("Alerts opens TJK4AB12FB").assertIsDisplayed()
+        back()
+        compose.onNodeWithText("You screen").assertIsDisplayed()
+    }
+
+    @Test
+    fun `a Fuliza reminder opens Home from any tab (R100)`() {
+        show()
+        tap("You")
+        notificationOpens(OpenDestination.Home)
+        compose.onNodeWithText("Home screen").assertIsDisplayed()
+    }
+
+    @Test
+    fun `a summary opens Activity on the payments it left, even from a pushed screen (R100)`() {
+        show()
+        tap("You")
+        tap("You lines")
+        StandIns.links.open(ActivityLink.Transactions(TransactionFilter(categoryKeys = setOf("groceries"))))
+        notificationOpens(OpenDestination.Activity)
+        compose.onNodeWithText("Activity showing transactions groceries").assertIsDisplayed()
+    }
+
+    @Test
+    fun `a notification tapped during onboarding opens nothing, then or later (R100)`() {
+        show(onboarded = false)
+        notificationOpens(OpenDestination.Alerts("TJK4AB12FA"))
+        compose.onNodeWithText("Onboarding screen").assertIsDisplayed()
+        assertEquals(listOf<OpenDestination>(OpenDestination.Alerts("TJK4AB12FA")), opened, "taken, so it never opens later")
     }
 }
