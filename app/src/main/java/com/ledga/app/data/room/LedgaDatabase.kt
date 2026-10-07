@@ -13,6 +13,7 @@ import com.ledga.app.data.room.dao.LegacyDao
 import com.ledga.app.data.room.dao.LinesDao
 import com.ledga.app.data.room.dao.MetaDao
 import com.ledga.app.data.room.dao.OverridesDao
+import com.ledga.app.data.room.dao.RestoreDao
 import com.ledga.app.data.room.dao.RulesDao
 import com.ledga.app.data.room.dao.SmsDao
 import com.ledga.app.data.room.dao.TransactionsDao
@@ -42,6 +43,7 @@ abstract class LedgaDatabase : RoomDatabase() {
     abstract fun legacyDao(): LegacyDao
     abstract fun linesDao(): LinesDao
     abstract fun alertsDao(): AlertsDao
+    abstract fun restoreDao(): RestoreDao
 
     companion object {
         const val FILE_NAME = "ledga.db"

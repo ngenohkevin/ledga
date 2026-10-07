@@ -6,6 +6,7 @@ import com.ledga.app.data.backup.BackupDirs
 import com.ledga.app.data.backup.BackupReader
 import com.ledga.app.data.backup.DeviceId
 import com.ledga.app.data.backup.Exporter
+import com.ledga.app.data.backup.Restorer
 import com.ledga.app.data.backup.SnapshotStore
 import com.ledga.app.data.backup.Snapshots
 import com.ledga.app.data.trackers.Trackers
@@ -169,6 +170,11 @@ object DataModule {
     /** Spec §12.2. */
     @Provides
     fun exporter(reader: BackupReader, db: LedgaDatabase): Exporter = Exporter(reader, db)
+
+    /** Spec §12.3 (R121–R123). */
+    @Provides
+    fun restorer(db: LedgaDatabase, deriver: Deriver, settings: SettingsStore, snapshots: Snapshots, sims: SimDirectory, device: DeviceId, clock: Clock): Restorer =
+        Restorer(db, deriver, settings, snapshots, sims, device, clock)
 
     @Provides
     fun startup(

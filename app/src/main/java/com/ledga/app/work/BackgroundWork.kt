@@ -6,8 +6,10 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
+import com.ledga.app.data.backup.RestoreMode
 import com.ledga.app.data.capture.ScanMode
 import com.ledga.app.data.settings.Settings
+import java.io.File
 import java.time.Clock
 import java.time.Instant
 import kotlinx.coroutines.flow.Flow
@@ -64,6 +66,41 @@ sealed interface ImportProgress {
     }
 }
 
+/** R122: what to restore. [file] is a snapshot or a copy in no-backup storage; [deleteAfter] removes a copy when done. */
+data class RestoreRequest(
+    val file: File,
+    val mode: RestoreMode,
+    val answers: Map<Long, Int?>,
+    val applySettings: Boolean,
+    val deleteAfter: Boolean,
+)
+
+/** A restore's progress (Export & restore, onboarding). [Done.added]: payments the backup added. */
+sealed interface RestoreProgress {
+    data object Idle : RestoreProgress
+
+    data class Running(val done: Int, val total: Int) : RestoreProgress {
+        val fraction: Float? get() = if (total > 0) done.toFloat() / total else null
+    }
+
+    data class Done(val added: Int, val payments: Int) : RestoreProgress
+
+    data class Failed(val message: String) : RestoreProgress
+
+    companion object {
+        fun of(infos: List<WorkInfo>): RestoreProgress {
+            val info = infos.lastOrNull() ?: return Idle
+            return when (info.state) {
+                WorkInfo.State.ENQUEUED, WorkInfo.State.BLOCKED, WorkInfo.State.RUNNING ->
+                    Running(info.progress.getInt(RebuildWorker.KEY_DONE, 0), info.progress.getInt(RebuildWorker.KEY_TOTAL, 0))
+                WorkInfo.State.SUCCEEDED -> Done(info.outputData.getInt(RestoreWorker.KEY_ADDED, 0), info.outputData.getInt(RestoreWorker.KEY_PAYMENTS, 0))
+                WorkInfo.State.FAILED -> Failed(info.outputData.getString(RestoreWorker.KEY_ERROR) ?: RestoreWorker.FAILED)
+                WorkInfo.State.CANCELLED -> Idle
+            }
+        }
+    }
+}
+
 /** Everything the app asks of WorkManager. Screens and Startup depend on this, so tests use a fake. */
 interface BackgroundWork {
     /** After MIGRATION_5_6 (spec §8 step 3): import v1's user intent, rescan the whole inbox, then rebuild. */
@@ -92,6 +129,11 @@ interface BackgroundWork {
 
     /** Spec §12.1, R119: a snapshot soon (the job decides whether one is due). A queued one is kept. */
     fun snapshotSoon()
+
+    /** Spec §12.3, R122: one restore at a time; a request while one runs is dropped. */
+    fun restore(request: RestoreRequest)
+
+    val restoreProgress: Flow<RestoreProgress>
 
     /** True while the post-migration chain has a step queued or running (its own rescan and rebuild are coming). */
     suspend fun migrationChainRunning(): Boolean
@@ -149,11 +191,17 @@ class WorkManagerBackgroundWork(private val wm: WorkManager, private val clock: 
         wm.enqueueUniqueWork(SnapshotWorker.UNIQUE_NAME, ExistingWorkPolicy.KEEP, OneTimeWorkRequestBuilder<SnapshotWorker>().build())
     }
 
+    override fun restore(request: RestoreRequest) {
+        wm.enqueueUniqueWork(RestoreWorker.UNIQUE_NAME, ExistingWorkPolicy.KEEP, RestoreWorker.request(request))
+    }
+
+    override val restoreProgress: Flow<RestoreProgress> = wm.getWorkInfosForUniqueWorkFlow(RestoreWorker.UNIQUE_NAME).map(RestoreProgress::of)
+
     override suspend fun migrationChainRunning(): Boolean =
         wm.getWorkInfosForUniqueWorkFlow(STARTUP).first().any { !it.state.isFinished }
 
     override val history: Flow<HistoryProgress?> =
-        combine(listOf(STARTUP, RebuildWorker.UNIQUE_NAME, IMPORT).map { wm.getWorkInfosForUniqueWorkFlow(it) }) { lists ->
+        combine(listOf(STARTUP, RebuildWorker.UNIQUE_NAME, IMPORT, RestoreWorker.UNIQUE_NAME).map { wm.getWorkInfosForUniqueWorkFlow(it) }) { lists ->
             HistoryProgress.of(lists.flatMap { it })
         }
 

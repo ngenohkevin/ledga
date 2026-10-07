@@ -47,6 +47,10 @@ interface SmsDao {
     @Query("SELECT COUNT(*) FROM sms")
     suspend fun count(): Int
 
+    /** R121: a restored message already here, with no line yet, takes the backup's line. */
+    @Query("UPDATE sms SET lineId = :lineId WHERE bodyHash = :hash AND lineId IS NULL")
+    suspend fun fillLine(hash: String, lineId: Long): Int
+
     /** R78: Messages Ledga couldn't read, newest first. */
     @Query("SELECT * FROM sms WHERE status = 'UNREADABLE' ORDER BY receivedAt DESC, id DESC")
     fun observeUnreadable(): Flow<List<SmsRow>>

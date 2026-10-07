@@ -4,6 +4,8 @@ import com.ledga.app.data.settings.Settings
 import com.ledga.app.work.BackgroundWork
 import com.ledga.app.work.HistoryProgress
 import com.ledga.app.work.ImportProgress
+import com.ledga.app.work.RestoreProgress
+import com.ledga.app.work.RestoreRequest
 import com.ledga.app.work.Scheduled
 import java.time.Instant
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -51,5 +53,13 @@ class FakeBackgroundWork : BackgroundWork {
 
     override fun snapshotSoon() {
         scheduled += "snapshotSoon"
+    }
+
+    /** Restores asked for (R122). */
+    val restores = mutableListOf<RestoreRequest>()
+    override val restoreProgress = MutableStateFlow<RestoreProgress>(RestoreProgress.Idle)
+
+    override fun restore(request: RestoreRequest) {
+        restores += request
     }
 }
