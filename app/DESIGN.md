@@ -173,10 +173,15 @@ Everything lives in `com.ledga.app.ui.design`. Until Phase 4 uses it, R8 strips 
   `NotificationOpens`, which marks the alert read and names an `OpenDestination`:
   - a payment → `AlertsRoute(openCode)` with the payment's sheet (Alerts alone when it is hidden or gone); a second
     payment's tap replaces an Alerts already on top;
-  - a Fuliza reminder → Home, whose `HomeRoute` takes `HomeLinks`' request with `TakeRequest` and opens its Fuliza sheet;
+  - a Fuliza reminder → Home, whose `HomeRoute` takes `HomeLinks`' `FulizaRequest` with `TakeRequest` and opens its
+    Fuliza sheet; when Home shows a different single line it first moves to the reminder's line (owner 2026-10-07), and
+    All lines stays;
   - a summary → Activity › Transactions on its days with every flow (`ActivityLinks`), so the day header's Out equals it.
-  `LedgaNavHost` goes there once (`onOpened`); during onboarding the tap is dropped. `LedgaNavHostTest` drives each.
-- **Words and times** come only from `AlertWords` and `AlertTimes`; no screen formats an alert's text.
+  `LedgaNavHost` goes there once (`onOpened`): Home and Activity open their tab and pop to its own screen, whatever was
+  pushed on it (final review I1); during onboarding the tap is dropped. `NotificationOpens` never throws: a database
+  that can't be read leaves Alerts without a sheet. `LedgaNavHostTest` drives each.
+- **Words and times** come only from `AlertWords` and `AlertTimes`; no screen formats an alert's text. You →
+  Notifications says "the day before" for a summary time before noon (`NotificationText.dailyDetail`).
 - **Ledga dev only (R113).** `adb shell am broadcast -a com.ledga.app.DEBUG_ALERT -n
   com.ledga.app.dev/com.ledga.app.debug.DebugAlertReceiver --es kind <large|draw|due|daily|weekly|clear>` posts a sample
   of each alert from the phone's own payments (keys `debug-…`); `clear` removes them. `src/debug` only.

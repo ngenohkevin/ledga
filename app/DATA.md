@@ -146,10 +146,12 @@
 - **Channels (R102).** `NotifyChannels.ensure` at every start: `spending_summaries` (Summaries) and `large_transactions`
   (Large payments) keep v1's ids; `fuliza` is new; v1's `budget_alerts` is deleted. Updates join in Phase 6.
 - **Live payments (spec §7.2 step 4).** `SmsReceiver` → `IncomingSms.store`: the line, `SmsIngestor`, then
-  `BackgroundWork.alertsFor(newCodes)`, a `PaymentAlertWorker` job 30 s later (R103) that runs `PaymentAlerts.check`.
-  Large = a non-reversed, non-hidden `SPEND` whose amount (no fees) reaches the threshold; a Fuliza draw = any payment
-  Fuliza covered (R104); only while the payment is under 2 hours old. **Inbox scans, imports, rebuilds and the 6-hourly
-  check never alert** (spec §11).
+  `BackgroundWork.alertsFor(newCodes, receivedAt)`, a `PaymentAlertWorker` job 30 s later (R103) that runs
+  `PaymentAlerts.check(codes, receivedAt)`. Large = a non-reversed, non-hidden `SPEND` whose amount (no fees) reaches the
+  threshold; a Fuliza companion whose payment SMS hasn't come is not a large payment (the payment's own alert follows,
+  final review I3); a Fuliza draw = any payment Fuliza covered (R104). Only for a payment at most 2 hours old **when its
+  SMS arrived**, so a job Android holds while the phone is idle alerts late rather than never (owner 2026-10-07, final
+  review I4). **Inbox scans, imports, rebuilds and the 6-hourly check never alert** (spec §11).
 - **Scheduled alerts (R105–R107).** `Scheduled` names the kinds and their unique work: `ledga-daily` (the person's time),
   `ledga-weekly` (Sunday 7 PM), `ledga-fuliza` (9 AM), all Nairobi time, strictly after now (`AlertTimes`). Each is
   one-time work that re-reads its switch, writes, and queues its own next run with REPLACE, last.
@@ -157,7 +159,8 @@
     pass `replace = false` (KEEP: a start never pushes a queued alert back); You → Notifications replaces only the kind
     it changed.
   - Summaries read the `ledger` view over all lines (`LedgerQueries.spentIn`, `biggest`): Spent includes fees, and the
-    count is the payments that added to it. Nothing spent, or a run more than 12 hours late, writes nothing (R106).
+    count is the payments that added to it. Nothing spent, or a run more than 12 hours late, writes nothing (R106). A
+    daily summary set before noon sums up the day before, "yesterday" (`AlertTimes.summaryDay`, owner 2026-10-07).
   - Fuliza reminders: `FulizaReminders.due`, each line's status (the lines' own readings when any reading has a line),
     "3d" once while 1–3 days are left, "0d" on the day, only while something is owed (R105).
 - **The 6-hourly check (R108).** `ledga-sync` (periodic, KEEP), queued once onboarded: `LinesRepository.syncActive`,
