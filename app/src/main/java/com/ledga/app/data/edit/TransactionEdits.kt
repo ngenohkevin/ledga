@@ -6,6 +6,7 @@ import com.ledga.app.data.derive.LedgerQueries
 import com.ledga.app.data.room.CategoryOrigin
 import com.ledga.app.data.room.CategoryRow
 import com.ledga.app.data.room.LedgaDatabase
+import com.ledga.app.data.room.OverrideRow
 import com.ledga.app.data.room.RuleRow
 import com.ledga.app.data.room.TxRow
 import com.ledga.app.data.room.toCore
@@ -72,6 +73,40 @@ class TransactionEdits(private val db: LedgaDatabase, private val deriver: Deriv
 
     /** Moves a payment to another line (spec §9.2, R46); null goes back to the line its SMS arrived on. */
     suspend fun setLine(code: String, lineId: Long?) = serial { deriver.saveOverride(override(code).copy(lineId = lineId)) }
+
+    /**
+     * R128: each payment in [byCode] that is still not on a line goes to its line, as an override (like [setLine]), so a
+     * rebuild keeps it. Returns the codes it moved, for Undo; a payment placed meanwhile is left where it is.
+     */
+    suspend fun placeOnLines(byCode: Map<String, Long>): List<String> = serial {
+        val now = clock.instant()
+        val moving = byCode.keys.toList().chunked(Deriver.CHUNK).flatMap { db.transactionsDao().unassignedAmong(it) }
+        moving.chunked(Deriver.CHUNK).forEach { chunk ->
+            db.withTransaction {
+                val existing = db.overridesDao().byCodes(chunk).associateBy { it.code }
+                db.overridesDao().upsertAll(
+                    chunk.map { code ->
+                        (existing[code] ?: OverrideRow(code, null, null, null, null, hidden = false, updatedAt = now))
+                            .copy(lineId = byCode.getValue(code), updatedAt = now)
+                    },
+                )
+            }
+        }
+        deriver.rederive(moving)
+        moving
+    }
+
+    /** Undo of [placeOnLines]: those payments leave their line again; override rows left saying nothing go. */
+    suspend fun unplace(codes: List<String>) = serial {
+        val now = clock.instant()
+        codes.chunked(Deriver.CHUNK).forEach { chunk ->
+            db.withTransaction {
+                db.overridesDao().clearLine(chunk, now)
+                db.overridesDao().deleteEmpty(chunk)
+            }
+        }
+        deriver.rederive(codes)
+    }
 
     suspend fun categoryCounts(code: String, categoryKey: String): ApplyCounts {
         val tx = db.transactionsDao().get(code) ?: return ApplyCounts(0, null)

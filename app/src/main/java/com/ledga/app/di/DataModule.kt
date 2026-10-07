@@ -27,6 +27,7 @@ import com.ledga.app.data.ingest.SmsIngestor
 import com.ledga.app.data.legacy.LegacyImporter
 import com.ledga.app.data.legacy.PreV6Snapshot
 import com.ledga.app.data.lines.AndroidSimDirectory
+import com.ledga.app.data.lines.LinePlacements
 import com.ledga.app.data.lines.LinesRepository
 import com.ledga.app.data.lines.SimDirectory
 import com.ledga.app.data.room.LedgaDatabase
@@ -98,6 +99,10 @@ object DataModule {
     @Provides
     @Singleton
     fun lines(db: LedgaDatabase, sims: SimDirectory, clock: Clock): LinesRepository = LinesRepository(db.linesDao(), sims, clock)
+
+    /** R116, R128. */
+    @Provides
+    fun linePlacements(db: LedgaDatabase): LinePlacements = LinePlacements(db)
 
     /** R47: the one line choice every summary follows. */
     @Provides

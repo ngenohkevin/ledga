@@ -11,6 +11,20 @@ interface OverridesDao {
     @Upsert
     suspend fun upsert(row: OverrideRow)
 
+    @Upsert
+    suspend fun upsertAll(rows: List<OverrideRow>)
+
+    /** R128: Undo of a placement. */
+    @Query("UPDATE overrides SET lineId = NULL, updatedAt = :at WHERE code IN (:codes)")
+    suspend fun clearLine(codes: List<String>, at: Instant): Int
+
+    /** Override rows that no longer say anything. */
+    @Query(
+        "DELETE FROM overrides WHERE code IN (:codes) AND categoryKey IS NULL AND note IS NULL AND lineId IS NULL " +
+            "AND ownAccount IS NULL AND hidden = 0",
+    )
+    suspend fun deleteEmpty(codes: List<String>): Int
+
     @Query("SELECT * FROM overrides WHERE code IN (:codes)")
     suspend fun byCodes(codes: List<String>): List<OverrideRow>
 

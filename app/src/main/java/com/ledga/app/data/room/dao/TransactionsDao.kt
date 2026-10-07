@@ -63,6 +63,18 @@ interface TransactionsDao {
     @Query("SELECT * FROM transactions WHERE isHidden = 0 ORDER BY occurredAt, code")
     suspend fun exportRows(): List<TxRow>
 
+    /** R128: which of [codes] are still not on a line. */
+    @Query("SELECT code FROM transactions WHERE lineId IS NULL AND code IN (:codes)")
+    suspend fun unassignedAmong(codes: List<String>): List<String>
+
+    /** R128: payments not on a line in [from, to), hidden ones too (they moved the wallet). */
+    @Query("SELECT code FROM transactions WHERE lineId IS NULL AND occurredAt >= :from AND occurredAt < :to")
+    suspend fun unassignedIn(from: Instant, to: Instant): List<String>
+
+    /** R129: how many payments aren't on a line, hidden ones included. */
+    @Query("SELECT COUNT(*) FROM transactions WHERE lineId IS NULL")
+    fun observeUnassigned(): Flow<Int>
+
     /** You → M-Pesa lines (R65): payments that show, per line. */
     @Query("SELECT lineId, COUNT(*) AS count FROM transactions WHERE isHidden = 0 GROUP BY lineId")
     fun observeCountsByLine(): Flow<List<LineCount>>
