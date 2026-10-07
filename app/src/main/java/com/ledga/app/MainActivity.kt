@@ -13,6 +13,7 @@ import com.ledga.app.time.LiveClock
 import com.ledga.app.ui.app.AppViewModel
 import com.ledga.app.ui.app.LedgaRoot
 import com.ledga.app.ui.app.NotificationOpens
+import com.ledga.app.work.BackgroundWork
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.launch
@@ -26,6 +27,9 @@ class MainActivity : ComponentActivity() {
 
     /** R100: a tapped notification's screen. */
     @Inject lateinit var opens: NotificationOpens
+
+    /** Spec §12.1, R130: a snapshot job when Ledga leaves the screen. */
+    @Inject lateinit var work: BackgroundWork
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // The splash stays until the database is open and the appearance is known (no light flash in dark mode).
@@ -47,6 +51,12 @@ class MainActivity : ComponentActivity() {
         val opened = NotificationIntents.read(intent) ?: return
         intent?.let(NotificationIntents::clear)
         lifecycleScope.launch { opens.open(opened) }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        // A rotation stops and recreates the activity; Ledga hasn't left the screen.
+        if (!isChangingConfigurations) work.snapshotSoon()
     }
 
     override fun onResume() {

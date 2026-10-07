@@ -90,6 +90,9 @@ interface BackgroundWork {
     /** Spec §9.1, R108: the 6-hourly check (SIMs, catch-up, alert pruning). A queued one is kept. */
     fun keepSyncing()
 
+    /** Spec §12.1, R119: a snapshot soon (the job decides whether one is due). A queued one is kept. */
+    fun snapshotSoon()
+
     /** True while the post-migration chain has a step queued or running (its own rescan and rebuild are coming). */
     suspend fun migrationChainRunning(): Boolean
 
@@ -140,6 +143,10 @@ class WorkManagerBackgroundWork(private val wm: WorkManager, private val clock: 
         // The first run waits a period: start and onboarding have just run their own scan.
         val request = PeriodicWorkRequestBuilder<SyncWorker>(SyncWorker.EVERY).setInitialDelay(SyncWorker.EVERY).build()
         wm.enqueueUniquePeriodicWork(SyncWorker.UNIQUE_NAME, ExistingPeriodicWorkPolicy.KEEP, request)
+    }
+
+    override fun snapshotSoon() {
+        wm.enqueueUniqueWork(SnapshotWorker.UNIQUE_NAME, ExistingWorkPolicy.KEEP, OneTimeWorkRequestBuilder<SnapshotWorker>().build())
     }
 
     override suspend fun migrationChainRunning(): Boolean =

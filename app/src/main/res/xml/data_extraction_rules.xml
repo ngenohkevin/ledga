@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- R114 (Android 12+): the same rule for Google backup and for moving to a new phone. -->
+<data-extraction-rules>
+    <cloud-backup>
+        <include domain="file" path="backup/" />
+    </cloud-backup>
+    <device-transfer>
+        <include domain="file" path="backup/" />
+    </device-transfer>
+</data-extraction-rules>

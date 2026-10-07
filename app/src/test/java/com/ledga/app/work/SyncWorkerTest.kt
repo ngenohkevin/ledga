@@ -7,15 +7,18 @@ import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import androidx.work.testing.TestListenableWorkerBuilder
 import com.ledga.app.data.alerts.AlertType
+import com.ledga.app.data.backup.SnapshotStore
 import com.ledga.app.data.capture.InboxScanner
 import com.ledga.app.data.capture.InboxSms
 import com.ledga.app.data.capture.InboxSource
 import com.ledga.app.data.derive.Deriver
+import com.ledga.app.data.ingest.RawSms
 import com.ledga.app.data.ingest.SmsIngestor
 import com.ledga.app.data.lines.LinesRepository
 import com.ledga.app.data.lines.Sim
 import com.ledga.app.data.room.AlertRow
 import com.ledga.app.data.room.LineRow
+import com.ledga.app.data.room.SmsSource
 import com.ledga.app.data.settings.SettingsStore
 import com.ledga.app.notify.Notifier
 import com.ledga.app.testing.FakePhone
@@ -24,19 +27,24 @@ import com.ledga.app.testing.FakeSims
 import com.ledga.app.testing.MutableClock
 import com.ledga.app.testing.Sms
 import com.ledga.app.testing.TestDb
+import com.ledga.app.testing.testSnapshots
 import java.time.Duration
 import java.time.Instant
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 
 /** Spec §9.1–9.2, R108: the 6-hourly check. Synthetic SMS. */
 @RunWith(RobolectricTestRunner::class)
 class SyncWorkerTest {
+    @get:Rule val tmp = TemporaryFolder()
     private val context: Context = ApplicationProvider.getApplicationContext()
     private val db = TestDb.inMemory()
     private val clock = MutableClock(Instant.parse("2026-03-24T09:00:00Z"))
@@ -44,14 +52,15 @@ class SyncWorkerTest {
     private val sims = FakeSims()
     private val phone = FakePhone()
     private var smsGranted = true
-    private val inbox = InboxSource { listOf(InboxSms("MPESA", Sms.SEND, Instant.parse("2026-03-21T10:30:30Z"), 7)) }
+    private var inboxFails = false
+    private val inbox = InboxSource { if (inboxFails) error("inbox unreadable") else listOf(InboxSms("MPESA", Sms.SEND, Instant.parse("2026-03-21T10:30:30Z"), 7)) }
     private val lines = LinesRepository(db.linesDao(), sims, clock)
     private val notifier = Notifier(db, phone, clock)
     private val factory = object : WorkerFactory() {
         override fun createWorker(appContext: Context, workerClassName: String, workerParameters: WorkerParameters): ListenableWorker? =
             if (workerClassName == SyncWorker::class.java.name) {
                 val scanner = InboxScanner(inbox, lines, SmsIngestor(db, Deriver(db, clock)), settings)
-                SyncWorker(appContext, workerParameters, lines, scanner, notifier, settings) { smsGranted }
+                SyncWorker(appContext, workerParameters, lines, scanner, notifier, settings, testSnapshots(db, tmp.root, settings, clock)) { smsGranted }
             } else {
                 null
             }
@@ -88,5 +97,16 @@ class SyncWorkerTest {
         run()
         assertEquals(0, db.transactionsDao().count())
         assertEquals(emptyList(), db.alertsDao().observeWithTx().first())
+    }
+
+    @Test
+    fun `a scan that fails still prunes old alerts and writes a due snapshot (R131)`() = runTest {
+        settings.setOnboarded()
+        SmsIngestor(db, Deriver(db, clock)).ingest(RawSms("MPESA", Sms.KPLC, Instant.parse("2026-03-21T12:00:30Z"), null, null, SmsSource.RECEIVER))
+        alertAt("large:TJK4AB12OL", clock.instant.minus(Duration.ofDays(61)))
+        inboxFails = true
+        assertEquals(ListenableWorker.Result.retry(), run())
+        assertEquals(emptyList(), db.alertsDao().observeWithTx().first())
+        assertTrue(SnapshotStore(tmp.root).current.exists())
     }
 }

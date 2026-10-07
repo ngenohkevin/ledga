@@ -8,6 +8,7 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
+import com.ledga.app.data.backup.Snapshots
 import com.ledga.app.data.derive.Deriver
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
@@ -22,10 +23,19 @@ class RebuildWorker @AssistedInject constructor(
     @Assisted context: Context,
     @Assisted params: WorkerParameters,
     private val deriver: Deriver,
+    private val snapshots: Snapshots,
 ) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result = try {
         deriver.rebuildAll { done, total -> setProgress(workDataOf(KEY_DONE to done, KEY_TOTAL to total)) }
+        // Spec §12.1: a fresh snapshot after a rebuild. It never fails the rebuild (R119).
+        try {
+            snapshots.write()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Unit
+        }
         Result.success()
     } catch (e: CancellationException) {
         throw e // stopped by WorkManager: not a failure to retry (Phase 2 deferred M6)

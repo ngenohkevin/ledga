@@ -14,6 +14,7 @@ import androidx.work.testing.SynchronousExecutor
 import androidx.work.testing.TestListenableWorkerBuilder
 import androidx.work.testing.WorkManagerTestInitHelper
 import androidx.work.workDataOf
+import com.ledga.app.data.backup.SnapshotStore
 import com.ledga.app.data.capture.InboxScanner
 import com.ledga.app.data.capture.InboxSms
 import com.ledga.app.data.capture.InboxSource
@@ -29,9 +30,12 @@ import com.ledga.app.testing.FakeSims
 import com.ledga.app.testing.MutableClock
 import com.ledga.app.testing.Sms
 import com.ledga.app.testing.TestDb
+import com.ledga.app.testing.testSnapshots
 import kotlinx.coroutines.test.runTest
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import java.time.Instant
@@ -44,6 +48,7 @@ import kotlin.test.assertTrue
 
 @RunWith(RobolectricTestRunner::class)
 class BackgroundWorkTest {
+    @get:Rule val tmp = TemporaryFolder()
     private val context: Context = ApplicationProvider.getApplicationContext()
     private val db = TestDb.inMemory()
     private val deriver = Deriver(db)
@@ -59,7 +64,8 @@ class BackgroundWorkTest {
             when (workerClassName) {
                 LegacyImportWorker::class.java.name -> LegacyImportWorker(appContext, workerParameters, LegacyImporter(db))
                 InboxScanWorker::class.java.name -> InboxScanWorker(appContext, workerParameters, scanner)
-                RebuildWorker::class.java.name -> RebuildWorker(appContext, workerParameters, deriver)
+                RebuildWorker::class.java.name -> RebuildWorker(appContext, workerParameters, deriver, testSnapshots(db, tmp.root))
+                SnapshotWorker::class.java.name -> SnapshotWorker(appContext, workerParameters, testSnapshots(db, tmp.root))
                 else -> null
             }
     }
@@ -216,5 +222,13 @@ class BackgroundWorkTest {
         assertEquals(6 * 60 * 60_000L, first.initialDelayMillis, "start and onboarding run their own scan: the first check waits")
         WorkManagerBackgroundWork(wm).keepSyncing()
         assertEquals(listOf(first.id), wm.getWorkInfosForUniqueWork(SyncWorker.UNIQUE_NAME).get().map { it.id })
+    }
+
+    @Test
+    fun `leaving the screen queues the snapshot job, which writes only when one is due (R119)`() {
+        WorkManagerBackgroundWork(wm).snapshotSoon()
+        val info = wm.getWorkInfosForUniqueWork(SnapshotWorker.UNIQUE_NAME).get().single()
+        assertEquals(WorkInfo.State.SUCCEEDED, info.state)
+        assertFalse(SnapshotStore(tmp.root).current.exists(), "not onboarded: nothing written")
     }
 }

@@ -48,4 +48,8 @@ class FakeBackgroundWork : BackgroundWork {
     override fun keepSyncing() {
         scheduled += "keepSyncing"
     }
+
+    override fun snapshotSoon() {
+        scheduled += "snapshotSoon"
+    }
 }

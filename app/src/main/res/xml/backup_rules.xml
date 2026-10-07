@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- R114 (Android 11 and older): only Ledga's snapshot folder. Never the live database, files/pre-v6/, the settings
+     file (it holds per-phone state) or caches. -->
+<full-backup-content>
+    <include domain="file" path="backup/" />
+</full-backup-content>

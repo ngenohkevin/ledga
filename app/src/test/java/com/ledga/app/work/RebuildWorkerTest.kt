@@ -10,18 +10,24 @@ import androidx.work.WorkerParameters
 import androidx.work.testing.SynchronousExecutor
 import androidx.work.testing.TestListenableWorkerBuilder
 import androidx.work.testing.WorkManagerTestInitHelper
+import com.ledga.app.data.backup.SnapshotStore
 import com.ledga.app.data.derive.Deriver
 import com.ledga.app.data.ingest.ParseStatus
 import com.ledga.app.data.room.MetaKeys
 import com.ledga.app.data.room.MetaRow
 import com.ledga.app.data.room.SmsRow
 import com.ledga.app.data.room.SmsSource
+import com.ledga.app.data.settings.SettingsStore
+import com.ledga.app.testing.FakePrefsStore
 import com.ledga.app.testing.Sms
 import com.ledga.app.testing.TestDb
+import com.ledga.app.testing.testSnapshots
 import com.ledga.core.parse.MpesaParser
 import com.ledga.core.parse.SmsText
 import kotlinx.coroutines.test.runTest
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import java.time.Instant
@@ -33,9 +39,23 @@ import kotlin.test.assertTrue
 class RebuildWorkerTest {
     private val context: Context = ApplicationProvider.getApplicationContext()
     private val db = TestDb.inMemory()
+    @get:Rule val tmp = TemporaryFolder()
+    private val settings = SettingsStore(FakePrefsStore())
+    private val snapshots by lazy { testSnapshots(db, tmp.root, settings) }
     private val factory = object : WorkerFactory() {
         override fun createWorker(appContext: Context, workerClassName: String, workerParameters: WorkerParameters): ListenableWorker? =
-            if (workerClassName == RebuildWorker::class.java.name) RebuildWorker(appContext, workerParameters, Deriver(db)) else null
+            if (workerClassName == RebuildWorker::class.java.name) RebuildWorker(appContext, workerParameters, Deriver(db), snapshots) else null
+    }
+
+    @Test
+    fun `a rebuild ends with a fresh snapshot`() = runTest {
+        settings.setOnboarded()
+        val at = Instant.parse("2026-03-21T10:30:05Z")
+        val s = ParseStatus.of(MpesaParser.parse(Sms.KPLC, at))
+        db.smsDao().insertIgnore(SmsRow(0, "MPESA", Sms.KPLC, SmsText.hash(Sms.KPLC), at, null, null, s.code, SmsSource.LEGACY, s.status, s.reason, 0))
+        val worker = TestListenableWorkerBuilder<RebuildWorker>(context).setWorkerFactory(factory).build()
+        assertEquals(ListenableWorker.Result.success(), worker.doWork())
+        assertEquals(1, SnapshotStore(tmp.root).read(SnapshotStore(tmp.root).current)?.counts?.payments)
     }
 
     @Test
