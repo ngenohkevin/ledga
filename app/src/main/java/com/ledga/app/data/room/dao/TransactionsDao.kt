@@ -59,6 +59,10 @@ interface TransactionsDao {
     @Query("SELECT COUNT(*) FROM transactions WHERE isHidden = 0")
     suspend fun countShown(): Int
 
+    /** Spec §12.2: every payment that shows, oldest first, for the export's spreadsheet. */
+    @Query("SELECT * FROM transactions WHERE isHidden = 0 ORDER BY occurredAt, code")
+    suspend fun exportRows(): List<TxRow>
+
     /** You → M-Pesa lines (R65): payments that show, per line. */
     @Query("SELECT lineId, COUNT(*) AS count FROM transactions WHERE isHidden = 0 GROUP BY lineId")
     fun observeCountsByLine(): Flow<List<LineCount>>

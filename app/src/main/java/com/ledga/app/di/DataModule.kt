@@ -5,6 +5,7 @@ import com.ledga.app.data.backup.AndroidDeviceId
 import com.ledga.app.data.backup.BackupDirs
 import com.ledga.app.data.backup.BackupReader
 import com.ledga.app.data.backup.DeviceId
+import com.ledga.app.data.backup.Exporter
 import com.ledga.app.data.backup.SnapshotStore
 import com.ledga.app.data.backup.Snapshots
 import com.ledga.app.data.trackers.Trackers
@@ -164,6 +165,10 @@ object DataModule {
     @Singleton
     fun snapshots(store: SnapshotStore, reader: BackupReader, db: LedgaDatabase, settings: SettingsStore, clock: Clock): Snapshots =
         Snapshots(store, reader, db, settings, clock)
+
+    /** Spec §12.2. */
+    @Provides
+    fun exporter(reader: BackupReader, db: LedgaDatabase): Exporter = Exporter(reader, db)
 
     @Provides
     fun startup(
