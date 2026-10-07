@@ -35,7 +35,7 @@
        completed (`Settings.fullRescanOwed`), else `catchUp()`.
 3. "Updating your history…" reads `BackgroundWork.history`, which covers `ledga-startup`, `ledga-rebuild` and `ledga-import`.
 
-- **Capture (from Phase 5, R26).** `SmsReceiver` and `InboxScanner` both resolve the line before `SmsIngestor`, so only existing line ids reach `sms.lineId`.
+- **Capture (from Phase 5, R26).** `IncomingSms` (the receiver's pipeline) and `InboxScanner` both resolve the line before `SmsIngestor`, so only existing line ids reach `sms.lineId`.
   - Inbox reads probe `sub_id`, then `sim_id`, then neither, and return nothing without READ_SMS.
   - A catch-up reads from `Settings.smsWatermarkMillis` minus 6 hours; the watermark never moves back.
   - A SIM whose subscription id changed keeps its line: an old id resolves to the line its past messages are filed under (`LinesDao.lineOfPastMessages`) before any new line is made.
@@ -98,10 +98,10 @@
 
 ## You, Categories & rules, Alerts (Phase 4d)
 
-- **Alerts.** `AlertsDao` reads the `alerts` table Phase 5 writes: `observeWithTx` (newest first, with the payment's code
+- **Alerts.** `AlertsDao` reads the `alerts` table (`Notifier` writes it, 5a): `observeWithTx` (newest first, with the payment's code
   while it exists and isn't hidden), `observeUnread`, `unreadKeys`/`markRead` (chunk to `Deriver.CHUNK`), and
-  `insertIgnore` for Phase 5's dedupe (spec §11: nothing posts twice). `alerts.type` is an `AlertType` name (`LARGE`,
-  `FULIZA_DRAW`, `FULIZA_DUE`, `DAILY`, `WEEKLY`); anything else reads as `OTHER`. Pruning after 60 days is Phase 5's.
+  `insertIgnore` for the dedupe (spec §11: nothing posts twice). `alerts.type` is an `AlertType` name (`LARGE`,
+  `FULIZA_DRAW`, `FULIZA_DUE`, `DAILY`, `WEEKLY`); anything else reads as `OTHER`. `Notifier.prune` drops alerts after 60 days.
 - **Date filters.** `TransactionFilter.dates` is a `DateFilter` choice; `LedgerQueries.transactions/dayTotals(filter,
   today)` turn it into a range (`today` is required when there are dates). Presets for the current period stay
   open-ended; a `Month` is open while it is the current month; a `Custom` range covers whole Nairobi days, both ends.
@@ -115,7 +115,7 @@
   - `CategoryRules.forCategory(rules, key)` is what a category's screen lists: every rule filing into it, on or off;
     Own accounts lists the `MARK_OWN_ACCOUNT` rules.
 - **Settings.** The notification setters clamp: `setDailySummaryMinute` keeps 0–1439, `setLargeThreshold` keeps
-  Ksh 100 to Ksh 1,000,000 (cents); anything else is ignored. Phase 5 reads them.
+  Ksh 100 to Ksh 1,000,000 (cents); anything else is ignored. 5a's workers read them.
 - **Lines.** `LinesRepository.rename` refuses blank and cuts to 24. Granting phone access later runs `syncActive()`.
 - **History check.** `BalanceChain.check` over `TransactionsDao.all()` (hidden rows included: the wallet moved). With two
   or more lines the group not on a line is left out of the verdict (`LineCheckUi.mixed`): its payments could be either
@@ -167,6 +167,34 @@
   an inbox catch-up (with SMS access), and `Notifier.prune`.
 - **WorkManager names (5a).** `ledga-daily`, `ledga-weekly`, `ledga-fuliza`, `ledga-sync`, and untagged
   `PaymentAlertWorker` jobs. Never reuse v1's names (`V1Leftovers`).
+
+## Backup, export and restore (Phase 5b)
+
+- **One payload.** `BackupData` (format 1) is the snapshot's whole content and an export's `data.json` (R118): every SMS,
+  overrides, the person's rules and the built-in ones they switched off, their categories and the built-in ones they
+  changed, lines, the portable settings, a device fingerprint (a SHA-256 of Android's per-app id, never the id) and counts.
+  Per-phone state (onboarded, SMS watermark, owed rescan, chosen line, banner dismissed) never travels (R114).
+- **The snapshot.** `files/backup/ledga-snapshot.json.gz`, written atomically by `SnapshotStore`. `Snapshots` decides
+  when: never before onboarding is done or while `sms` is empty (R119), at most hourly when Ledga leaves the screen
+  (`MainActivity.onStop` → `ledga-snapshot`, R130) and in the 6-hourly check (R131), and at once after a rebuild or a
+  restore. A snapshot an install didn't restore becomes `ledga-snapshot-earlier.json.gz` when onboarding ends (R120);
+  every restore first writes `ledga-before-restore.json.gz` (R121). Auto Backup and device transfer include only
+  `files/backup/` (`backup_rules.xml`, `data_extraction_rules.xml`).
+- **Export** (`Exporter`): a zip of `manifest.json`, `data.json` and `transactions.csv` (R124). The share copy lives in the
+  cache's `exports/`; FileProvider path `exports/`.
+- **Restore** (`BackupFiles` → `LineMatching` → `Restorer`, run by `RestoreWorker` as `ledga-restore`, R122). Reads a
+  `.ledga` file, a snapshot or a v1 export zip by its first bytes. Lines: same phone by SIM id, else by number, else one
+  question per line (R115). Merge fills gaps and never overrides this phone's choices; Replace clears this phone first and
+  resets the built-ins (`RestoreDao`). The write is one transaction that clears the stored parser version, so a restore
+  cut short is rebuilt at the next start; then `rebuildAll` and a fresh snapshot. `Restorer` is the only writer of `sms`
+  besides `SmsIngestor`; a restored message from another phone keeps no SIM id. **A restore never alerts.**
+
+## Lines (Phase 5b)
+
+- **Placement** (R116, R128): `LinePlacements.propose()` runs `:core` `LinePlacer` over every payment (hidden ones too)
+  and this phone's lines; `TransactionEdits.placeOnLines` writes `overrides.lineId` only for payments still not on a line
+  and returns them for Undo (`unplace`, which drops override rows left empty). A date range is whole Nairobi days, both
+  ends. Lines reconciliation itself is 4a's (`LinesRepository.syncActive`, at start and in the 6-hourly check).
 
 ## Phase 5 acceptance step (from the 2026-10-05 Phase 1 review)
 

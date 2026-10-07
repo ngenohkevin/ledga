@@ -119,7 +119,7 @@ Everything lives in `com.ledga.app.ui.design`. Until Phase 4 uses it, R8 strips 
   on the back stack. `LedgaNavHostTest` covers every route with stand-ins. `DetailFrame` paints no background: the
   app's `ShellFrame` does, so a pushed screen's golden wraps its content in `ShellFrame(null, onSelect = {})`.
 - **You (4d).** `YouContent` is a card per group (`GroupLabel` + `LedgaCard` of `ListRow`s): Money, App, Data, About.
-  Phase 5 adds Export & restore and Android backup under Data; Phase 6 adds Updates and Version history under About
+  5b added Export & restore and Android backup under Data (R125); Phase 6 adds Updates and Version history under About
   (R66): add a row, not a section. Rescan's row shows its progress, and a result only for a rescan started there (R77).
 - **Alerts (4d, R71).** Home's bell sits beside search; its badge is `onPrimary` on `primary`, "9+" above nine, and
   TalkBack hears "Alerts, N unread" (the badge's own text is cleared from semantics). M3's `IconButton` clips what it
@@ -188,6 +188,24 @@ Everything lives in `com.ledga.app.ui.design`. Until Phase 4 uses it, R8 strips 
 - **Testing notes.** Grant POST_NOTIFICATIONS on Robolectric (`shadowOf(app).grantPermissions`) before posting.
   `ShadowNotificationManager.allNotifications` lists what was posted; `shadowOf(contentIntent).savedIntent` reads a tap.
   A delayed WorkManager request stays `ENQUEUED` under `SynchronousExecutor`; read its `initialDelayMillis`.
+
+## Export & restore, Not on a line, onboarding (Phase 5b)
+
+- **Export & restore** (`BackupRoute`, from You's "Export & restore" and "Android backup" rows, R125): Export (Save to a
+  file through Android's picker, or Share), Android backup (when the snapshot was saved; Ledga never claims Android's
+  switch is on), Restore (Before your last restore, Earlier backup, Choose a file). A picked file is copied into
+  no-backup storage before it is read. The restore sheet (`RestoreDraftContent`) holds what the backup is, Merge or
+  Replace (`ChoiceRow`s), the line questions (`LineQuestionsContent`, radio chips) and Restore, enabled once each question
+  is answered; Replace asks once more in a dialog ("Replace" in `danger`). Results show only for a restore started on
+  the screen, as Rescan's (R77).
+- **Not on a line** (`UnassignedRoute`, from M-Pesa lines' row and History check's link, R129): By balance (counts per line,
+  "still unclear", one tap) and By date (line chips, From/To with `RangeDatePicker`, now `internal` in `ui/activity`).
+  Each placement offers Undo in the screen's snackbar.
+- **Onboarding** (R126, R127): the steps are fixed at the start (Welcome, SMS, Import, Notifications when Android can
+  ask). A snapshot found on a fresh install is offered inside the import step, with its line questions, before the
+  inbox import; naming two or more lines sits under "Your history is ready". Start fresh keeps the backup as the earlier
+  one.
+- **Shared:** `LineQuestionsContent` is the one "Which SIM was <line>?" UI (Export & restore and onboarding).
 
 ## Screenshot tests
 
