@@ -5,6 +5,7 @@ import com.ledga.app.data.trackers.CategoryMeasure
 import androidx.room.Dao
 import androidx.room.Query
 import com.ledga.app.data.room.LedgerRow
+import com.ledga.core.model.TxKind
 import kotlinx.coroutines.flow.Flow
 import java.time.Instant
 
@@ -58,6 +59,12 @@ data class CategorySpend(val code: String, val categoryKey: String, val occurred
 
 /** Spent in one period: [period] reads like `Period.key`: "2026-09-28" (a week, by its Monday) or "2026" (a year). */
 data class PeriodSum(val period: String, val cents: Long, val count: Int)
+
+/** A summary's total over a range and the payments that added to it (spec §11; R106 counts like Spending's chart). */
+data class SpentCount(val cents: Long, val count: Int)
+
+/** The payment that added most to Spent in a range: a summary's "biggest" (spec §11). */
+data class BiggestPayment(val code: String, val kind: TxKind, val name: String?, val cents: Long)
 
 /** Every aggregate reads the `ledger` view: the spending definition exists once. [to] null = a live, open-ended range. */
 @Dao
@@ -200,4 +207,20 @@ interface LedgerDao {
             "WHERE occurredAt >= :from AND (:to IS NULL OR occurredAt < :to) AND (:lineId IS NULL OR lineId = :lineId)",
     )
     fun totals(from: Instant, to: Instant?, lineId: Long?): Flow<PeriodTotals>
+
+    /** A summary's Spent and its count (spec §11, R106): every line, [from] to [to]. */
+    @Query(
+        "SELECT COALESCE(SUM(spendCents + feeCents), 0) AS cents, COALESCE(SUM(spendCents + feeCents > 0), 0) AS count " +
+            "FROM ledger WHERE occurredAt >= :from AND occurredAt < :to",
+    )
+    suspend fun spentIn(from: Instant, to: Instant): SpentCount
+
+    /** A summary's biggest payment: the row that added most to Spent, the newest on a tie. */
+    @Query(
+        "SELECT l.code AS code, l.kind AS kind, t.counterpartyName AS name, l.spendCents + l.feeCents AS cents " +
+            "FROM ledger l JOIN transactions t ON t.code = l.code " +
+            "WHERE l.occurredAt >= :from AND l.occurredAt < :to AND l.spendCents + l.feeCents > 0 " +
+            "ORDER BY cents DESC, l.occurredAt DESC, l.code DESC LIMIT 1",
+    )
+    suspend fun biggest(from: Instant, to: Instant): BiggestPayment?
 }

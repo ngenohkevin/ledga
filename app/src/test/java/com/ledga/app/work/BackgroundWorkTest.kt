@@ -22,9 +22,11 @@ import com.ledga.app.data.derive.Deriver
 import com.ledga.app.data.ingest.SmsIngestor
 import com.ledga.app.data.legacy.LegacyImporter
 import com.ledga.app.data.lines.LinesRepository
+import com.ledga.app.data.settings.Settings
 import com.ledga.app.data.settings.SettingsStore
 import com.ledga.app.testing.FakePrefsStore
 import com.ledga.app.testing.FakeSims
+import com.ledga.app.testing.MutableClock
 import com.ledga.app.testing.Sms
 import com.ledga.app.testing.TestDb
 import kotlinx.coroutines.test.runTest
@@ -36,6 +38,7 @@ import java.time.Instant
 import java.util.UUID
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNotEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -159,5 +162,39 @@ class BackgroundWorkTest {
         assertEquals(1, wm.getWorkInfosByTag(PaymentAlertWorker::class.java.name).get().size, "no codes, no job")
         val codes = PaymentAlertWorker.request(setOf("TJK4AB12FA", "TJK4AB12FB")).workSpec.input.getStringArray(PaymentAlertWorker.KEY_CODES)
         assertEquals(setOf("TJK4AB12FA", "TJK4AB12FB"), codes?.toSet())
+    }
+
+    @Test
+    fun `a summary is queued for its next time, kept at start, moved when changed, and cancelled when off (R107)`() {
+        val work = WorkManagerBackgroundWork(wm, MutableClock(Instant.parse("2026-10-07T16:30:00Z"))) // 7:30 PM, Wed 7 Oct
+        val s = Settings()
+        work.schedule(Scheduled.DAILY, s, replace = false)
+        val first = wm.getWorkInfosForUniqueWork("ledga-daily").get().single()
+        assertEquals(WorkInfo.State.ENQUEUED, first.state)
+        assertEquals(30 * 60_000L, first.initialDelayMillis, "8 PM is half an hour away")
+        work.schedule(Scheduled.DAILY, s, replace = false)
+        assertEquals(listOf(first.id), wm.getWorkInfosForUniqueWork("ledga-daily").get().filter { !it.state.isFinished }.map { it.id }, "KEEP")
+        work.schedule(Scheduled.DAILY, s.copy(dailySummaryMinute = 21 * 60), replace = true)
+        val moved = wm.getWorkInfosForUniqueWork("ledga-daily").get().single { !it.state.isFinished }
+        assertNotEquals(first.id, moved.id)
+        assertEquals(90 * 60_000L, moved.initialDelayMillis)
+        work.schedule(Scheduled.DAILY, s.copy(notifyDaily = false), replace = true)
+        assertTrue(wm.getWorkInfosForUniqueWork("ledga-daily").get().all { it.state == WorkInfo.State.CANCELLED })
+    }
+
+    @Test
+    fun `the weekly summary waits for Sunday at 7 PM, and a summary switched off is never queued`() {
+        WorkManagerBackgroundWork(wm, MutableClock(Instant.parse("2026-10-07T16:30:00Z")))
+            .scheduleNotifications(Settings(notifyDaily = false), replace = false)
+        assertEquals((95 * 60 + 30) * 60_000L, wm.getWorkInfosForUniqueWork("ledga-weekly").get().single().initialDelayMillis)
+        assertEquals(emptyList(), wm.getWorkInfosForUniqueWork("ledga-daily").get())
+    }
+
+    @Test
+    fun `a scheduled job carries its kind and its time`() {
+        val at = Instant.parse("2026-10-07T17:00:00Z")
+        val input = ScheduledAlertWorker.request(Scheduled.DAILY, at, Instant.parse("2026-10-07T16:30:00Z")).workSpec.input
+        assertEquals("DAILY", input.getString(ScheduledAlertWorker.KEY_KIND))
+        assertEquals(at.toEpochMilli(), input.getLong(ScheduledAlertWorker.KEY_AT, 0L))
     }
 }

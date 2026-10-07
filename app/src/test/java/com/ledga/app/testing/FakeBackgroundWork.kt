@@ -1,8 +1,10 @@
 package com.ledga.app.testing
 
+import com.ledga.app.data.settings.Settings
 import com.ledga.app.work.BackgroundWork
 import com.ledga.app.work.HistoryProgress
 import com.ledga.app.work.ImportProgress
+import com.ledga.app.work.Scheduled
 import kotlinx.coroutines.flow.MutableStateFlow
 
 /** Records what was asked of WorkManager; tests drive the progress flows by hand. */
@@ -36,5 +38,9 @@ class FakeBackgroundWork : BackgroundWork {
 
     override fun alertsFor(codes: Set<String>) {
         scheduled += "alertsFor ${codes.sorted().joinToString(",")}"
+    }
+
+    override fun schedule(kind: Scheduled, settings: Settings, replace: Boolean) {
+        scheduled += "${kind.name} ${if (kind.isOn(settings)) "on" else "off"} replace=$replace"
     }
 }

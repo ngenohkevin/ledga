@@ -23,6 +23,7 @@ import com.ledga.app.notify.AndroidPhoneNotifications
 import com.ledga.app.notify.Notifier
 import com.ledga.app.notify.PaymentAlerts
 import com.ledga.app.notify.PhoneNotifications
+import com.ledga.app.notify.SummaryAlerts
 import com.ledga.app.receiver.IncomingSms
 import com.ledga.app.startup.SmsAccess
 import com.ledga.app.startup.Startup
@@ -100,7 +101,7 @@ object DataModule {
 
     @Provides
     @Singleton
-    fun backgroundWork(wm: WorkManager): BackgroundWork = WorkManagerBackgroundWork(wm)
+    fun backgroundWork(wm: WorkManager, clock: Clock): BackgroundWork = WorkManagerBackgroundWork(wm, clock)
 
     /** Android's notification shade (spec §11). */
     @Provides
@@ -121,6 +122,11 @@ object DataModule {
     @Provides
     fun incomingSms(lines: LinesRepository, ingestor: SmsIngestor, work: BackgroundWork, clock: Clock): IncomingSms =
         IncomingSms(lines, ingestor, work, clock)
+
+    /** The daily and weekly summaries (spec §11, R106). */
+    @Provides
+    fun summaryAlerts(db: LedgaDatabase, ledger: LedgerQueries, notifier: Notifier, clock: Clock): SummaryAlerts =
+        SummaryAlerts(db, ledger, notifier, clock)
 
     @Provides
     fun startup(

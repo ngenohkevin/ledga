@@ -1,6 +1,8 @@
 package com.ledga.app.data.derive
 
+import com.ledga.app.data.room.dao.BiggestPayment
 import com.ledga.app.data.room.dao.CategorySpend
+import com.ledga.app.data.room.dao.SpentCount
 import com.ledga.app.data.room.dao.CategoryMonthTotals
 import com.ledga.app.data.trackers.CategoryMeasure
 import com.ledga.core.time.PeriodType
@@ -99,6 +101,14 @@ class LedgerQueries(private val db: LedgaDatabase) {
     /** A category's newest [limit] payments that counted. */
     fun latestSpends(categoryKey: String, lineId: Long?, limit: Int): Flow<List<CategorySpend>> =
         db.ledgerDao().latestSpends(categoryKey, lineId, limit)
+
+    /** A summary's Spent and its count over a closed [range], every line (spec §11, R106). */
+    suspend fun spentIn(range: InstantRange): SpentCount =
+        db.ledgerDao().spentIn(range.start, checkNotNull(range.endExclusive) { "a summary's range is closed" })
+
+    /** The payment that added most to Spent in a closed [range]; null when nothing did. */
+    suspend fun biggest(range: InstantRange): BiggestPayment? =
+        db.ledgerDao().biggest(range.start, checkNotNull(range.endExclusive) { "a summary's range is closed" })
 
     /** [TransactionFilter] as the shared SQL filter's arguments (`TX_FILTER`). */
     private class Args(f: TransactionFilter, today: LocalDate?) {

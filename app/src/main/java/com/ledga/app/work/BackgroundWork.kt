@@ -5,6 +5,8 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import com.ledga.app.data.capture.ScanMode
+import com.ledga.app.data.settings.Settings
+import java.time.Clock
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
@@ -76,6 +78,12 @@ interface BackgroundWork {
     /** Spec §7.2 step 4 (R103): the receiver's new codes get their alerts a little later. */
     fun alertsFor(codes: Set<String>)
 
+    /** R107: [kind]'s next run, or none while it is switched off. [replace] moves a queued one; otherwise it stays. */
+    fun schedule(kind: Scheduled, settings: Settings, replace: Boolean)
+
+    /** Every scheduled kind: app start and the end of onboarding (KEEP), each following its switch. */
+    fun scheduleNotifications(settings: Settings, replace: Boolean) = Scheduled.entries.forEach { schedule(it, settings, replace) }
+
     /** True while the post-migration chain has a step queued or running (its own rescan and rebuild are coming). */
     suspend fun migrationChainRunning(): Boolean
 
@@ -88,7 +96,7 @@ interface BackgroundWork {
     val legacyImportFailed: Flow<Boolean>
 }
 
-class WorkManagerBackgroundWork(private val wm: WorkManager) : BackgroundWork {
+class WorkManagerBackgroundWork(private val wm: WorkManager, private val clock: Clock = Clock.systemUTC()) : BackgroundWork {
 
     override fun afterMigration() {
         wm.beginUniqueWork(STARTUP, ExistingWorkPolicy.KEEP, OneTimeWorkRequestBuilder<LegacyImportWorker>().build())
@@ -110,6 +118,16 @@ class WorkManagerBackgroundWork(private val wm: WorkManager) : BackgroundWork {
     override fun alertsFor(codes: Set<String>) {
         if (codes.isEmpty()) return
         wm.enqueue(PaymentAlertWorker.request(codes))
+    }
+
+    override fun schedule(kind: Scheduled, settings: Settings, replace: Boolean) {
+        if (!kind.isOn(settings)) {
+            wm.cancelUniqueWork(kind.uniqueName)
+            return
+        }
+        val now = clock.instant()
+        val policy = if (replace) ExistingWorkPolicy.REPLACE else ExistingWorkPolicy.KEEP
+        wm.enqueueUniqueWork(kind.uniqueName, policy, ScheduledAlertWorker.request(kind, kind.next(now, settings), now))
     }
 
     override suspend fun migrationChainRunning(): Boolean =
