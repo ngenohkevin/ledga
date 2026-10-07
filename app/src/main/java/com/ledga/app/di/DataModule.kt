@@ -19,6 +19,9 @@ import com.ledga.app.data.lines.LinesRepository
 import com.ledga.app.data.lines.SimDirectory
 import com.ledga.app.data.room.LedgaDatabase
 import com.ledga.app.data.settings.SettingsStore
+import com.ledga.app.notify.AndroidPhoneNotifications
+import com.ledga.app.notify.Notifier
+import com.ledga.app.notify.PhoneNotifications
 import com.ledga.app.startup.SmsAccess
 import com.ledga.app.startup.Startup
 import com.ledga.app.startup.V1Leftovers
@@ -96,6 +99,16 @@ object DataModule {
     @Provides
     @Singleton
     fun backgroundWork(wm: WorkManager): BackgroundWork = WorkManagerBackgroundWork(wm)
+
+    /** Android's notification shade (spec §11). */
+    @Provides
+    @Singleton
+    fun phoneNotifications(@ApplicationContext context: Context): PhoneNotifications = AndroidPhoneNotifications(context)
+
+    /** The one writer of `alerts` (spec §7.1, R101). */
+    @Provides
+    @Singleton
+    fun notifier(db: LedgaDatabase, phone: PhoneNotifications, clock: Clock): Notifier = Notifier(db, phone, clock)
 
     @Provides
     fun startup(

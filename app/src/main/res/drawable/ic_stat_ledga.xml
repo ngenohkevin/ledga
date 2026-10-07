@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- R110: the launcher's "L" (ic_launcher_foreground) as a one-colour status-bar icon; Android tints it. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M10,6 L10,42 L38,42 L38,35 L17,35 L17,6 Z" />
+</vector>

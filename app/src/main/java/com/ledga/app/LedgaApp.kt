@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
 import com.ledga.app.data.legacy.PreV6Snapshot
+import com.ledga.app.notify.NotifyChannels
 import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject
 
@@ -26,5 +27,11 @@ class LedgaApp : Application(), Configuration.Provider {
             Log.w("Ledga", "pre-v6 snapshot failed", e)
         }
         super.onCreate()
+        // R102: the channels exist before anything posts (a receiver or a worker can start the process).
+        try {
+            NotifyChannels.ensure(this)
+        } catch (e: RuntimeException) {
+            Log.w("Ledga", "notification channels", e)
+        }
     }
 }

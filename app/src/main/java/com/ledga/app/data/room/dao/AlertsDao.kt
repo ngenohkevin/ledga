@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.Flow
 /** An alert and its payment's code while that payment exists and isn't hidden (R71: only then can it open). */
 data class AlertWithTx(@Embedded val alert: AlertRow, val txCode: String?)
 
-/** The notification log (spec §7.1). Phase 5 writes it; 4d reads it for Alerts and Home's bell. */
+/** The notification log (spec §7.1). `Notifier` writes it (5a); Alerts and Home's bell read it (4d). */
 @Dao
 interface AlertsDao {
     @Query(
@@ -31,7 +31,11 @@ interface AlertsDao {
     @Query("UPDATE alerts SET readAt = :at WHERE `key` IN (:keys) AND readAt IS NULL")
     suspend fun markRead(keys: List<String>, at: Instant)
 
-    /** Phase 5's dedupe (spec §11: nothing posts twice): -1 when the key is already logged. */
+    /** `Notifier`'s dedupe (spec §11: nothing posts twice): -1 when the key is already logged. */
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertIgnore(row: AlertRow): Long
+
+    /** Spec §7.1: alerts are pruned after 60 days (`Notifier.prune`). */
+    @Query("DELETE FROM alerts WHERE createdAt < :before")
+    suspend fun deleteOlderThan(before: Instant): Int
 }
