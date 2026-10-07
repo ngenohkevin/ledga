@@ -108,7 +108,7 @@ fun LedgaNavHost(onboarded: Boolean, screens: LedgaScreens = AppScreens) {
                     HomeNav(
                         openActivity = { hop(Tab.HOME) },
                         openTrackers = { nav.openTab(Tab.CATEGORIES) },
-                        openTracker = { openCategory(it) },
+                        openCategory = { openCategory(it) },
                         openYou = { nav.openTab(Tab.YOU) },
                         openAlerts = { nav.navigate(AlertsRoute) { launchSingleTop = true } },
                     ),
@@ -120,7 +120,7 @@ fun LedgaNavHost(onboarded: Boolean, screens: LedgaScreens = AppScreens) {
                     backTo = null
                     nav.openTab(to)
                 }
-                screens.Activity()
+                screens.Activity(openCategory = { key, month -> openCategory(key, month) })
             }
             composable<CategoriesRoute> { screens.Categories(onOpen = { openCategory(it) }) }
             composable<YouRoute> {
@@ -137,14 +137,21 @@ fun LedgaNavHost(onboarded: Boolean, screens: LedgaScreens = AppScreens) {
                 )
             }
             composable<LinesRoute> { screens.Lines(onBack = back) }
-            composable<CategoryRoute> { screens.Category(onBack = back, onSeeAll = { hop(owningTab()) }) }
+            composable<CategoryRoute> {
+                screens.Category(
+                    onBack = back,
+                    // R90: Activity is one screen on its stack, so a page opened inside it pops back to it; from any
+                    // other tab the page hops to Activity, and Back returns to the page (R61, R83).
+                    onSeeAll = { owningTab().let { tab -> if (tab == Tab.ACTIVITY) nav.popBackStack<ActivityRoute>(inclusive = false) else hop(tab) } },
+                )
+            }
             composable<NotificationsRoute> { screens.NotificationSettings(onBack = back) }
             composable<AppearanceRoute> { screens.AppearanceSettings(onBack = back) }
             composable<UnreadableRoute> { screens.Unreadable(onBack = back) }
-            composable<HistoryCheckRoute> { screens.HistoryCheck(onBack = back) }
+            composable<HistoryCheckRoute> { screens.HistoryCheck(onBack = back, onOpenCategory = { openCategory(it) }) }
             composable<LicencesRoute> { screens.Licences(onBack = back, onOpen = { push(LicenceRoute(it)) }) }
             composable<LicenceRoute> { entry -> screens.Licence(entry.toRoute<LicenceRoute>().asset, onBack = back) }
-            composable<AlertsRoute> { screens.Alerts(onBack = { nav.popBackStack() }) }
+            composable<AlertsRoute> { screens.Alerts(onBack = { nav.popBackStack() }, onOpenCategory = { openCategory(it) }) }
         }
     }
 }

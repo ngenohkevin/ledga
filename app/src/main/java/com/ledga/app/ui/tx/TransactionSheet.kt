@@ -29,6 +29,9 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -94,6 +97,8 @@ data class TxSheetActions(
     val onShare: () -> Unit = {},
     val onHide: () -> Unit = {},
     val onUnhide: () -> Unit = {},
+    /** 4e D3: the Category row's View; null hides it (on the category's own page). */
+    val onViewCategory: (() -> Unit)? = null,
 )
 
 /**
@@ -153,7 +158,21 @@ fun TransactionSheetContent(
         }
         Facts(state, tx, actions, Modifier.padding(top = Spacing.l))
         Column(Modifier.fillMaxWidth().padding(top = Spacing.s)) {
-            SheetRow(icon, "Category", TxText.categoryLabel(state.categoryName, state.category?.tracked == true), "Change category", actions.onChangeCategory)
+            SheetRow(
+                icon,
+                "Category",
+                TxText.categoryLabel(state.categoryName, state.category?.tracked == true),
+                "Change category",
+                extra = {
+                    val view = actions.onViewCategory
+                    if (view != null && state.category != null) {
+                        TextButton(onClick = view, modifier = Modifier.semantics { contentDescription = "View ${state.categoryName}" }) {
+                            Text("View", style = LedgaType.label, color = LedgaTheme.colors.primary)
+                        }
+                    }
+                },
+                onClick = actions.onChangeCategory,
+            )
             RowDivider()
             if (editingNote) {
                 NoteEditor(
@@ -282,7 +301,7 @@ private fun LineFact(fact: Fact, state: TxSheetState, actions: TxSheetActions) {
 
 /** A sheet row (mockup `txsheet`): a small 3D icon, a caption over its value, and a chevron. */
 @Composable
-private fun SheetRow(iconKey: String, label: String, value: String, actionLabel: String, onClick: () -> Unit) {
+private fun SheetRow(iconKey: String, label: String, value: String, actionLabel: String, extra: @Composable RowScope.() -> Unit = {}, onClick: () -> Unit) {
     val c = LedgaTheme.colors
     Row(
         Modifier
@@ -298,6 +317,7 @@ private fun SheetRow(iconKey: String, label: String, value: String, actionLabel:
             Text(label, style = LedgaType.caption, color = c.muted)
             Text(value, style = LedgaType.bodyStrong, color = c.ink, maxLines = 3, overflow = TextOverflow.Ellipsis)
         }
+        extra()
         Icon(Ph.CaretRightBold, contentDescription = null, tint = c.muted, modifier = Modifier.size(Sizes.iconSmall))
     }
 }
@@ -403,6 +423,7 @@ fun TransactionSheetHost(
     onDismiss: () -> Unit,
     onHidden: (String) -> Unit,
     onChangeCategory: (String) -> Unit,
+    onViewCategory: ((String) -> Unit)? = null,
     vm: TxSheetViewModel = hiltViewModel(key = "tx-sheet"),
 ) {
     if (code == null) return
@@ -420,6 +441,14 @@ fun TransactionSheetHost(
                 state = shown,
                 actions = TxSheetActions(
                     onChangeCategory = { onChangeCategory(code) },
+                    onViewCategory = onViewCategory?.let { open ->
+                        {
+                            shown.category?.key?.let { key ->
+                                onDismiss()
+                                open(key)
+                            }
+                        }
+                    },
                     onSaveNote = vm::setNote,
                     onOwnAccount = vm::setOwnAccount,
                     onConfirmOwn = vm::confirmOwn,

@@ -27,7 +27,7 @@ interface LedgaScreens {
 
     @Composable fun Home(nav: HomeNav)
 
-    @Composable fun Activity()
+    @Composable fun Activity(openCategory: (String, String?) -> Unit)
 
     @Composable fun You(nav: YouNav)
 
@@ -43,13 +43,13 @@ interface LedgaScreens {
 
     @Composable fun Unreadable(onBack: () -> Unit)
 
-    @Composable fun HistoryCheck(onBack: () -> Unit)
+    @Composable fun HistoryCheck(onBack: () -> Unit, onOpenCategory: (String) -> Unit)
 
     @Composable fun Licences(onBack: () -> Unit, onOpen: (String) -> Unit)
 
     @Composable fun Licence(asset: String, onBack: () -> Unit)
 
-    @Composable fun Alerts(onBack: () -> Unit)
+    @Composable fun Alerts(onBack: () -> Unit, onOpenCategory: (String) -> Unit)
 }
 
 /** The real screens, each with its Hilt ViewModel. */
@@ -58,7 +58,7 @@ object AppScreens : LedgaScreens {
 
     @Composable override fun Home(nav: HomeNav) = HomeScreenRoute(nav)
 
-    @Composable override fun Activity() = ActivityTab()
+    @Composable override fun Activity(openCategory: (String, String?) -> Unit) = ActivityTab(openCategory = openCategory)
 
     @Composable override fun You(nav: YouNav) = YouScreen(nav)
 
@@ -74,11 +74,11 @@ object AppScreens : LedgaScreens {
 
     @Composable override fun Unreadable(onBack: () -> Unit) = UnreadableScreen(onBack = onBack)
 
-    @Composable override fun HistoryCheck(onBack: () -> Unit) = HistoryCheckScreen(onBack = onBack)
+    @Composable override fun HistoryCheck(onBack: () -> Unit, onOpenCategory: (String) -> Unit) = HistoryCheckScreen(onBack = onBack, onOpenCategory = onOpenCategory)
 
     @Composable override fun Licences(onBack: () -> Unit, onOpen: (String) -> Unit) = LicencesContent(onBack = onBack, onOpen = onOpen)
 
     @Composable override fun Licence(asset: String, onBack: () -> Unit) = LicenceScreen(asset = asset, onBack = onBack)
 
-    @Composable override fun Alerts(onBack: () -> Unit) = AlertsScreen(onBack = onBack)
+    @Composable override fun Alerts(onBack: () -> Unit, onOpenCategory: (String) -> Unit) = AlertsScreen(onBack = onBack, onOpenCategory = onOpenCategory)
 }

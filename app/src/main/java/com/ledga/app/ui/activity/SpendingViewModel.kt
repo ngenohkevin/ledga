@@ -61,6 +61,12 @@ data class ShareRow(
     val categoryKeys: Set<String>,
 )
 
+/** D3: what a "Where it went" row opens — a category's page at the month shown, or (by group) Transactions. */
+sealed interface ShareTap {
+    data class Page(val categoryKey: String, val month: String?) : ShareTap
+    data class Transactions(val filter: TransactionFilter) : ShareTap
+}
+
 /** Activity › Spending (spec §10.4, mockup `spending`). Every number reads the `ledger` view. */
 data class SpendingUi(
     val loaded: Boolean = false,
@@ -154,6 +160,10 @@ class SpendingViewModel @Inject constructor(
         val m = ui.value.month ?: return TransactionFilter(categoryKeys = row.categoryKeys, lineId = ui.value.line.lineId)
         return TransactionFilter(categoryKeys = row.categoryKeys, dates = DateFilter.Month(m), lineId = ui.value.line.lineId)
     }
+
+    /** D3: a category row opens its page at this month; a group row still opens Transactions narrowed to its categories. */
+    fun tap(row: ShareRow): ShareTap =
+        if (ui.value.byGroup) ShareTap.Transactions(transactionsFor(row)) else ShareTap.Page(row.id, ui.value.month?.toString())
 
     private fun load(s: Selection): Flow<SpendingUi> {
         val now = live.now()

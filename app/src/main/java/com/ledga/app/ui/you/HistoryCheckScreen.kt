@@ -168,7 +168,7 @@ fun HistoryCheckContent(ui: HistoryCheckUi, actions: HistoryCheckActions, modifi
 
 /** History check (route): Rescan, and the payment sheet with Undo after Hide. */
 @Composable
-fun HistoryCheckScreen(onBack: () -> Unit, vm: HistoryCheckViewModel = hiltViewModel()) {
+fun HistoryCheckScreen(onBack: () -> Unit, onOpenCategory: (String) -> Unit, vm: HistoryCheckViewModel = hiltViewModel()) {
     val ui by vm.ui.collectAsStateWithLifecycle()
     var sheets by rememberSaveable(stateSaver = OpenSheets.Saver) { mutableStateOf(OpenSheets()) }
     val snackbar = remember { SnackbarHostState() }
@@ -197,6 +197,7 @@ fun HistoryCheckScreen(onBack: () -> Unit, vm: HistoryCheckViewModel = hiltViewM
             }
         },
         onChangeCategory = { sheets = sheets.copy(picker = it) },
+        onViewCategory = onOpenCategory,
     )
     CategoryPickerHost(sheets.picker, onDismiss = { sheets = sheets.copy(picker = null) })
 }

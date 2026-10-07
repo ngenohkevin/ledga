@@ -107,7 +107,7 @@ private fun AlertItem(a: AlertUi, today: LocalDate?, modifier: Modifier, onClick
 
 /** Alerts (route): the payment sheet and picker over it, and Undo after Hide in its own snackbar host (R71). */
 @Composable
-fun AlertsScreen(onBack: () -> Unit, vm: AlertsViewModel = hiltViewModel()) {
+fun AlertsScreen(onBack: () -> Unit, onOpenCategory: (String) -> Unit, vm: AlertsViewModel = hiltViewModel()) {
     val ui by vm.ui.collectAsStateWithLifecycle()
     var sheets by rememberSaveable(stateSaver = OpenSheets.Saver) { mutableStateOf(OpenSheets()) }
     val snackbar = remember { SnackbarHostState() }
@@ -126,6 +126,7 @@ fun AlertsScreen(onBack: () -> Unit, vm: AlertsViewModel = hiltViewModel()) {
             }
         },
         onChangeCategory = { sheets = sheets.copy(picker = it) },
+        onViewCategory = onOpenCategory,
     )
     CategoryPickerHost(sheets.picker, onDismiss = { sheets = sheets.copy(picker = null) })
 }

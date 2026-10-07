@@ -33,6 +33,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.After
+import kotlin.test.assertNotNull
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -129,6 +130,7 @@ class ActivityViewModelTest {
         val vm = vm(links)
         vm.ui.first { it.today != null }
         links.open(ActivityLink.Transactions(TransactionFilter(categoryKeys = setOf(Categories.ELECTRICITY), lineId = 2)))
+        vm.take(links.requests.value!!)
         val shown = vm.ui.first { it.filter.lineId == 2L }
         assertEquals(setOf(Categories.ELECTRICITY), shown.filter.categoryKeys)
         assertEquals(ActivitySegment.TRANSACTIONS, vm.segment.value)
@@ -142,8 +144,10 @@ class ActivityViewModelTest {
         val links = ActivityLinks()
         links.open(ActivityLink.Spending) // before Activity's ViewModel exists
         val vm = vm(links)
+        vm.take(links.requests.value!!)
         assertEquals(ActivitySegment.SPENDING, vm.segment.first { it == ActivitySegment.SPENDING })
         links.open(ActivityLink.Transactions(focusSearch = true))
+        vm.take(links.requests.value!!)
         assertEquals(1, vm.ui.first { it.searchFocus == 1 }.searchFocus)
         assertEquals(ActivitySegment.TRANSACTIONS, vm.segment.value)
         vm.searchFocused()
@@ -171,6 +175,21 @@ class ActivityViewModelTest {
         val links = ActivityLinks()
         val vm = vm(links)
         links.open(ActivityLink.People)
+        vm.take(links.requests.value!!)
         assertEquals(ActivitySegment.PEOPLE, vm.segment.first { it == ActivitySegment.PEOPLE })
+    }
+
+    @Test
+    fun `a ViewModel off screen leaves a hand-off for the one on screen (R93)`() = runTest {
+        val links = ActivityLinks()
+        val stray = vm(links)
+        val shown = vm(links)
+        stray.ui.first { it.today != null }
+        links.open(ActivityLink.Transactions(TransactionFilter(categoryKeys = setOf(Categories.ELECTRICITY))))
+        assertNotNull(links.requests.value, "nobody took it by merely existing")
+        shown.take(links.requests.value!!)
+        assertEquals(setOf(Categories.ELECTRICITY), shown.ui.first { it.filter.categoryKeys.isNotEmpty() }.filter.categoryKeys)
+        assertTrue(stray.ui.value.filter.isEverything)
+        assertNull(links.requests.value, "taken once")
     }
 }

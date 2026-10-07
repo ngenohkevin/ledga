@@ -158,4 +158,18 @@ class SpendingViewModelTest {
         val business = vm.ui.first { it.line.lineId == 2L && it.totals.spentCents == 250_000L }
         assertEquals(2L, vm.transactionsFor(business.shares.single()).lineId)
     }
+
+    @Test
+    fun `a category row opens its page at the month shown, and a group row opens Transactions (D3)`() = runTest {
+        ingest(Sms.paybill("TJK4AB12YA", "KPLC PREPAID", "37100000001", "1,000.00", "10/9/26 at 9:00 AM"))
+        val vm = vm()
+        vm.ui.first { it.loaded } // October: nothing yet
+        vm.previous() // September 2026
+        val row = vm.ui.first { it.month == YearMonth.of(2026, 9) && it.shares.isNotEmpty() }.shares.first()
+        assertEquals(ShareTap.Page(Categories.ELECTRICITY, "2026-09"), vm.tap(row))
+        vm.setByGroup(true)
+        val group = vm.ui.first { it.byGroup && it.shares.isNotEmpty() }.shares.first()
+        val tap = vm.tap(group)
+        assertTrue(tap is ShareTap.Transactions && tap.filter.categoryKeys.contains(Categories.ELECTRICITY))
+    }
 }

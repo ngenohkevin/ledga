@@ -27,7 +27,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.shareIn
@@ -111,21 +110,20 @@ class ActivityViewModel @Inject constructor(
         TransactionsUi(q, f, totals, categories, x.lines, x.today, x.hasHistory, x.searchFocus)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), TransactionsUi())
 
-    init {
-        // R61: Home's and Tracker detail's hops, each applied once.
-        viewModelScope.launch {
-            links.requests.filterNotNull().collect { link ->
-                when (link) {
-                    is ActivityLink.Transactions -> {
-                        showTransactions(link.filter)
-                        if (link.focusSearch) searchFocus.update { it + 1 }
-                    }
-                    ActivityLink.Spending -> _segment.value = ActivitySegment.SPENDING
-                    ActivityLink.People -> _segment.value = ActivitySegment.PEOPLE
-                }
-                links.taken(link)
+    /** R61, R93: the hand-off waiting for Activity; the screen takes it while it is shown ([TakeLinks]). */
+    val pending: StateFlow<ActivityLink?> = links.requests
+
+    /** R61: applies [link] once; a newer request stays waiting. */
+    fun take(link: ActivityLink) {
+        when (link) {
+            is ActivityLink.Transactions -> {
+                showTransactions(link.filter)
+                if (link.focusSearch) searchFocus.update { it + 1 }
             }
+            ActivityLink.Spending -> _segment.value = ActivitySegment.SPENDING
+            ActivityLink.People -> _segment.value = ActivitySegment.PEOPLE
         }
+        links.taken(link)
     }
 
     fun select(segment: ActivitySegment) {

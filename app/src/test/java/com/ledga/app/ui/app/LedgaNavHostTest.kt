@@ -45,16 +45,18 @@ class LedgaNavHostTest {
 
         @Composable override fun Home(nav: HomeNav) = Column {
             Text("Home screen")
-            Button(onClick = { nav.openTracker("electricity") }) { Text("Home tile") }
+            Button(onClick = { nav.openCategory("electricity") }) { Text("Home tile") }
+            Button(onClick = { nav.openCategory("fuel") }) { Text("Home view category") }
             Button(onClick = nav.openActivity) { Text("Home search") }
             Button(onClick = nav.openAlerts) { Text("Home bell") }
         }
 
-        @Composable override fun Activity() = Column {
+        @Composable override fun Activity(openCategory: (String, String?) -> Unit) = Column {
             val probe = viewModel { LinkProbe(links) }
             val showing by probe.showing.collectAsState()
             Text("Activity screen")
             Text("Activity showing $showing")
+            Button(onClick = { openCategory("groceries", "2026-09") }) { Text("Spending row") }
         }
 
         @Composable override fun Categories(onOpen: (String) -> Unit) = Column {
@@ -92,7 +94,10 @@ class LedgaNavHostTest {
 
         @Composable override fun Unreadable(onBack: () -> Unit) = Text("Unreadable screen")
 
-        @Composable override fun HistoryCheck(onBack: () -> Unit) = Text("History check screen")
+        @Composable override fun HistoryCheck(onBack: () -> Unit, onOpenCategory: (String) -> Unit) = Column {
+            Text("History check screen")
+            Button(onClick = { onOpenCategory("fuel") }) { Text("History view category") }
+        }
 
         @Composable override fun Licences(onBack: () -> Unit, onOpen: (String) -> Unit) = Column {
             Text("Licences screen")
@@ -101,7 +106,7 @@ class LedgaNavHostTest {
 
         @Composable override fun Licence(asset: String, onBack: () -> Unit) = Text("Licence $asset")
 
-        @Composable override fun Alerts(onBack: () -> Unit) = Column {
+        @Composable override fun Alerts(onBack: () -> Unit, onOpenCategory: (String) -> Unit) = Column {
             Text("Alerts screen")
             Button(onClick = onBack) { Text("Alerts back") }
         }
@@ -264,5 +269,42 @@ class LedgaNavHostTest {
         tap("Home tile")
         tap("See all")
         compose.onNodeWithText("Activity showing transactions electricity").assertIsDisplayed()
+    }
+
+    @Test
+    fun `a Spending row opens the page, and Back returns to Spending (D3)`() {
+        show()
+        tap("Activity")
+        tap("Spending row")
+        compose.onNodeWithText("Category page").assertIsDisplayed()
+        compose.onNodeWithText("Categories").assertDoesNotExist() // no bottom bar on a pushed screen
+        back()
+        compose.onNodeWithText("Activity screen").assertIsDisplayed()
+    }
+
+    @Test
+    fun `See all from a page opened in Activity returns to Activity's root (R90)`() {
+        show()
+        tap("Activity")
+        tap("Spending row")
+        tap("See all")
+        compose.onNodeWithText("Activity showing transactions electricity").assertIsDisplayed()
+        back()
+        compose.onNodeWithText("Home screen").assertIsDisplayed()
+    }
+
+    @Test
+    fun `a payment's View opens its category over the tab it was on`() {
+        show()
+        tap("Home view category")
+        compose.onNodeWithText("Category page").assertIsDisplayed()
+        back()
+        compose.onNodeWithText("Home screen").assertIsDisplayed()
+        tap("You")
+        tap("You history")
+        tap("History view category")
+        compose.onNodeWithText("Category page").assertIsDisplayed()
+        back()
+        compose.onNodeWithText("History check screen").assertIsDisplayed()
     }
 }

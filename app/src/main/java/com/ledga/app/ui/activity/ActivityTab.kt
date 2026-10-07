@@ -124,7 +124,8 @@ private fun FilterButton(count: Int, onClick: () -> Unit, modifier: Modifier = M
  * offers Undo in a snackbar (spec §10.4).
  */
 @Composable
-fun ActivityTab(vm: ActivityViewModel = hiltViewModel()) {
+fun ActivityTab(openCategory: (String, String?) -> Unit, vm: ActivityViewModel = hiltViewModel()) {
+    TakeLinks(vm.pending, vm::take)
     val segment by vm.segment.collectAsStateWithLifecycle()
     val ui by vm.ui.collectAsStateWithLifecycle()
     val items = vm.items.collectAsLazyPagingItems()
@@ -158,7 +159,12 @@ fun ActivityTab(vm: ActivityViewModel = hiltViewModel()) {
                             onNext = spending::next,
                             onSelect = spending::select,
                             onByGroup = spending::setByGroup,
-                            onShare = { vm.showTransactions(spending.transactionsFor(it)) },
+                            onShare = { row ->
+                                when (val tap = spending.tap(row)) {
+                                    is ShareTap.Page -> openCategory(tap.categoryKey, tap.month)
+                                    is ShareTap.Transactions -> vm.showTransactions(tap.filter)
+                                }
+                            },
                             onLine = spending::selectLine,
                         ),
                     )
@@ -197,6 +203,7 @@ fun ActivityTab(vm: ActivityViewModel = hiltViewModel()) {
             }
         },
         onChangeCategory = { sheets = sheets.copy(picker = it) },
+        onViewCategory = { openCategory(it, null) },
     )
     CategoryPickerHost(sheets.picker, onDismiss = { sheets = sheets.copy(picker = null) })
     // The sheet's custom range starts from today (R70); on the first frame, before the date is known, it waits.

@@ -157,7 +157,8 @@ internal data class HomeSheets(val payment: String? = null, val picker: String? 
 data class HomeNav(
     val openActivity: () -> Unit = {},
     val openTrackers: () -> Unit = {},
-    val openTracker: (String) -> Unit = {},
+    /** A category's page: a tracker tile, a payment's View (4e D3). */
+    val openCategory: (String) -> Unit = {},
     val openYou: () -> Unit = {},
     val openAlerts: () -> Unit = {},
 )
@@ -202,7 +203,7 @@ fun HomeRoute(nav: HomeNav, vm: HomeViewModel = hiltViewModel()) {
             vm.openSpending()
             nav.openActivity()
         },
-        onTracker = nav.openTracker,
+        onTracker = nav.openCategory,
         onAllTrackers = nav.openTrackers,
         onOpenTx = { sheets = sheets.copy(payment = it) },
         onPickCategory = { sheets = sheets.copy(picker = it) },
@@ -228,6 +229,7 @@ fun HomeRoute(nav: HomeNav, vm: HomeViewModel = hiltViewModel()) {
             }
         },
         onChangeCategory = { sheets = sheets.copy(picker = it) },
+        onViewCategory = nav.openCategory,
     )
     CategoryPickerHost(sheets.picker, onDismiss = { sheets = sheets.copy(picker = null) })
 }

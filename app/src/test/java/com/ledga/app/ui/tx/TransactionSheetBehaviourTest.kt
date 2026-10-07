@@ -25,6 +25,8 @@ import com.ledga.core.model.TxKind
 import java.time.Instant
 import java.time.LocalDate
 import kotlin.test.assertEquals
+import com.ledga.app.data.room.CategoryOrigin
+import com.ledga.app.data.room.CategoryRow
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -117,5 +119,26 @@ class TransactionSheetBehaviourTest {
         val layout = mutableListOf<TextLayoutResult>().also { node.config[SemanticsActions.GetTextLayoutResult].action?.invoke(it) }.single()
         // A system family (Monospace, Default) follows the phone's font setting, which on Samsung can be a script font.
         assertEquals(LedgaType.caption.fontFamily, layout.layoutInput.style.fontFamily)
+    }
+
+    @Test
+    fun `the Category row changes the category, and View opens its page`() {
+        val calls = mutableListOf<String>()
+        val electricity = Categories.seed(Categories.ELECTRICITY)!!.let {
+            CategoryRow(it.key, it.name, it.group, it.icon3d, null, null, true, it.sortOrder, CategoryOrigin.SYSTEM, false)
+        }
+        show(
+            TxSheetState(txRow(), category = electricity, today = today),
+            TxSheetActions(onChangeCategory = { calls += "change" }, onViewCategory = { calls += "view" }),
+        )
+        compose.onNodeWithContentDescription("View Electricity").performClick()
+        compose.onNodeWithText("Category").performClick()
+        assertEquals(listOf("view", "change"), calls)
+    }
+
+    @Test
+    fun `without a page to open, the Category row has no View`() {
+        show(TxSheetState(txRow(), today = today))
+        compose.onNodeWithText("View").assertDoesNotExist()
     }
 }
