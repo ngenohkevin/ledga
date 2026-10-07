@@ -158,6 +158,9 @@ object MetaKeys {
 
     /** Written by Startup when it first sees MIGRATION_5_6's staging tables: this database holds the v1 history. */
     const val MIGRATED_FROM_V1 = "migratedFromV1"
+
+    /** Final review I1: the id of the last restore written ([com.ledga.app.work.RestoreRequest.id]). */
+    const val RESTORE_REQUEST = "restoreRequest"
 }
 
 /** A line's latest stated wallet balance (query result, not a table). */

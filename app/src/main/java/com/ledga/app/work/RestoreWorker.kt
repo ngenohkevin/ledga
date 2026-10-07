@@ -19,8 +19,9 @@ import java.io.File
 import kotlinx.coroutines.CancellationException
 
 /**
- * Spec §12.3, R122: a restore that survives leaving the screen. Only the first attempt keeps the "before restore" copy:
- * a retry would copy half-restored data over it. A file that isn't a backup fails at once with the screen's message.
+ * Spec §12.3, R122: a restore that survives leaving the screen. The "before restore" copy is taken unless this request
+ * was already written (final review I1): a retry never copies restored data over it, and never skips it either. A file
+ * that isn't a backup fails at once with the screen's message.
  */
 @HiltWorker
 class RestoreWorker @AssistedInject constructor(
@@ -37,7 +38,8 @@ class RestoreWorker @AssistedInject constructor(
         val applySettings = inputData.getBoolean(KEY_SETTINGS, false)
         return try {
             val incoming = BackupFiles.read(file)
-            val report = restorer.restore(incoming, mode, decode(inputData.getString(KEY_ANSWERS)), applySettings, saveBefore = runAttemptCount == 0) { done, total ->
+            val requestId = inputData.getString(KEY_ID) ?: id.toString()
+            val report = restorer.restore(incoming, mode, decode(inputData.getString(KEY_ANSWERS)), applySettings, requestId = requestId) { done, total ->
                 setProgress(workDataOf(RebuildWorker.KEY_DONE to done, RebuildWorker.KEY_TOTAL to total))
             }
             // R107: restored notification choices take effect now, not at the next start (onboarding's end does its own).
@@ -70,6 +72,7 @@ class RestoreWorker @AssistedInject constructor(
         const val KEY_ANSWERS = "answers"
         const val KEY_SETTINGS = "settings"
         const val KEY_DELETE = "delete"
+        const val KEY_ID = "id"
         const val KEY_ADDED = "added"
         const val KEY_PAYMENTS = "payments"
         const val KEY_ERROR = "error"
@@ -84,6 +87,7 @@ class RestoreWorker @AssistedInject constructor(
             KEY_ANSWERS to encode(r.answers),
             KEY_SETTINGS to r.applySettings,
             KEY_DELETE to r.deleteAfter,
+            KEY_ID to r.id,
         )
 
         /** "1=5;2=": backup line id = the chosen SIM's subscription id, or nothing for "its own line". */

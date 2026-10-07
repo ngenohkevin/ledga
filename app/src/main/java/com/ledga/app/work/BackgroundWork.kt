@@ -12,6 +12,7 @@ import com.ledga.app.data.settings.Settings
 import java.io.File
 import java.time.Clock
 import java.time.Instant
+import java.util.UUID
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
@@ -73,6 +74,8 @@ data class RestoreRequest(
     val answers: Map<Long, Int?>,
     val applySettings: Boolean,
     val deleteAfter: Boolean,
+    /** Final review I1: tells a retry whether this restore was already written (and its copy already taken). */
+    val id: String = UUID.randomUUID().toString(),
 )
 
 /** A restore's progress (Export & restore, onboarding). [Done.added]: payments the backup added. */

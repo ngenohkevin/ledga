@@ -32,6 +32,7 @@ import com.ledga.core.parse.ParseOutcome
 import com.ledga.core.parse.SmsText
 import java.time.Clock
 import java.time.Instant
+import java.util.UUID
 import kotlinx.coroutines.CancellationException
 
 enum class RestoreMode { MERGE, REPLACE }
@@ -78,12 +79,14 @@ class Restorer(
         mode: RestoreMode,
         answers: Map<Long, Int?>,
         applySettings: Boolean,
-        saveBefore: Boolean = true,
+        requestId: String = UUID.randomUUID().toString(),
         progress: suspend (done: Int, total: Int) -> Unit = { _, _ -> },
     ): RestoreReport {
-        if (saveBefore) snapshots.saveBeforeRestore()
+        // Final review I1: the copy is taken unless this very restore was already written (a retry after the write);
+        // a retry after a failure before the write takes it again from the untouched phone.
+        if (db.metaDao().get(MetaKeys.RESTORE_REQUEST) != requestId) snapshots.saveBeforeRestore()
         val before = db.transactionsDao().countShown()
-        val added = write(incoming, mode, answers)
+        val added = write(incoming, mode, answers, requestId)
         if (applySettings) incoming.data.settings?.let { settings.applyPortable(it) }
         deriver.rebuildAll(progress)
         try {
@@ -97,7 +100,7 @@ class Restorer(
     }
 
     /** Everything but the rebuild, all or nothing. Returns the messages added. */
-    internal suspend fun write(incoming: Incoming, mode: RestoreMode, answers: Map<Long, Int?>): Int = db.withTransaction {
+    internal suspend fun write(incoming: Incoming, mode: RestoreMode, answers: Map<Long, Int?>, requestId: String = UUID.randomUUID().toString()): Int = db.withTransaction {
         val now = clock.instant()
         val sameDevice = sameDevice(incoming)
         if (mode == RestoreMode.REPLACE) wipe()
@@ -111,6 +114,7 @@ class Restorer(
         if (incoming.origin == BackupOrigin.V1) applyV1Choices(incoming.v1Choices, now)
         // R122: a rebuild is owed until rebuildAll records the versions; a start after a crash here sees it.
         db.metaDao().put(MetaRow(MetaKeys.PARSER_VERSION, "0"))
+        db.metaDao().put(MetaRow(MetaKeys.RESTORE_REQUEST, requestId))
         added
     }
 

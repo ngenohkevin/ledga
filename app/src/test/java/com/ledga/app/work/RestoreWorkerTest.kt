@@ -15,6 +15,8 @@ import com.ledga.app.data.backup.SnapshotStore
 import com.ledga.app.data.derive.Deriver
 import com.ledga.app.data.ingest.RawSms
 import com.ledga.app.data.ingest.SmsIngestor
+import com.ledga.app.data.room.MetaKeys
+import com.ledga.app.data.room.MetaRow
 import com.ledga.app.data.room.SmsSource
 import com.ledga.app.data.settings.SettingsStore
 import com.ledga.app.testing.FakeBackgroundWork
@@ -48,8 +50,9 @@ class RestoreWorkerTest {
     private val settings = SettingsStore(FakePrefsStore())
     private val work = FakeBackgroundWork()
     private val backupDir by lazy { tmp.newFolder("backup") }
+    private val snapshots by lazy { testSnapshots(db, backupDir, settings, clock) }
     private val restorer by lazy {
-        Restorer(db, Deriver(db, clock), settings, testSnapshots(db, backupDir, settings, clock), FakeSims(), DeviceId { "this-phone" }, clock)
+        Restorer(db, Deriver(db, clock), settings, snapshots, FakeSims(), DeviceId { "this-phone" }, clock)
     }
     private val factory = object : WorkerFactory() {
         override fun createWorker(appContext: Context, workerClassName: String, workerParameters: WorkerParameters): ListenableWorker? =
@@ -95,11 +98,26 @@ class RestoreWorkerTest {
         assertEquals(0, db.smsDao().count())
     }
 
+    private suspend fun beforeRestoreBodies(): List<String>? = SnapshotStore(backupDir).let { it.read(it.beforeRestore) }?.sms?.map { it.body }
+
     @Test
-    fun `a retry keeps the first before-restore copy`() = runTest {
+    fun `a retry before the restore was written takes the copy again (final review I1)`() = runTest {
+        // The first attempt died while taking the copy: the phone is untouched, so the retry takes it now.
         SmsIngestor(db, Deriver(db, clock)).ingest(RawSms("MPESA", Sms.SEND, Sms.at("2026-03-21T10:30:00Z"), null, null, SmsSource.INBOX))
-        run(RestoreRequest(exported(), RestoreMode.MERGE, emptyMap(), applySettings = false, deleteAfter = false), attempt = 1)
-        assertFalse(SnapshotStore(backupDir).beforeRestore.exists(), "the first attempt took it; a retry would copy half-restored data")
+        run(RestoreRequest(exported(), RestoreMode.REPLACE, emptyMap(), applySettings = false, deleteAfter = false, id = "r2"), attempt = 1)
+        assertEquals(listOf(Sms.SEND), beforeRestoreBodies())
+    }
+
+    @Test
+    fun `a retry after the restore was written never takes the copy again (final review I1)`() = runTest {
+        // The first attempt took the copy and wrote the restore, then died during the rebuild: the copy must stay the
+        // phone as it was, not what the restore brought.
+        SmsIngestor(db, Deriver(db, clock)).ingest(RawSms("MPESA", Sms.SEND, Sms.at("2026-03-21T10:30:00Z"), null, null, SmsSource.INBOX))
+        snapshots.saveBeforeRestore()
+        db.metaDao().put(MetaRow(MetaKeys.RESTORE_REQUEST, "r1"))
+        SmsIngestor(db, Deriver(db, clock)).ingest(RawSms("MPESA", Sms.BANK_APP, Sms.at("2026-04-02T06:15:00Z"), null, null, SmsSource.IMPORT))
+        run(RestoreRequest(exported(), RestoreMode.MERGE, emptyMap(), applySettings = false, deleteAfter = false, id = "r1"), attempt = 1)
+        assertEquals(listOf(Sms.SEND), beforeRestoreBodies())
     }
 
     @Test
