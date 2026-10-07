@@ -21,6 +21,10 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import com.ledga.app.work.ImportProgress
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 /**
  * R79: History check (spec §15.1). Each line's balances must follow: previous − amount (a paybill, no fee here) = stated.
@@ -96,5 +100,22 @@ class HistoryCheckViewModelTest {
         assertEquals(listOf(LineCheckUi("Personal ··11", 1, 0), LineCheckUi("Business ··78", 1, 1)), ui.lines)
         vm.rescan()
         assertEquals(listOf("importInbox"), work.calls)
+    }
+
+    @Test
+    fun `a rescan started here checks the history again when it finishes`() = runTest {
+        db.transactionsDao().upsertAll(listOf(pay("TJK4AB12HA", "2026-10-01T06:00:00Z", 100_000, 500_000), pay("TJK4AB12HC", "2026-10-03T06:00:00Z", 50_000, 300_000)))
+        val vm = vm()
+        assertEquals(1, vm.ui.first { it.loaded }.breaks.size)
+        // Keep the screen's state live while the test waits in real time (Robolectric's coroutine timeouts never fire).
+        val watching = CoroutineScope(Dispatchers.Main).launch { vm.ui.collect { } }
+        vm.rescan()
+        db.transactionsDao().upsertAll(listOf(pay("TJK4AB12HB", "2026-10-02T06:00:00Z", 150_000, 350_000))) // what the rescan found
+        work.inboxImport.value = ImportProgress.Running(1, 2)
+        work.inboxImport.value = ImportProgress.Done(found = 2, inserted = 1)
+        var tries = 0
+        while (vm.ui.value.breaks.isNotEmpty() && tries++ < 100) Thread.sleep(20)
+        watching.cancel()
+        assertTrue(vm.ui.value.breaks.isEmpty(), "the history was checked again once the rescan finished")
     }
 }

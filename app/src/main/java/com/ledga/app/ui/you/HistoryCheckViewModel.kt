@@ -11,6 +11,7 @@ import com.ledga.app.time.LiveClock
 import com.ledga.app.ui.design.format.AmountFormat
 import com.ledga.app.ui.tx.TxText
 import com.ledga.app.work.BackgroundWork
+import com.ledga.app.work.ImportProgress
 import com.ledga.core.derive.BalanceChain
 import com.ledga.core.money.Decimals
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -63,8 +64,25 @@ class HistoryCheckViewModel @Inject constructor(
 ) : ViewModel() {
     private val result = MutableStateFlow<HistoryCheckUi?>(null)
 
+    /** A Rescan tapped here, until its scan has been seen running and then finishing: the check runs again then. */
+    private var rescanning = false
+    private var sawRunning = false
+
     init {
         check()
+        viewModelScope.launch {
+            work.inboxImport.collect { p ->
+                if (!rescanning) return@collect
+                when (p) {
+                    is ImportProgress.Running -> sawRunning = true
+                    is ImportProgress.Done, ImportProgress.Failed -> if (sawRunning) {
+                        rescanning = false
+                        check()
+                    }
+                    ImportProgress.Idle -> Unit
+                }
+            }
+        }
     }
 
     fun check() {
@@ -89,8 +107,12 @@ class HistoryCheckViewModel @Inject constructor(
         r.copy(categories = cats.associateBy { it.key }, today = today)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HistoryCheckUi())
 
-    /** A break is most often a message Ledga never saw: the whole inbox again (spec §9.1). */
-    fun rescan() = work.importInbox()
+    /** A break is most often a message Ledga never saw: the whole inbox again (spec §9.1), then the check again. */
+    fun rescan() {
+        rescanning = true
+        sawRunning = false
+        work.importInbox()
+    }
 
     fun undoHide(code: String): Job = viewModelScope.launch { edits.setHidden(code, false) }
 }

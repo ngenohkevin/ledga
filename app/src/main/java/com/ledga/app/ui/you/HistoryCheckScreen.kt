@@ -168,7 +168,7 @@ fun HistoryCheckScreen(onBack: () -> Unit, vm: HistoryCheckViewModel = hiltViewM
                 onBack = onBack,
                 onRescan = {
                     vm.rescan()
-                    scope.launch { snackbar.showSnackbar("Rescanning your inbox. Check again once it's done.", duration = SnackbarDuration.Short) }
+                    scope.launch { snackbar.showSnackbar("Rescanning your inbox. The check runs again when it's done.", duration = SnackbarDuration.Short) }
                 },
                 onOpenTx = { sheets = sheets.copy(payment = it) },
             ),
