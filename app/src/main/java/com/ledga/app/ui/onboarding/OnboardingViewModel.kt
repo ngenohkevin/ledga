@@ -130,6 +130,9 @@ class OnboardingViewModel @Inject constructor(
 
     private suspend fun finish() {
         settings.setOnboarded()
+        // R107, R108: the 6-hourly check and the notifications start now, not at the next start.
+        work.keepSyncing()
+        work.scheduleNotifications(settings.current(), replace = false)
         _state.update { it.copy(finished = true) }
     }
 

@@ -33,7 +33,8 @@ fun interface SmsAccess {
  * - after the migration: the import → full rescan → rebuild chain (and v1's leftovers are cleared, R31);
  * - after a parser or derivation version change: a rebuild;
  * - otherwise: deletes the pre-v6 copy once the migration's work is done (only with proof the migration happened here),
- *   and catches up on missed SMS (or runs the migration's full rescan if it never completed).
+ *   and catches up on missed SMS (or runs the migration's full rescan if it never completed);
+ * - once onboarded: keeps the 6-hourly check and the notification schedule queued (KEEP, R107, R108).
  * `LedgaApp` has already taken the pre-v6 snapshot. Never throws: a failure becomes [StartupState.Failed].
  */
 class Startup(
@@ -78,6 +79,11 @@ class Startup(
             snapshot.exists() -> snapshot.delete()
         }
         val s = runCatching { settings.current() }.getOrDefault(Settings())
+        if (s.onboarded) {
+            // R107, R108: kept as they are (KEEP), so a start never pushes a queued alert back.
+            work.keepSyncing()
+            work.scheduleNotifications(s, replace = false)
+        }
         if (s.onboarded && sms.granted()) {
             runCatching { lines.syncActive() }
             when {

@@ -156,4 +156,17 @@ class StartupTest {
         assertTrue(snapshot.exists(), "the pre-v6 copy is the user's history: never delete it here")
         db.close()
     }
+
+    @Test
+    fun `an onboarded start keeps the 6-hourly check and each switched-on notification queued (R107, R108)`() = runTest {
+        settings.setOnboarded()
+        startup(TestDb.inMemory()).run()
+        assertEquals(listOf("keepSyncing", "DAILY on replace=false", "WEEKLY on replace=false", "FULIZA on replace=false"), work.scheduled)
+    }
+
+    @Test
+    fun `before onboarding nothing is scheduled`() = runTest {
+        startup(TestDb.inMemory()).run()
+        assertEquals(emptyList(), work.scheduled)
+    }
 }

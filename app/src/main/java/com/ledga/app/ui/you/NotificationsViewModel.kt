@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.ledga.app.data.settings.Settings
 import com.ledga.app.data.settings.SettingsStore
 import com.ledga.app.ui.onboarding.NotificationAccess
+import com.ledga.app.work.BackgroundWork
+import com.ledga.app.work.Scheduled
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,9 +25,16 @@ data class NotificationsUi(
     val toSettings: Boolean = false,
 )
 
-/** You → Notifications (spec §11, R75). Phase 5 reads what this saves. */
+/**
+ * You → Notifications (spec §11, R75): saves the switches, the time and the amount, and moves the alert each one
+ * changes (R107).
+ */
 @HiltViewModel
-class NotificationsViewModel @Inject constructor(private val settings: SettingsStore, private val access: NotificationAccess) : ViewModel() {
+class NotificationsViewModel @Inject constructor(
+    private val settings: SettingsStore,
+    private val access: NotificationAccess,
+    private val work: BackgroundWork,
+) : ViewModel() {
     private val ask = MutableStateFlow(access.shouldAsk())
     private val enabled = MutableStateFlow(access.enabled())
     private val blocked = MutableStateFlow(false)
@@ -46,19 +55,24 @@ class NotificationsViewModel @Inject constructor(private val settings: SettingsS
         if (!granted) blocked.value = !showRationale
     }
 
-    fun setDaily(on: Boolean) = save { settings.setNotifyDaily(on) }
+    fun setDaily(on: Boolean) = save(Scheduled.DAILY) { settings.setNotifyDaily(on) }
 
-    fun setDailyMinute(minute: Int) = save { settings.setDailySummaryMinute(minute) }
+    fun setDailyMinute(minute: Int) = save(Scheduled.DAILY) { settings.setDailySummaryMinute(minute) }
 
-    fun setWeekly(on: Boolean) = save { settings.setNotifyWeekly(on) }
+    fun setWeekly(on: Boolean) = save(Scheduled.WEEKLY) { settings.setNotifyWeekly(on) }
 
-    fun setLarge(on: Boolean) = save { settings.setNotifyLarge(on) }
+    /** Large payments are read as each payment arrives: nothing to move. */
+    fun setLarge(on: Boolean) = save(null) { settings.setNotifyLarge(on) }
 
-    fun setThreshold(cents: Long) = save { settings.setLargeThreshold(cents) }
+    fun setThreshold(cents: Long) = save(null) { settings.setLargeThreshold(cents) }
 
-    fun setFuliza(on: Boolean) = save { settings.setNotifyFuliza(on) }
+    fun setFuliza(on: Boolean) = save(Scheduled.FULIZA) { settings.setNotifyFuliza(on) }
 
-    private fun save(block: suspend () -> Unit) {
-        viewModelScope.launch { block() }
+    /** R107: after saving, the kind that changed moves to its new time, or stops. */
+    private fun save(kind: Scheduled?, block: suspend () -> Unit) {
+        viewModelScope.launch {
+            block()
+            kind?.let { work.schedule(it, settings.current(), replace = true) }
+        }
     }
 }

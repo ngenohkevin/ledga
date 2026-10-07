@@ -204,4 +204,15 @@ class BackgroundWorkTest {
             .schedule(Scheduled.FULIZA, Settings(), replace = false)
         assertEquals((13 * 60 + 30) * 60_000L, wm.getWorkInfosForUniqueWork("ledga-fuliza").get().single().initialDelayMillis)
     }
+
+    @Test
+    fun `the 6-hourly check is queued once, and kept (R108)`() {
+        WorkManagerBackgroundWork(wm).keepSyncing()
+        val first = wm.getWorkInfosForUniqueWork(SyncWorker.UNIQUE_NAME).get().single()
+        assertEquals(WorkInfo.State.ENQUEUED, first.state)
+        assertEquals(6 * 60 * 60_000L, first.periodicityInfo?.repeatIntervalMillis)
+        assertEquals(6 * 60 * 60_000L, first.initialDelayMillis, "start and onboarding run their own scan: the first check waits")
+        WorkManagerBackgroundWork(wm).keepSyncing()
+        assertEquals(listOf(first.id), wm.getWorkInfosForUniqueWork(SyncWorker.UNIQUE_NAME).get().map { it.id })
+    }
 }

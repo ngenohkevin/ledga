@@ -1,7 +1,9 @@
 package com.ledga.app.work
 
+import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import com.ledga.app.data.capture.ScanMode
@@ -84,6 +86,9 @@ interface BackgroundWork {
     /** Every scheduled kind: app start and the end of onboarding (KEEP), each following its switch. */
     fun scheduleNotifications(settings: Settings, replace: Boolean) = Scheduled.entries.forEach { schedule(it, settings, replace) }
 
+    /** Spec §9.1, R108: the 6-hourly check (SIMs, catch-up, alert pruning). A queued one is kept. */
+    fun keepSyncing()
+
     /** True while the post-migration chain has a step queued or running (its own rescan and rebuild are coming). */
     suspend fun migrationChainRunning(): Boolean
 
@@ -128,6 +133,12 @@ class WorkManagerBackgroundWork(private val wm: WorkManager, private val clock: 
         val now = clock.instant()
         val policy = if (replace) ExistingWorkPolicy.REPLACE else ExistingWorkPolicy.KEEP
         wm.enqueueUniqueWork(kind.uniqueName, policy, ScheduledAlertWorker.request(kind, kind.next(now, settings), now))
+    }
+
+    override fun keepSyncing() {
+        // The first run waits a period: start and onboarding have just run their own scan.
+        val request = PeriodicWorkRequestBuilder<SyncWorker>(SyncWorker.EVERY).setInitialDelay(SyncWorker.EVERY).build()
+        wm.enqueueUniquePeriodicWork(SyncWorker.UNIQUE_NAME, ExistingPeriodicWorkPolicy.KEEP, request)
     }
 
     override suspend fun migrationChainRunning(): Boolean =

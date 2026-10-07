@@ -1,6 +1,7 @@
 package com.ledga.app.ui.you
 
 import com.ledga.app.data.settings.SettingsStore
+import com.ledga.app.testing.FakeBackgroundWork
 import com.ledga.app.testing.FakePrefsStore
 import com.ledga.app.testing.MainDispatcherRule
 import com.ledga.app.testing.OFF_IN_SETTINGS
@@ -23,8 +24,9 @@ class NotificationsViewModelTest {
     private val settings = SettingsStore(FakePrefsStore())
     private var ask = false
     private val vms = TestViewModels()
+    private val work = FakeBackgroundWork()
 
-    private fun vm() = vms.track(NotificationsViewModel(settings, NotificationAccess { ask }))
+    private fun vm() = vms.track(NotificationsViewModel(settings, NotificationAccess { ask }, work))
 
     @After fun close() = vms.stopAll()
 
@@ -56,9 +58,21 @@ class NotificationsViewModelTest {
 
     @Test
     fun `with notifications off in Android's settings the banner shows, and Turn on opens the settings (R109)`() = runTest {
-        val vm = vms.track(NotificationsViewModel(settings, OFF_IN_SETTINGS))
+        val vm = vms.track(NotificationsViewModel(settings, OFF_IN_SETTINGS, work))
         val ui = vm.ui.first { it.loaded }
         assertFalse(ui.allowed)
         assertTrue(ui.toSettings)
+    }
+
+    @Test
+    fun `a changed switch or time moves its own notification and nothing else (R107)`() = runTest {
+        val vm = vm()
+        vm.setDailyMinute(19 * 60)
+        vm.setWeekly(false)
+        vm.setFuliza(false)
+        vm.setLarge(true)
+        vm.setThreshold(750_000)
+        vm.ui.first { it.settings.largeThresholdCents == 750_000L }
+        assertEquals(listOf("DAILY on replace=true", "WEEKLY off replace=true", "FULIZA off replace=true"), work.scheduled)
     }
 }

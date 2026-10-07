@@ -13,7 +13,7 @@ enum class TextSize(val scale: Float?) {
 
 /**
  * Every v2 setting (spec §8 step 4, §11, refinement R30). The defaults are a fresh install's; an upgraded phone's values
- * arrive through [V1SettingsMigration]. Phase 5 reads the notification fields; Phase 6 adds the update channel.
+ * arrive through [V1SettingsMigration]. 5a's workers read the notification fields; Phase 6 adds the update channel.
  */
 data class Settings(
     val appearance: Appearance = Appearance.SYSTEM,

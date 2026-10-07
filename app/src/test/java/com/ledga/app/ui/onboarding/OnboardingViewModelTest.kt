@@ -118,4 +118,12 @@ class OnboardingViewModelTest {
         vm.state.first { it.finished }
         assertTrue(settings.current().onboarded)
     }
+
+    @Test
+    fun `finishing onboarding starts the 6-hourly check and each switched-on notification (R107, R108)`() = runTest {
+        val vm = vm()
+        vm.done()
+        vm.state.first { it.finished }
+        assertEquals(listOf("keepSyncing", "DAILY on replace=false", "WEEKLY on replace=false", "FULIZA on replace=false"), work.scheduled)
+    }
 }

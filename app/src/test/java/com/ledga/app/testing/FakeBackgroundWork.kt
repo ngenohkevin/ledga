@@ -43,4 +43,8 @@ class FakeBackgroundWork : BackgroundWork {
     override fun schedule(kind: Scheduled, settings: Settings, replace: Boolean) {
         scheduled += "${kind.name} ${if (kind.isOn(settings)) "on" else "off"} replace=$replace"
     }
+
+    override fun keepSyncing() {
+        scheduled += "keepSyncing"
+    }
 }
