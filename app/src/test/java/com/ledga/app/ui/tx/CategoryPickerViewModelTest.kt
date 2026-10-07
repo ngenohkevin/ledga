@@ -135,9 +135,12 @@ class CategoryPickerViewModelTest {
         ingest(academy1024, academy1024Again, academy2048)
         val vm = vm()
         vm.open("TJK4AB12JA", session = 107)
-        vm.state.first { it.loaded }
+        // The opening count (for the payment's own category) lands first: the race a full run sometimes hit.
+        vm.state.first { it.loaded && it.counts.fromName == 3 }
         vm.select(Categories.SCHOOL)
-        val s = vm.state.first { it.selected == Categories.SCHOOL && it.counts.forAccount == 2 }
+        // Until School's own count lands, the frame still carries the old category's counts (3 and 2 here too) with
+        // "apply to all" off; School's count turns it on.
+        val s = vm.state.first { it.selected == Categories.SCHOOL && it.counts.forAccount == 2 && it.applyAll }
         assertEquals(3, s.counts.fromName)
         assertEquals("ADM 1024", s.account)
         assertTrue(s.showAccountOnly)
