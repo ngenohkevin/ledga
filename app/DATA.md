@@ -178,12 +178,14 @@
   when: never before onboarding is done or while `sms` is empty (R119), at most hourly when Ledga leaves the screen
   (`MainActivity.onStop` → `ledga-snapshot`, R130) and in the 6-hourly check (R131), and at once after a rebuild or a
   restore. A snapshot an install didn't restore becomes `ledga-snapshot-earlier.json.gz` when onboarding ends (R120);
-  every restore first writes `ledga-before-restore.json.gz` (R121). Auto Backup and device transfer include only
+  every restore first writes `ledga-before-restore.json.gz` (R121), unless a retry finds its own request already written
+  (meta `restoreRequest`, final review I1). A copy on the phone is restored from a copy of it in no-backup storage: a
+  restore rewrites "Before your last restore" first (C1). Auto Backup and device transfer include only
   `files/backup/` (`backup_rules.xml`, `data_extraction_rules.xml`).
 - **Export** (`Exporter`): a zip of `manifest.json`, `data.json` and `transactions.csv` (R124). The share copy lives in the
   cache's `exports/`; FileProvider path `exports/`.
 - **Restore** (`BackupFiles` → `LineMatching` → `Restorer`, run by `RestoreWorker` as `ledga-restore`, R122). Reads a
-  `.ledga` file, a snapshot or a v1 export zip by its first bytes. Lines: same phone by SIM id, else by number, else one
+  `.ledga` file, a snapshot or a v1 export zip by its first bytes; a backup with no messages is refused (I2). Lines: same phone by SIM id, else by number, else one
   question per line (R115). Merge fills gaps and never overrides this phone's choices; Replace clears this phone first and
   resets the built-ins (`RestoreDao`). The write is one transaction that clears the stored parser version, so a restore
   cut short is rebuilt at the next start; then `rebuildAll` and a fresh snapshot. `Restorer` is the only writer of `sms`
@@ -192,7 +194,9 @@
 ## Lines (Phase 5b)
 
 - **Placement** (R116, R128): `LinePlacements.propose()` runs `:core` `LinePlacer` over every payment (hidden ones too)
-  and this phone's lines; `TransactionEdits.placeOnLines` writes `overrides.lineId` only for payments still not on a line
+  and this phone's lines. It keeps a line's balance only while it is certain: a gap (a Fuliza companion with no
+  balance), a payment it couldn't place, or one that fits no line makes the lines it could belong to unknown until
+  their next anchor (final review C2), so it never guesses. `TransactionEdits.placeOnLines` writes `overrides.lineId` only for payments still not on a line
   and returns them for Undo (`unplace`, which drops override rows left empty). A date range is whole Nairobi days, both
   ends. Lines reconciliation itself is 4a's (`LinesRepository.syncActive`, at start and in the 6-hourly check).
 
