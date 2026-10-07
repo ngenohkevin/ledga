@@ -135,6 +135,36 @@
   any category (D6, R91); `resetCategoryLooks` (built-in only) writes the seed's icon and clears both colours
   (`CategoriesDao.resetLooks`). Archive stays for your own categories. No schema change.
 
+## Notifications (Phase 5a)
+
+- **Alerts.** `Notifier` is the only writer of `alerts` (spec §7.1, §11). `send(alert)` inserts the row under its key
+  first (`AlertsDao.insertIgnore`), then shows it when Android allows (`PhoneNotifications.allowed`: Android's switch,
+  Android 13's permission and the channel's switch). A key already logged posts nothing, ever. An alert Android blocks is
+  still logged (R101). `prune()` drops alerts older than 60 days (`SyncWorker`).
+  - Keys: `large:<code>`, `fuliza-draw:<code>`, `fuliza-due:<lineId|none>:<due date>:<3d|0d>`, `daily:<date>`,
+    `weekly:<Monday>`. What each alert says, its key and its tap come only from `AlertWords` (R111).
+- **Channels (R102).** `NotifyChannels.ensure` at every start: `spending_summaries` (Summaries) and `large_transactions`
+  (Large payments) keep v1's ids; `fuliza` is new; v1's `budget_alerts` is deleted. Updates join in Phase 6.
+- **Live payments (spec §7.2 step 4).** `SmsReceiver` → `IncomingSms.store`: the line, `SmsIngestor`, then
+  `BackgroundWork.alertsFor(newCodes)`, a `PaymentAlertWorker` job 30 s later (R103) that runs `PaymentAlerts.check`.
+  Large = a non-reversed, non-hidden `SPEND` whose amount (no fees) reaches the threshold; a Fuliza draw = any payment
+  Fuliza covered (R104); only while the payment is under 2 hours old. **Inbox scans, imports, rebuilds and the 6-hourly
+  check never alert** (spec §11).
+- **Scheduled alerts (R105–R107).** `Scheduled` names the kinds and their unique work: `ledga-daily` (the person's time),
+  `ledga-weekly` (Sunday 7 PM), `ledga-fuliza` (9 AM), all Nairobi time, strictly after now (`AlertTimes`). Each is
+  one-time work that re-reads its switch, writes, and queues its own next run with REPLACE, last.
+  - `BackgroundWork.schedule(kind, settings, replace)` cancels a kind switched off. App start and the end of onboarding
+    pass `replace = false` (KEEP: a start never pushes a queued alert back); You → Notifications replaces only the kind
+    it changed.
+  - Summaries read the `ledger` view over all lines (`LedgerQueries.spentIn`, `biggest`): Spent includes fees, and the
+    count is the payments that added to it. Nothing spent, or a run more than 12 hours late, writes nothing (R106).
+  - Fuliza reminders: `FulizaReminders.due`, each line's status (the lines' own readings when any reading has a line),
+    "3d" once while 1–3 days are left, "0d" on the day, only while something is owed (R105).
+- **The 6-hourly check (R108).** `ledga-sync` (periodic, KEEP), queued once onboarded: `LinesRepository.syncActive`,
+  an inbox catch-up (with SMS access), and `Notifier.prune`.
+- **WorkManager names (5a).** `ledga-daily`, `ledga-weekly`, `ledga-fuliza`, `ledga-sync`, and untagged
+  `PaymentAlertWorker` jobs. Never reuse v1's names (`V1Leftovers`).
+
 ## Phase 5 acceptance step (from the 2026-10-05 Phase 1 review)
 
 The v1 export can't prove inbox-wide coverage: v1 never stored the messages its parser rejected. So after the first full inbox rescan **on the owner's phone**, record:
@@ -142,3 +172,5 @@ The v1 export can't prove inbox-wide coverage: v1 never stored the messages its 
 - the History-check (`BalanceChain`) breaks, compared against the export audit (`LegacyMigrationAuditTest`).
 
 Investigate any rise before shipping a beta.
+
+R99: it runs in 5b's S26 check, after bulk line assignment, so the History check covers every payment.

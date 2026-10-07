@@ -162,6 +162,28 @@ Everything lives in `com.ledga.app.ui.design`. Until Phase 4 uses it, R8 strips 
   on the page itself). See all pops back to Activity's root when the page was opened inside Activity and hops from any
   other tab. Activity takes a hand-off only while its screen is started (`TakeLinks`).
 
+## Notifications (Phase 5a)
+
+- **"Allowed" (R109).** `NotificationAccess.enabled()` is Android's own switch on every version
+  (`areNotificationsEnabled`, which also covers Android 13's permission); `shouldAsk()` only means Android's dialog can
+  still ask (13+). Home's banner, You's row and You → Notifications read `enabled()`. "Turn on" opens the dialog only
+  while it can ask, else Android's notification settings (Android 8–12, a refusal for good, switched off there).
+- **Taps (R100).** A notification carries its alert key and a `NotificationTap` (`NotificationIntents`). `MainActivity`
+  reads it in `onCreate` (first launch only) and `onNewIntent`, clears it (a rotation never reopens it), and hands it to
+  `NotificationOpens`, which marks the alert read and names an `OpenDestination`:
+  - a payment → `AlertsRoute(openCode)` with the payment's sheet (Alerts alone when it is hidden or gone); a second
+    payment's tap replaces an Alerts already on top;
+  - a Fuliza reminder → Home, whose `HomeRoute` takes `HomeLinks`' request with `TakeRequest` and opens its Fuliza sheet;
+  - a summary → Activity › Transactions on its days with every flow (`ActivityLinks`), so the day header's Out equals it.
+  `LedgaNavHost` goes there once (`onOpened`); during onboarding the tap is dropped. `LedgaNavHostTest` drives each.
+- **Words and times** come only from `AlertWords` and `AlertTimes`; no screen formats an alert's text.
+- **Ledga dev only (R113).** `adb shell am broadcast -a com.ledga.app.DEBUG_ALERT -n
+  com.ledga.app.dev/com.ledga.app.debug.DebugAlertReceiver --es kind <large|draw|due|daily|weekly|clear>` posts a sample
+  of each alert from the phone's own payments (keys `debug-…`); `clear` removes them. `src/debug` only.
+- **Testing notes.** Grant POST_NOTIFICATIONS on Robolectric (`shadowOf(app).grantPermissions`) before posting.
+  `ShadowNotificationManager.allNotifications` lists what was posted; `shadowOf(contentIntent).savedIntent` reads a tap.
+  A delayed WorkManager request stays `ENQUEUED` under `SynchronousExecutor`; read its `initialDelayMillis`.
+
 ## Screenshot tests
 
 - **Component groups:** `compose.snap("name") { … }` in a Robolectric class annotated `@GraphicsMode(NATIVE)` and `@Config(qualifiers = SPECIMEN_QUALIFIERS)`. It writes `src/test/screenshots/design/<name>.png`, a 2×2 grid of light/dark × 1.0/1.3.

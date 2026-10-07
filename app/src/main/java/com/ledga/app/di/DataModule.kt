@@ -43,8 +43,9 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object DataModule {
     /**
-     * The one Room instance on ledga.db (`app/DATA.md`). Room opens the file lazily, so `Startup.run()` is its first
-     * opener, after `LedgaApp` has taken the pre-v6 snapshot. Never fallbackToDestructiveMigration.
+     * The one Room instance on ledga.db (`app/DATA.md`). Room opens the file lazily. `Startup.run()` usually opens it
+     * first, but a cold start from the receiver or a worker may open it before; that is safe because `LedgaApp` takes
+     * the pre-v6 snapshot in `Application.onCreate`, before either. Never fallbackToDestructiveMigration.
      */
     @Provides
     @Singleton
