@@ -1,5 +1,6 @@
 package com.ledga.app.ui.you
 
+import com.ledga.app.data.backup.BackupStatus
 import com.ledga.app.BuildConfig
 import com.ledga.app.data.lines.LinesRepository
 import com.ledga.app.data.settings.SettingsStore
@@ -42,10 +43,11 @@ class YouViewModelTest {
     private val work = FakeBackgroundWork()
     private val links = ActivityLinks()
     private var smsGranted = true
+    private var savedAt: Instant? = null
     private val vms = TestViewModels()
 
     private fun vm() = vms.track(
-        YouViewModel(settings, db, LinesRepository(db.linesDao(), FakeSims(), clock), work, SmsAccess { smsGranted }, NotificationAccess { false }, links),
+        YouViewModel(settings, db, LinesRepository(db.linesDao(), FakeSims(), clock), work, SmsAccess { smsGranted }, NotificationAccess { false }, links, BackupStatus { savedAt }, clock),
     )
 
     @After fun close() {
@@ -112,8 +114,17 @@ class YouViewModelTest {
     @Test
     fun `with notifications off in Android's settings, You says so (R109)`() = runTest {
         val vm = vms.track(
-            YouViewModel(settings, db, LinesRepository(db.linesDao(), FakeSims(), clock), work, SmsAccess { smsGranted }, OFF_IN_SETTINGS, links),
+            YouViewModel(settings, db, LinesRepository(db.linesDao(), FakeSims(), clock), work, SmsAccess { smsGranted }, OFF_IN_SETTINGS, links, BackupStatus { savedAt }, clock),
         )
         assertEquals("Off for Ledga in Android settings", vm.ui.first { it.loaded }.notifications)
+    }
+
+    @Test
+    fun `the Android backup row says when the snapshot was saved (R125)`() = runTest {
+        val vm = vm()
+        assertEquals("No snapshot yet", vm.ui.first { it.loaded }.backup)
+        savedAt = clock.instant()
+        vm.refresh()
+        assertTrue(vm.ui.first { it.backup.startsWith("Snapshot saved today") }.backup.isNotEmpty())
     }
 }

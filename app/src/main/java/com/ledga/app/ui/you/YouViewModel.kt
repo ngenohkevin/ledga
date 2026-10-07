@@ -3,6 +3,7 @@ package com.ledga.app.ui.you
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ledga.app.BuildConfig
+import com.ledga.app.data.backup.BackupStatus
 import com.ledga.app.data.lines.LinesRepository
 import com.ledga.app.data.room.LedgaDatabase
 import com.ledga.app.data.room.LineRow
@@ -11,11 +12,14 @@ import com.ledga.app.data.settings.SettingsStore
 import com.ledga.app.startup.SmsAccess
 import com.ledga.app.ui.activity.ActivityLink
 import com.ledga.app.ui.activity.ActivityLinks
+import com.ledga.app.ui.backup.BackupText
 import com.ledga.app.ui.onboarding.NotificationAccess
 import com.ledga.app.work.BackgroundWork
 import com.ledga.app.work.ImportProgress
 import com.ledga.core.time.Periods
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.time.Clock
+import java.time.Instant
 import java.time.LocalDate
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -52,9 +56,11 @@ data class YouUi(
     /** Android won't show the SMS dialog again: Rescan's ask opens Settings (4a M3). */
     val smsToSettings: Boolean = false,
     val version: String = "",
+    /** R125: "Snapshot saved today, 8:12 PM" / "No snapshot yet". */
+    val backup: String = "",
 )
 
-/** You (spec §10.4). Phase 5 adds Export & restore and Android backup, Phase 6 Updates and Version history (R66). */
+/** You (spec §10.4). 5b added Export & restore and Android backup (R125); Phase 6 adds Updates and Version history (R66). */
 @HiltViewModel
 class YouViewModel @Inject constructor(
     private val settings: SettingsStore,
@@ -64,11 +70,14 @@ class YouViewModel @Inject constructor(
     private val sms: SmsAccess,
     private val notifications: NotificationAccess,
     private val links: ActivityLinks,
+    private val backup: BackupStatus,
+    private val clock: Clock,
 ) : ViewModel() {
     private val smsGranted = MutableStateFlow(sms.granted())
     private val smsBlocked = MutableStateFlow(false)
     private val notifyAllowed = MutableStateFlow(notifications.enabled())
     private val rescan = MutableStateFlow<RescanState>(RescanState.Idle)
+    private val savedAt = MutableStateFlow(backup.savedAt())
 
     /** R77: a result shows only for a rescan started here, once it has been seen running. */
     private var startedHere = false
@@ -91,7 +100,7 @@ class YouViewModel @Inject constructor(
 
     private data class Counts(val span: TxSpan, val unreadable: Int)
 
-    private data class Access(val sms: Boolean, val smsBlocked: Boolean, val notify: Boolean)
+    private data class Access(val sms: Boolean, val smsBlocked: Boolean, val notify: Boolean, val savedAt: Instant?)
 
     val ui: StateFlow<YouUi> = combine(
         settings.settings,
@@ -100,7 +109,7 @@ class YouViewModel @Inject constructor(
             Counts(span, unreadable)
         },
         rescan,
-        combine(smsGranted, smsBlocked, notifyAllowed) { a, b, c -> Access(a, b, c) },
+        combine(smsGranted, smsBlocked, notifyAllowed, savedAt) { a, b, c, d -> Access(a, b, c, d) },
     ) { s, ls, counts, r, access ->
         YouUi(
             loaded = true,
@@ -115,6 +124,7 @@ class YouViewModel @Inject constructor(
             smsGranted = access.sms,
             smsToSettings = access.smsBlocked,
             version = BuildConfig.VERSION_NAME,
+            backup = BackupText.savedLine(access.savedAt, Periods.dateOf(clock.instant())),
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), YouUi())
 
@@ -123,6 +133,7 @@ class YouViewModel @Inject constructor(
         smsGranted.value = sms.granted()
         if (smsGranted.value) smsBlocked.value = false
         notifyAllowed.value = notifications.enabled()
+        savedAt.value = backup.savedAt()
     }
 
     /** After the SMS dialog: granted starts the rescan the person asked for. */

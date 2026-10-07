@@ -75,9 +75,12 @@ class LedgaNavHostTest {
             Button(onClick = nav.openUnreadable) { Text("You unreadable") }
             Button(onClick = nav.openHistoryCheck) { Text("You history") }
             Button(onClick = nav.openLicences) { Text("You licences") }
+            Button(onClick = nav.openBackup) { Text("You backup") }
         }
 
         @Composable override fun Lines(onBack: () -> Unit) = Text("Lines screen")
+
+        @Composable override fun Backup(onBack: () -> Unit) = Text("Backup screen")
 
 
         @Composable override fun Category(onBack: () -> Unit, onSeeAll: () -> Unit) = Column {
@@ -388,5 +391,15 @@ class LedgaNavHostTest {
         notificationOpens(OpenDestination.Activity)
         compose.onNodeWithText("Activity showing transactions groceries").assertIsDisplayed()
         compose.onNodeWithText("Category page").assertDoesNotExist()
+    }
+
+    @Test
+    fun `You's Export & restore pushes its screen, and Back returns to You`() {
+        show()
+        tap("You")
+        tap("You backup")
+        compose.onNodeWithText("Backup screen").assertIsDisplayed()
+        back()
+        compose.onNodeWithText("You screen").assertIsDisplayed()
     }
 }

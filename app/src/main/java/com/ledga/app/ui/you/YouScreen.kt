@@ -66,6 +66,7 @@ data class YouNav(
     val openUnreadable: () -> Unit = {},
     val openHistoryCheck: () -> Unit = {},
     val openLicences: () -> Unit = {},
+    val openBackup: () -> Unit = {},
 )
 
 /** What You's taps do. Every default does nothing, for screenshots and tests. */
@@ -79,6 +80,7 @@ data class YouActions(
     val onUnreadable: () -> Unit = {},
     val onHistoryCheck: () -> Unit = {},
     val onLicences: () -> Unit = {},
+    val onBackup: () -> Unit = {},
 )
 
 const val RESCAN_TEXT = "Ledga reads every M-Pesa message on this phone again and adds any it missed. Your categories, notes and rules stay as they are."
@@ -104,8 +106,11 @@ fun YouContent(ui: YouUi, actions: YouActions, modifier: Modifier = Modifier) {
                 Divider()
                 ListRow("Appearance", subtitle = ui.appearance, iconKey = "fluent_artist_palette", onClick = actions.onAppearance)
             }
-            // R66: Export & restore and Android backup join Data in Phase 5.
             Group("Data") {
+                ListRow("Export & restore", subtitle = "Full backup file (.ledga) + spreadsheet", iconKey = "fluent_floppy_disk", onClick = actions.onBackup)
+                Divider()
+                ListRow("Android backup", subtitle = ui.backup, iconKey = "fluent_cloud", onClick = actions.onBackup)
+                Divider()
                 ListRow("Rescan SMS inbox", subtitle = YouText.rescanLine(ui.rescan), iconKey = "fluent_incoming_envelope", onClick = actions.onRescan)
                 Divider()
                 ListRow("Messages Ledga couldn't read", subtitle = YouText.unreadableLine(ui.unreadable), iconKey = "fluent_memo", onClick = actions.onUnreadable)
@@ -208,6 +213,7 @@ fun YouScreen(nav: YouNav, vm: YouViewModel = hiltViewModel()) {
             onUnreadable = nav.openUnreadable,
             onHistoryCheck = nav.openHistoryCheck,
             onLicences = nav.openLicences,
+            onBackup = nav.openBackup,
         ),
     )
     when (sheet) {

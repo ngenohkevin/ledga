@@ -143,10 +143,12 @@ fun LedgaNavHost(
                         openUnreadable = { push(UnreadableRoute) },
                         openHistoryCheck = { push(HistoryCheckRoute) },
                         openLicences = { push(LicencesRoute) },
+                        openBackup = { push(BackupRoute) },
                     ),
                 )
             }
             composable<LinesRoute> { screens.Lines(onBack = back) }
+            composable<BackupRoute> { screens.Backup(onBack = back) }
             composable<CategoryRoute> {
                 screens.Category(
                     onBack = back,

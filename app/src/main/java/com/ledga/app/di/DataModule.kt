@@ -2,9 +2,12 @@ package com.ledga.app.di
 
 import com.ledga.app.BuildConfig
 import com.ledga.app.data.backup.AndroidDeviceId
+import com.ledga.app.data.backup.AndroidDocuments
 import com.ledga.app.data.backup.BackupDirs
 import com.ledga.app.data.backup.BackupReader
+import com.ledga.app.data.backup.BackupStatus
 import com.ledga.app.data.backup.DeviceId
+import com.ledga.app.data.backup.Documents
 import com.ledga.app.data.backup.Exporter
 import com.ledga.app.data.backup.Restorer
 import com.ledga.app.data.backup.SnapshotStore
@@ -166,6 +169,12 @@ object DataModule {
     @Singleton
     fun snapshots(store: SnapshotStore, reader: BackupReader, db: LedgaDatabase, settings: SettingsStore, clock: Clock): Snapshots =
         Snapshots(store, reader, db, settings, clock)
+
+    @Provides
+    fun documents(resolver: ContentResolver): Documents = AndroidDocuments(resolver)
+
+    @Provides
+    fun backupStatus(snapshots: Snapshots): BackupStatus = BackupStatus { snapshots.savedAt() }
 
     /** Spec §12.2. */
     @Provides

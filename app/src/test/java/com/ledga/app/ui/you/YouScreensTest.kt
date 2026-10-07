@@ -29,6 +29,7 @@ class YouScreensTest {
         appearance = "System theme · Default text",
         unreadable = 2,
         version = "2.0.0-beta.1",
+        backup = "Snapshot saved today, 8:12 PM",
     )
 
     @Test

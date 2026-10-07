@@ -3,6 +3,7 @@ package com.ledga.app.ui.app
 import androidx.compose.runtime.Composable
 import com.ledga.app.ui.activity.ActivityTab
 import com.ledga.app.ui.alerts.AlertsScreen
+import com.ledga.app.ui.backup.BackupScreen
 import com.ledga.app.ui.home.HomeNav
 import com.ledga.app.ui.home.HomeRoute as HomeScreenRoute
 import com.ledga.app.ui.onboarding.OnboardingRoute as OnboardingScreenRoute
@@ -32,6 +33,8 @@ interface LedgaScreens {
     @Composable fun You(nav: YouNav)
 
     @Composable fun Lines(onBack: () -> Unit)
+
+    @Composable fun Backup(onBack: () -> Unit)
 
     @Composable fun Categories(onOpen: (String) -> Unit)
 
@@ -63,6 +66,8 @@ object AppScreens : LedgaScreens {
     @Composable override fun You(nav: YouNav) = YouScreen(nav)
 
     @Composable override fun Lines(onBack: () -> Unit) = LinesScreen(onBack = onBack)
+
+    @Composable override fun Backup(onBack: () -> Unit) = BackupScreen(onBack = onBack)
 
     @Composable override fun Categories(onOpen: (String) -> Unit) = CategoriesTab(onOpen = onOpen)
 
