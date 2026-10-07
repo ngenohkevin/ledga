@@ -70,4 +70,11 @@ class NotificationOpensTest {
         opens.taken(OpenDestination.Activity)
         assertNull(opens.destination.value)
     }
+
+    @Test
+    fun `a tap while the database can't be read still lands on Alerts, without crashing (final review)`() = runTest {
+        db.close() // a database that failed to open: Startup shows the recovery screen
+        opens.open(OpenedNotification("large:TJK4AB12FA", tap))
+        assertEquals(OpenDestination.Alerts(null), opens.destination.value)
+    }
 }

@@ -1,5 +1,6 @@
 package com.ledga.app.ui.app
 
+import android.util.Log
 import com.ledga.app.data.derive.DateFilter
 import com.ledga.app.data.derive.TransactionFilter
 import com.ledga.app.data.room.LedgaDatabase
@@ -11,6 +12,9 @@ import com.ledga.app.ui.home.HomeLinks
 import java.time.Clock
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
@@ -41,9 +45,9 @@ class NotificationOpens @Inject constructor(
     val destination: StateFlow<OpenDestination?> = pending
 
     suspend fun open(opened: OpenedNotification) {
-        db.alertsDao().markRead(listOf(opened.alertKey), clock.instant())
+        readSafely { db.alertsDao().markRead(listOf(opened.alertKey), clock.instant()) }
         pending.value = when (val tap = opened.tap) {
-            is NotificationTap.Payment -> OpenDestination.Alerts(tap.code.takeIf { db.transactionsDao().get(it)?.isHidden == false })
+            is NotificationTap.Payment -> OpenDestination.Alerts(tap.code.takeIf { readSafely { db.transactionsDao().get(it) }?.isHidden == false })
             NotificationTap.Fuliza -> {
                 home.openFuliza()
                 OpenDestination.Home
@@ -58,5 +62,24 @@ class NotificationOpens @Inject constructor(
 
     fun taken(destination: OpenDestination) {
         pending.compareAndSet(destination, null)
+    }
+
+    /**
+     * A database that can't be read (the recovery screen is up) must not crash a tap (final review): null instead. Room
+     * reports a closed database as a cancellation, so only this coroutine's own cancellation is passed on.
+     */
+    private suspend fun <T> readSafely(read: suspend () -> T): T? = try {
+        read()
+    } catch (e: CancellationException) {
+        currentCoroutineContext().ensureActive()
+        Log.w(TAG, "a notification's tap couldn't read the database", e)
+        null
+    } catch (e: Exception) {
+        Log.w(TAG, "a notification's tap couldn't read the database", e)
+        null
+    }
+
+    private companion object {
+        const val TAG = "Ledga"
     }
 }
