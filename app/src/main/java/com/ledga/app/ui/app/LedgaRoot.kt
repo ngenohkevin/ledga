@@ -169,14 +169,14 @@ private fun SystemBarsFollowTheme() {
     }
 }
 
-/** You → Appearance → Text size (R30). SYSTEM keeps Android's own scale, including its non-linear scaling. */
+/**
+ * You → Appearance → Text size (R30). SYSTEM keeps Android's own scale, including its non-linear scaling. The content
+ * keeps one place in the tree whatever the size: moving it would rebuild the navigation (back to Home), and the old
+ * screens' ViewModels would live on unseen and take Activity's hand-offs (S26).
+ */
 @Composable
-private fun WithTextSize(size: TextSize, content: @Composable () -> Unit) {
-    val scale = size.scale
-    if (scale == null) {
-        content()
-    } else {
-        val d = LocalDensity.current
-        CompositionLocalProvider(LocalDensity provides Density(d.density, scale), content = content)
-    }
+internal fun WithTextSize(size: TextSize, content: @Composable () -> Unit) {
+    val d = LocalDensity.current
+    val density = size.scale?.let { Density(d.density, it) } ?: d
+    CompositionLocalProvider(LocalDensity provides density, content = content)
 }

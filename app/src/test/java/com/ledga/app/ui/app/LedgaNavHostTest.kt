@@ -5,14 +5,28 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.ledga.app.data.derive.TransactionFilter
+import com.ledga.app.data.settings.TextSize
+import com.ledga.app.ui.activity.ActivityLink
+import com.ledga.app.ui.activity.ActivityLinks
 import com.ledga.app.ui.design.theme.Appearance
 import com.ledga.app.ui.design.theme.LedgaTheme
 import com.ledga.app.ui.home.HomeNav
 import com.ledga.app.ui.you.YouNav
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.launch
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -24,6 +38,9 @@ class LedgaNavHostTest {
     @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
 
     private object StandIns : LedgaScreens {
+        /** The app's one hand-off to Activity (R61); a fresh one per test. */
+        var links = ActivityLinks()
+
         @Composable override fun Onboarding(onDone: () -> Unit) = Text("Onboarding screen")
 
         @Composable override fun Home(nav: HomeNav) = Column {
@@ -33,7 +50,12 @@ class LedgaNavHostTest {
             Button(onClick = nav.openAlerts) { Text("Home bell") }
         }
 
-        @Composable override fun Activity() = Text("Activity screen")
+        @Composable override fun Activity() = Column {
+            val probe = viewModel { LinkProbe(links) }
+            val showing by probe.showing.collectAsState()
+            Text("Activity screen")
+            Text("Activity showing $showing")
+        }
 
         @Composable override fun Trackers(onOpen: (String) -> Unit) = Column {
             Button(onClick = { onOpen("electricity") }) { Text("Trackers row") }
@@ -43,7 +65,10 @@ class LedgaNavHostTest {
 
         @Composable override fun Tracker(onBack: () -> Unit, onSeeAll: () -> Unit) = Column {
             Text("Tracker detail")
-            Button(onClick = onSeeAll) { Text("See all") }
+            Button(onClick = {
+                links.open(ActivityLink.Transactions(TransactionFilter(categoryKeys = setOf("electricity"))))
+                onSeeAll()
+            }) { Text("See all") }
         }
 
         @Composable override fun You(nav: YouNav) = Column {
@@ -91,7 +116,39 @@ class LedgaNavHostTest {
         }
     }
 
-    private fun show() = compose.setContent { LedgaTheme(Appearance.LIGHT, reducedMotion = true) { LedgaNavHost(onboarded = true, screens = StandIns) } }
+    /** Stands in for ActivityViewModel's side of R61: it takes each request once, the way the real one does. */
+    class LinkProbe(links: ActivityLinks) : ViewModel() {
+        val showing = MutableStateFlow("nothing")
+
+        init {
+            viewModelScope.launch {
+                links.requests.filterNotNull().collect { link ->
+                    showing.value = when (link) {
+                        is ActivityLink.Transactions -> "transactions ${link.filter.categoryKeys.joinToString()}"
+                        ActivityLink.Spending -> "spending"
+                        ActivityLink.People -> "people"
+                    }
+                    links.taken(link)
+                }
+            }
+        }
+    }
+
+    private val textSize = mutableStateOf(TextSize.SYSTEM)
+
+    @Before
+    fun freshLinks() {
+        StandIns.links = ActivityLinks()
+    }
+
+    private fun show() = compose.setContent {
+        LedgaTheme(Appearance.LIGHT, reducedMotion = true) { WithTextSize(textSize.value) { LedgaNavHost(onboarded = true, screens = StandIns) } }
+    }
+
+    private fun setTextSize(size: TextSize) {
+        compose.runOnUiThread { textSize.value = size }
+        compose.waitForIdle()
+    }
 
     private fun tap(text: String) {
         compose.onNodeWithText(text).performClick()
@@ -207,5 +264,27 @@ class LedgaNavHostTest {
         compose.onNodeWithText("Licence licenses/inter-OFL.txt").assertIsDisplayed()
         back()
         compose.onNodeWithText("Licences screen").assertIsDisplayed()
+    }
+
+    @Test
+    fun `a text size change keeps the screen you are on (S26)`() {
+        show()
+        tap("You")
+        tap("You lines")
+        setTextSize(TextSize.LARGE)
+        compose.onNodeWithText("Lines screen").assertIsDisplayed()
+        setTextSize(TextSize.SYSTEM)
+        compose.onNodeWithText("Lines screen").assertIsDisplayed()
+    }
+
+    @Test
+    fun `after a text size change, a tracker's See all reaches the Activity on screen (S26)`() {
+        show()
+        tap("Activity")
+        setTextSize(TextSize.LARGE)
+        tap("Home")
+        tap("Home tile")
+        tap("See all")
+        compose.onNodeWithText("Activity showing transactions electricity").assertIsDisplayed()
     }
 }
