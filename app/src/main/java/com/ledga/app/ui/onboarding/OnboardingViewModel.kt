@@ -37,9 +37,16 @@ data class OnboardingState(
     val finished: Boolean = false,
 )
 
-/** True on Android 13+ while POST_NOTIFICATIONS isn't granted: only then is the notifications step shown. */
+/**
+ * Whether Ledga's notifications can reach the person (spec §11, R109). [shouldAsk]: Android 13+ and POST_NOTIFICATIONS
+ * not granted, so Android's dialog can still ask; only then is the onboarding step shown. [enabled]: Android lets Ledga
+ * post at all, on every version. On Android 8–12 notifications can be off with no dialog to ask, so "Turn on" opens
+ * Android's settings there. Tests pass a lambda for [shouldAsk]; [enabled] then follows it.
+ */
 fun interface NotificationAccess {
     fun shouldAsk(): Boolean
+
+    fun enabled(): Boolean = !shouldAsk()
 }
 
 @HiltViewModel

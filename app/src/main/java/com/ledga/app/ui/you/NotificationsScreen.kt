@@ -162,10 +162,12 @@ fun NotificationsScreen(onBack: () -> Unit, vm: NotificationsViewModel = hiltVie
         ui,
         NotificationsActions(
             onBack = onBack,
+            // R109: Android's dialog while it can still ask, else Android's notification settings.
             onTurnOn = {
-                when {
-                    ui.toSettings -> context.openNotificationSettings()
-                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU -> ask.launch(Manifest.permission.POST_NOTIFICATIONS)
+                if (!ui.toSettings && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    ask.launch(Manifest.permission.POST_NOTIFICATIONS)
+                } else {
+                    context.openNotificationSettings()
                 }
             },
             onDaily = vm::setDaily,

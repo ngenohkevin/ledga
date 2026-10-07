@@ -189,10 +189,13 @@ fun HomeRoute(nav: HomeNav, vm: HomeViewModel = hiltViewModel()) {
         onProfile = nav.openYou,
         // 4a M3: the first tap asks; once Android won't ask again, the next tap opens Settings.
         onAllowSms = { if (ui.smsToSettings) context.openAppSettings() else askSms.launch(SmsPermissions.ALL) },
+        // R109: Android's dialog while it can still ask; otherwise (a refusal for good, Android 8–12, notifications
+        // switched off in Android) Android's notification settings.
         onTurnOnNotifications = {
-            when {
-                ui.notificationsToSettings -> context.openNotificationSettings()
-                Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU -> askNotifications.launch(Manifest.permission.POST_NOTIFICATIONS)
+            if (!ui.notificationsToSettings && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                askNotifications.launch(Manifest.permission.POST_NOTIFICATIONS)
+            } else {
+                context.openNotificationSettings()
             }
         },
         onNotNow = vm::dismissNotifications,

@@ -3,6 +3,7 @@ package com.ledga.app.ui.you
 import com.ledga.app.data.settings.SettingsStore
 import com.ledga.app.testing.FakePrefsStore
 import com.ledga.app.testing.MainDispatcherRule
+import com.ledga.app.testing.OFF_IN_SETTINGS
 import com.ledga.app.testing.TestViewModels
 import com.ledga.app.ui.onboarding.NotificationAccess
 import kotlin.test.assertEquals
@@ -51,5 +52,13 @@ class NotificationsViewModelTest {
         val ui = vm.ui.first { it.allowed }
         assertFalse(ui.toSettings)
         assertEquals(true, ui.allowed)
+    }
+
+    @Test
+    fun `with notifications off in Android's settings the banner shows, and Turn on opens the settings (R109)`() = runTest {
+        val vm = vms.track(NotificationsViewModel(settings, OFF_IN_SETTINGS))
+        val ui = vm.ui.first { it.loaded }
+        assertFalse(ui.allowed)
+        assertTrue(ui.toSettings)
     }
 }

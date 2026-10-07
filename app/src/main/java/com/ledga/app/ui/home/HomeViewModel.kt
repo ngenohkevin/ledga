@@ -74,8 +74,9 @@ data class HomeUi(
     val smsToSettings: Boolean = false,
     val history: HistoryProgress? = null,
     val legacyImportFailed: Boolean = false,
-    /** R59: Android 13+, onboarded, notifications not allowed, and the person hasn't said "Not now". */
+    /** R59, R109: onboarded, Android won't let Ledga post (any version), and the person hasn't said "Not now". */
     val notificationsNudge: Boolean = false,
+    /** R109: "Turn on" opens Android's notification settings (no dialog can ask). */
     val notificationsToSettings: Boolean = false,
     /** R71: alerts not yet read (the bell's badge). */
     val unreadAlerts: Int = 0,
@@ -102,6 +103,7 @@ class HomeViewModel @Inject constructor(
     private val smsBlocked = MutableStateFlow(false)
     private val notifyAsk = MutableStateFlow(notifications.shouldAsk())
     private val notifyBlocked = MutableStateFlow(false)
+    private val notifyEnabled = MutableStateFlow(notifications.enabled())
 
     /** When Home last came to the screen: the greeting's hour (R60). */
     private val resumedAt = MutableStateFlow(live.now())
@@ -122,7 +124,13 @@ class HomeViewModel @Inject constructor(
         val categories: Map<String, CategoryRow>,
     )
 
-    private data class Access(val smsGranted: Boolean, val smsBlocked: Boolean, val notifyAsk: Boolean, val notifyBlocked: Boolean)
+    private data class Access(
+        val smsGranted: Boolean,
+        val smsBlocked: Boolean,
+        val notifyAsk: Boolean,
+        val notifyBlocked: Boolean,
+        val notifyEnabled: Boolean,
+    )
 
     private data class Background(val history: HistoryProgress?, val legacyImportFailed: Boolean, val hasHistory: Boolean, val unreadAlerts: Int)
 
@@ -146,7 +154,7 @@ class HomeViewModel @Inject constructor(
 
     val ui: StateFlow<HomeUi> = combine(
         content,
-        combine(smsGranted, smsBlocked, notifyAsk, notifyBlocked) { a, b, c, d -> Access(a, b, c, d) },
+        combine(smsGranted, smsBlocked, notifyAsk, notifyBlocked, notifyEnabled) { a, b, c, d, e -> Access(a, b, c, d, e) },
         settings.settings,
         combine(work.history, work.legacyImportFailed, db.transactionsDao().observeSpan(), db.alertsDao().observeUnread()) { h, failed, span, unread ->
             Background(h, failed, span.count > 0, unread)
@@ -172,8 +180,8 @@ class HomeViewModel @Inject constructor(
             smsToSettings = a.smsBlocked,
             history = bg.history,
             legacyImportFailed = bg.legacyImportFailed,
-            notificationsNudge = a.notifyAsk && s.onboarded && !s.notificationNudgeDismissed,
-            notificationsToSettings = a.notifyBlocked,
+            notificationsNudge = !a.notifyEnabled && s.onboarded && !s.notificationNudgeDismissed,
+            notificationsToSettings = !a.notifyEnabled && (a.notifyBlocked || !a.notifyAsk),
             unreadAlerts = bg.unreadAlerts,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeUi())
@@ -188,6 +196,7 @@ class HomeViewModel @Inject constructor(
         smsGranted.value = granted
         if (granted) smsBlocked.value = false
         notifyAsk.value = notifications.shouldAsk()
+        notifyEnabled.value = notifications.enabled()
         resumedAt.value = live.now()
     }
 
@@ -200,6 +209,7 @@ class HomeViewModel @Inject constructor(
 
     fun onNotificationsResult(granted: Boolean, showRationale: Boolean) {
         notifyAsk.value = notifications.shouldAsk()
+        notifyEnabled.value = notifications.enabled()
         if (!granted) notifyBlocked.value = !showRationale
     }
 

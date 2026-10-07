@@ -17,9 +17,9 @@ import kotlinx.coroutines.launch
 data class NotificationsUi(
     val loaded: Boolean = false,
     val settings: Settings = Settings(),
-    /** False on Android 13+ while Ledga may not post notifications. */
+    /** R109: Android lets Ledga post (any version). */
     val allowed: Boolean = true,
-    /** Android won't ask again: "Turn on" opens Android's settings (4a M3). */
+    /** R109: "Turn on" opens Android's notification settings (a refusal for good, Android 8–12, or switched off there). */
     val toSettings: Boolean = false,
 )
 
@@ -27,19 +27,22 @@ data class NotificationsUi(
 @HiltViewModel
 class NotificationsViewModel @Inject constructor(private val settings: SettingsStore, private val access: NotificationAccess) : ViewModel() {
     private val ask = MutableStateFlow(access.shouldAsk())
+    private val enabled = MutableStateFlow(access.enabled())
     private val blocked = MutableStateFlow(false)
 
-    val ui: StateFlow<NotificationsUi> = combine(settings.settings, ask, blocked) { s, a, b -> NotificationsUi(true, s, allowed = !a, toSettings = b) }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), NotificationsUi())
+    val ui: StateFlow<NotificationsUi> = combine(settings.settings, ask, enabled, blocked) { s, a, on, b ->
+        NotificationsUi(true, s, allowed = on, toSettings = !on && (b || !a))
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), NotificationsUi())
 
-    /** On resume: permission may have changed in Android's settings. */
+    /** On resume: notifications may have been switched in Android's settings. */
     fun refresh() {
         ask.value = access.shouldAsk()
-        if (!ask.value) blocked.value = false
+        enabled.value = access.enabled()
+        if (enabled.value) blocked.value = false
     }
 
     fun onPermissionResult(granted: Boolean, showRationale: Boolean) {
-        ask.value = access.shouldAsk()
+        refresh()
         if (!granted) blocked.value = !showRationale
     }
 

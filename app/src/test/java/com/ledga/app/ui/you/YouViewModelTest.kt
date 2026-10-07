@@ -30,6 +30,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import com.ledga.app.testing.OFF_IN_SETTINGS
 
 /** Spec §10.4 You (R77, R81, R82). Synthetic data. */
 @RunWith(RobolectricTestRunner::class)
@@ -106,5 +107,13 @@ class YouViewModelTest {
     fun `People opens Activity's People (R82)`() = runTest {
         vm().openPeople()
         assertEquals(ActivityLink.People, links.requests.value)
+    }
+
+    @Test
+    fun `with notifications off in Android's settings, You says so (R109)`() = runTest {
+        val vm = vms.track(
+            YouViewModel(settings, db, LinesRepository(db.linesDao(), FakeSims(), clock), work, SmsAccess { smsGranted }, OFF_IN_SETTINGS, links),
+        )
+        assertEquals("Off for Ledga in Android settings", vm.ui.first { it.loaded }.notifications)
     }
 }

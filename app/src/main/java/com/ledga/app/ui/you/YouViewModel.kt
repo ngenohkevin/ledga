@@ -67,7 +67,7 @@ class YouViewModel @Inject constructor(
 ) : ViewModel() {
     private val smsGranted = MutableStateFlow(sms.granted())
     private val smsBlocked = MutableStateFlow(false)
-    private val notifyAllowed = MutableStateFlow(!notifications.shouldAsk())
+    private val notifyAllowed = MutableStateFlow(notifications.enabled())
     private val rescan = MutableStateFlow<RescanState>(RescanState.Idle)
 
     /** R77: a result shows only for a rescan started here, once it has been seen running. */
@@ -122,7 +122,7 @@ class YouViewModel @Inject constructor(
     fun refresh() {
         smsGranted.value = sms.granted()
         if (smsGranted.value) smsBlocked.value = false
-        notifyAllowed.value = !notifications.shouldAsk()
+        notifyAllowed.value = notifications.enabled()
     }
 
     /** After the SMS dialog: granted starts the rescan the person asked for. */

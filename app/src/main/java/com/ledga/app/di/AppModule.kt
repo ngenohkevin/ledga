@@ -5,6 +5,7 @@ import android.content.ContentResolver
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
+import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
@@ -58,9 +59,12 @@ object AppModule {
     }
 
     @Provides
-    fun notificationAccess(@ApplicationContext context: Context): NotificationAccess = NotificationAccess {
-        Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+    fun notificationAccess(@ApplicationContext context: Context): NotificationAccess = object : NotificationAccess {
+        override fun shouldAsk(): Boolean = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
             ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+
+        // R109: Android's own switch, on every version (it is also off while Android 13's permission is refused).
+        override fun enabled(): Boolean = !shouldAsk() && NotificationManagerCompat.from(context).areNotificationsEnabled()
     }
 
     @Provides

@@ -40,6 +40,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import com.ledga.app.data.room.AlertRow
+import com.ledga.app.testing.OFF_IN_SETTINGS
+import com.ledga.app.ui.onboarding.NotificationAccess
 
 /** Spec §10.4 Home: every card from the ledger, on the chosen line, live (R47, R57–R61). Synthetic SMS and rows. */
 @RunWith(RobolectricTestRunner::class)
@@ -54,12 +56,13 @@ class HomeViewModelTest {
     private val links = ActivityLinks()
     private var granted = true
     private var notifyAsk = false
+    private var notifyAccess: NotificationAccess = NotificationAccess { notifyAsk }
     private val vms = TestViewModels()
 
     private fun vm(live: LiveClock = LiveClock(clock) { awaitCancellation() }) = vms.track(
         HomeViewModel(
             LedgerQueries(db), db, Trackers(db, LedgerQueries(db)), selectedLine(db, prefs), live, work,
-            { granted }, { notifyAsk }, settings, TransactionEdits(db, deriver, clock), links,
+            { granted }, notifyAccess, settings, TransactionEdits(db, deriver, clock), links,
         ),
     )
 
@@ -232,5 +235,13 @@ class HomeViewModelTest {
         db.alertsDao().insertIgnore(AlertRow("b", "DAILY", "t", "b", null, Instant.parse("2026-03-23T17:00:00Z"), null))
         db.alertsDao().insertIgnore(AlertRow("c", "DAILY", "t", "b", null, Instant.parse("2026-03-22T17:00:00Z"), Instant.parse("2026-03-22T18:00:00Z")))
         assertEquals(2, vm().ui.first { it.unreadAlerts == 2 }.unreadAlerts)
+    }
+
+    @Test
+    fun `with notifications off in Android's settings the banner shows, and Turn on opens the settings (R109)`() = runTest {
+        notifyAccess = OFF_IN_SETTINGS
+        settings.setOnboarded()
+        val ui = vm().ui.first { it.loaded && it.notificationsNudge }
+        assertTrue(ui.notificationsToSettings)
     }
 }
