@@ -27,7 +27,7 @@ object CategoryText {
             1 -> ", and 1 rule still files new payments here."
             else -> ", and $rules rules still file new payments here."
         }
-        return "It leaves the category picker, the filters and Trackers. $kept$filing You can bring it back from Categories & rules."
+        return "It leaves the category picker, the filters and Trackers. $kept$filing You can bring it back from Categories."
     }
 
     /** "fluent_hammer_and_wrench" → "Hammer and wrench" (TalkBack's name for an icon choice). */

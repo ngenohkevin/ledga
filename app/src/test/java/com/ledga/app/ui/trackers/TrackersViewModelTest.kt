@@ -41,7 +41,7 @@ class TrackersViewModelTest {
     private fun vm() = vms.track(
         TrackersViewModel(
             Trackers(db, LedgerQueries(db)), db, selectedLine(db, FakePrefsStore()), LiveClock(clock) { awaitCancellation() },
-            TransactionEdits(db, deriver, clock), StoppedTrackers(TransactionEdits(db, deriver, clock)),
+            TransactionEdits(db, deriver, clock),
         ),
     )
 

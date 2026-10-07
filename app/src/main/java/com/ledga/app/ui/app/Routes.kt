@@ -22,8 +22,8 @@ import kotlinx.serialization.Serializable
 /** Categories & rules (R67). */
 @Serializable data object CategoriesRoute
 
-/** A category's screen (R67). The ViewModel reads [categoryKey] by that name. */
-@Serializable data class CategoryRoute(val categoryKey: String)
+/** A category's page (4e D1). [month] is "2026-09" when Spending opened it at that month (D3). The ViewModel reads both by name. */
+@Serializable data class CategoryRoute(val categoryKey: String, val month: String? = null)
 
 @Serializable data object NotificationsRoute
 
@@ -38,6 +38,3 @@ import kotlinx.serialization.Serializable
 
 /** One licence's text; [asset] is its path under `assets/`. */
 @Serializable data class LicenceRoute(val asset: String)
-
-/** Tracker detail (spec §10.4): pushed full screen, no bottom bar. The ViewModel reads [categoryKey] by that name. */
-@Serializable data class TrackerRoute(val categoryKey: String)

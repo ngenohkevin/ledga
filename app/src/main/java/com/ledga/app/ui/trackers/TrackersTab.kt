@@ -210,7 +210,6 @@ fun TrackersTab(onOpen: (String) -> Unit, vm: TrackersViewModel = hiltViewModel(
     val ui by vm.ui.collectAsStateWithLifecycle()
     var picking by rememberSaveable { mutableStateOf(false) }
     val snackbar = remember { SnackbarHostState() }
-    StoppedTrackingUndo(vm.stoppedTracking, snackbar, vm::stoppedShown, vm::undoStop)
     Box(Modifier.fillMaxSize()) {
         TrackersContent(ui, TrackersActions(onRange = vm::setRange, onLine = vm::selectLine, onOpen = onOpen, onTrackNew = { picking = true }))
         SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter).padding(Spacing.l))

@@ -85,8 +85,8 @@ fun LedgaNavHost(onboarded: Boolean, screens: LedgaScreens = AppScreens) {
         backTo = from
         nav.openTab(Tab.ACTIVITY)
     }
-    // One tracker per tap, however fast the taps come.
-    fun openTracker(key: String) = nav.navigate(TrackerRoute(key)) { launchSingleTop = true }
+    // A category's page, once however fast the taps come (4e D1, D3).
+    fun openCategory(key: String, month: String? = null) = nav.navigate(CategoryRoute(key, month)) { launchSingleTop = true }
     // A pushed screen, once however fast the taps come.
     fun push(route: Any) = nav.navigate(route) { launchSingleTop = true }
     val back: () -> Unit = { nav.popBackStack() }
@@ -108,7 +108,7 @@ fun LedgaNavHost(onboarded: Boolean, screens: LedgaScreens = AppScreens) {
                     HomeNav(
                         openActivity = { hop(Tab.HOME) },
                         openTrackers = { nav.openTab(Tab.TRACKERS) },
-                        openTracker = ::openTracker,
+                        openTracker = { openCategory(it) },
                         openYou = { nav.openTab(Tab.YOU) },
                         openAlerts = { nav.navigate(AlertsRoute) { launchSingleTop = true } },
                     ),
@@ -122,13 +122,7 @@ fun LedgaNavHost(onboarded: Boolean, screens: LedgaScreens = AppScreens) {
                 }
                 screens.Activity()
             }
-            composable<TrackersRoute> { screens.Trackers(onOpen = ::openTracker) }
-            composable<TrackerRoute> {
-                screens.Tracker(
-                    onBack = { nav.popBackStack() },
-                    onSeeAll = { hop(owningTab()) },
-                )
-            }
+            composable<TrackersRoute> { screens.Trackers(onOpen = { openCategory(it) }) }
             composable<YouRoute> {
                 screens.You(
                     YouNav(
@@ -144,8 +138,8 @@ fun LedgaNavHost(onboarded: Boolean, screens: LedgaScreens = AppScreens) {
                 )
             }
             composable<LinesRoute> { screens.Lines(onBack = back) }
-            composable<CategoriesRoute> { screens.Categories(onBack = back, onOpen = { push(CategoryRoute(it)) }) }
-            composable<CategoryRoute> { screens.Category(onBack = back, onSeePayments = { hop(owningTab()) }) }
+            composable<CategoriesRoute> { screens.Categories(onBack = back, onOpen = { openCategory(it) }) }
+            composable<CategoryRoute> { screens.Category(onBack = back, onSeeAll = { hop(owningTab()) }) }
             composable<NotificationsRoute> { screens.NotificationSettings(onBack = back) }
             composable<AppearanceRoute> { screens.AppearanceSettings(onBack = back) }
             composable<UnreadableRoute> { screens.Unreadable(onBack = back) }

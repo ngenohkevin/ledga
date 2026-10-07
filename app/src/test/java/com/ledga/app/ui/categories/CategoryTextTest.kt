@@ -15,11 +15,11 @@ class CategoryTextTest {
     @Test
     fun `the archive question says what stays and how to come back (R72)`() {
         assertEquals(
-            "It leaves the category picker, the filters and Trackers. Its 12 payments keep it, and 2 rules still file new payments here. You can bring it back from Categories & rules.",
+            "It leaves the category picker, the filters and Trackers. Its 12 payments keep it, and 2 rules still file new payments here. You can bring it back from Categories.",
             CategoryText.archiveText(payments = 12, rules = 2),
         )
         assertEquals(
-            "It leaves the category picker, the filters and Trackers. No payments use it. You can bring it back from Categories & rules.",
+            "It leaves the category picker, the filters and Trackers. No payments use it. You can bring it back from Categories.",
             CategoryText.archiveText(payments = 0, rules = 0),
         )
     }

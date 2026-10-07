@@ -34,31 +34,6 @@ import com.ledga.app.ui.design.tokens.ChartTones
 import com.ledga.app.ui.design.tokens.Spacing
 import com.ledga.app.ui.design.type.LedgaType
 
-/** R68: the icons a category of your own can take, the current one ringed. A radio group for TalkBack. */
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-fun IconChoiceContent(selected: String, onPick: (String) -> Unit) {
-    val c = LedgaTheme.colors
-    FlowRow(
-        Modifier.verticalScroll(rememberScrollState()).selectableGroup(),
-        horizontalArrangement = Arrangement.spacedBy(Spacing.s),
-        verticalArrangement = Arrangement.spacedBy(Spacing.s),
-    ) {
-        CategoryLooks.ICONS.forEach { key ->
-            val chosen = key == selected
-            Box(
-                Modifier
-                    .size(56.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .border(if (chosen) 2.dp else 0.dp, if (chosen) c.primary else c.surfaceSheet, RoundedCornerShape(16.dp))
-                    .selectable(chosen, role = Role.RadioButton, onClick = { onPick(key) })
-                    .semantics { contentDescription = CategoryText.iconName(key) },
-                contentAlignment = Alignment.Center,
-            ) { CategoryIcon(key, contentDescription = null) }
-        }
-    }
-}
-
 /** R74: the twelve swatches, each at its strong chart tone with its name under it. A radio group for TalkBack. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable

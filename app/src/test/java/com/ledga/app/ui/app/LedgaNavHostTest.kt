@@ -63,13 +63,6 @@ class LedgaNavHostTest {
             Button(onClick = { onOpen("electricity"); onOpen("electricity") }) { Text("Trackers row twice") }
         }
 
-        @Composable override fun Tracker(onBack: () -> Unit, onSeeAll: () -> Unit) = Column {
-            Text("Tracker detail")
-            Button(onClick = {
-                links.open(ActivityLink.Transactions(TransactionFilter(categoryKeys = setOf("electricity"))))
-                onSeeAll()
-            }) { Text("See all") }
-        }
 
         @Composable override fun You(nav: YouNav) = Column {
             Text("You screen")
@@ -90,9 +83,12 @@ class LedgaNavHostTest {
             Button(onClick = { onOpen("groceries") }) { Text("Categories row") }
         }
 
-        @Composable override fun Category(onBack: () -> Unit, onSeePayments: () -> Unit) = Column {
-            Text("Category screen")
-            Button(onClick = onSeePayments) { Text("See payments") }
+        @Composable override fun Category(onBack: () -> Unit, onSeeAll: () -> Unit) = Column {
+            Text("Category page")
+            Button(onClick = {
+                links.open(ActivityLink.Transactions(TransactionFilter(categoryKeys = setOf("electricity"))))
+                onSeeAll()
+            }) { Text("See all") }
         }
 
         @Composable override fun NotificationSettings(onBack: () -> Unit) = Text("Notifications screen")
@@ -161,23 +157,23 @@ class LedgaNavHostTest {
     }
 
     @Test
-    fun `Back from See all returns to the tracker opened on the Trackers tab`() {
+    fun `Back from See all returns to the page opened on the Trackers tab`() {
         show()
         tap("Trackers")
         tap("Trackers row")
         tap("See all")
         compose.onNodeWithText("Activity screen").assertIsDisplayed()
         back()
-        compose.onNodeWithText("Tracker detail").assertIsDisplayed()
+        compose.onNodeWithText("Category page").assertIsDisplayed()
     }
 
     @Test
-    fun `Back from See all returns to the tracker opened from Home`() {
+    fun `Back from See all returns to the page opened from Home`() {
         show()
         tap("Home tile")
         tap("See all")
         back()
-        compose.onNodeWithText("Tracker detail").assertIsDisplayed()
+        compose.onNodeWithText("Category page").assertIsDisplayed()
     }
 
     @Test
@@ -237,10 +233,10 @@ class LedgaNavHostTest {
         tap("You")
         tap("You categories")
         tap("Categories row")
-        tap("See payments")
+        tap("See all")
         compose.onNodeWithText("Activity screen").assertIsDisplayed()
         back()
-        compose.onNodeWithText("Category screen").assertIsDisplayed()
+        compose.onNodeWithText("Category page").assertIsDisplayed()
         back()
         compose.onNodeWithText("Categories screen").assertIsDisplayed()
     }

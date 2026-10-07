@@ -3,7 +3,6 @@ package com.ledga.app.data.trackers
 import com.ledga.app.data.derive.LedgerQueries
 import com.ledga.app.data.room.CategoryRow
 import com.ledga.app.data.room.LedgaDatabase
-import com.ledga.app.data.room.RuleRow
 import com.ledga.app.data.room.TxRow
 import com.ledga.app.data.room.dao.CategoryMonthTotal
 import com.ledga.app.data.room.dao.CategorySpend
@@ -51,8 +50,6 @@ data class CategoryDetail(
     val allMonths: List<Bucket>,
     val yearSoFarCents: Long,
     val topPlaces: List<PersonTotal>,
-    /** Tracker detail's "Matched by" chips; Task 5's page reads 4d's rule list instead and drops this (R94). */
-    val rules: List<RuleRow>,
     val payments: List<TxRow>,
 )
 
@@ -82,9 +79,8 @@ class Trackers(private val db: LedgaDatabase, private val ledger: LedgerQueries)
             ledger.categoryMonthTotals(listOf(categoryKey), InstantRange(Instant.EPOCH, null), lineId).map { rows -> rows.map { it.pick(measure) } },
             ledger.latestSpends(categoryKey, lineId, LATEST),
             ledger.topPlaces(categoryKey, measure, periods.first().startInstant, lineId),
-            db.rulesDao().observeForCategory(categoryKey),
             ledger.recent(lineId, categoryKey),
-        ) { monthly, latest, places, rules, payments ->
+        ) { monthly, latest, places, payments ->
             val first = monthly.filter { it.count > 0 }.minByOrNull { it.month }
                 ?.let { YearMonth.parse(it.month).atDay(1).atStartOfDay(Nairobi.ZONE).toInstant() }
             val all = buckets(monthly, Periods.since(PeriodType.MONTH, first ?: now, now))
@@ -95,7 +91,6 @@ class Trackers(private val db: LedgaDatabase, private val ledger: LedgerQueries)
                 allMonths = all,
                 yearSoFarCents = all.filter { it.period.start.year == year }.sumOf { it.total.cents },
                 topPlaces = places,
-                rules = rules,
                 payments = payments,
             )
         }

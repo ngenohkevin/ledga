@@ -67,18 +67,9 @@ class TrackersViewModel @Inject constructor(
     private val line: SelectedLine,
     private val live: LiveClock,
     private val edits: TransactionEdits,
-    private val stopped: StoppedTrackers,
 ) : ViewModel() {
     private val range = MutableStateFlow(TrackerRange.SIX_MONTHS)
 
-    /** "Stopped tracking …" from a detail that just closed (R51). */
-    val stoppedTracking: StateFlow<StoppedTracking?> = stopped.latest
-
-    fun stoppedShown(note: StoppedTracking) = stopped.taken(note)
-
-    fun undoStop(note: StoppedTracking) {
-        viewModelScope.launch { stopped.undo(note) }
-    }
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val ui: StateFlow<TrackersUi> = combine(live.today, line.choice) { today, choice -> today to choice }

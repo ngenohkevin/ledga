@@ -11,13 +11,6 @@ interface RulesDao {
     @Query("SELECT * FROM rules ORDER BY id")
     suspend fun all(): List<RuleRow>
 
-    /** Tracker detail's "Matched by" (R49): the enabled rules filing into [categoryKey], the person's first and newest first. */
-    @Query(
-        "SELECT * FROM rules WHERE action = 'SET_CATEGORY' AND categoryKey = :categoryKey AND enabled = 1 " +
-            "ORDER BY CASE origin WHEN 'USER' THEN 0 ELSE 1 END, createdAt DESC, id",
-    )
-    fun observeForCategory(categoryKey: String): Flow<List<RuleRow>>
-
     /** Categories & rules (R67): every rule, on or off — the person's first and newest first, then built-in ones in seed order. */
     @Query("SELECT * FROM rules ORDER BY CASE origin WHEN 'USER' THEN 0 ELSE 1 END, CASE origin WHEN 'USER' THEN -createdAt ELSE 0 END, id")
     fun observeAll(): Flow<List<RuleRow>>

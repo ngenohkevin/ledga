@@ -49,7 +49,6 @@ import com.ledga.app.ui.design.components.Skeleton
 import com.ledga.app.ui.design.icons.Ph
 import com.ledga.app.ui.design.tokens.Radii
 import com.ledga.app.ui.design.tokens.Spacing
-import com.ledga.app.ui.trackers.StoppedTrackingUndo
 import com.ledga.app.ui.tx.CategoryPickerHost
 import com.ledga.app.ui.tx.TransactionSheetHost
 import com.ledga.core.time.PeriodType
@@ -171,7 +170,6 @@ fun HomeRoute(nav: HomeNav, vm: HomeViewModel = hiltViewModel()) {
     var sheets by rememberSaveable(stateSaver = HomeSheets.Saver) { mutableStateOf(HomeSheets()) }
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
-    StoppedTrackingUndo(vm.stoppedTracking, snackbar, vm::stoppedShown, vm::undoStop)
     val askSms = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
         if (result[Manifest.permission.READ_SMS] == true) vm.onSmsGranted() else vm.onSmsDenied(context.showsRationale(Manifest.permission.READ_SMS))
     }
