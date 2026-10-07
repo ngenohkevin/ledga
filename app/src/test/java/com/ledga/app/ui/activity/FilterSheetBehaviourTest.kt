@@ -16,6 +16,11 @@ import com.ledga.app.ui.design.theme.LedgaTheme
 import java.time.LocalDate
 import java.time.YearMonth
 import kotlin.test.assertEquals
+import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.isDialog
+import androidx.compose.ui.test.onAllNodesWithContentDescription
+import androidx.compose.ui.test.assertCountEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -83,5 +88,22 @@ class FilterSheetBehaviourTest {
         compose.onNodeWithText("Wedding").performClick()
         compose.onNodeWithText("Show results").performScrollTo().performClick()
         assertEquals(emptySet(), applied.single().categoryKeys)
+    }
+
+    @Test
+    fun `on a tall screen the date opens as the calendar`() {
+        show(TransactionFilter(dates = DateFilter.Custom(LocalDate.parse("2026-09-02"), LocalDate.parse("2026-09-14"))), mutableListOf())
+        compose.onNodeWithText("From").performScrollTo().performClick()
+        compose.onAllNodes(hasSetTextAction() and hasAnyAncestor(isDialog())).assertCountEquals(0)
+        compose.onAllNodesWithContentDescription("input mode", substring = true).assertCountEquals(1)
+    }
+
+    @Test
+    @Config(qualifiers = "w800dp-h360dp-land-xhdpi")
+    fun `on a short screen the date opens as typed fields, with no way into the clipped calendar (S26)`() {
+        show(TransactionFilter(dates = DateFilter.Custom(LocalDate.parse("2026-09-02"), LocalDate.parse("2026-09-14"))), mutableListOf())
+        compose.onNodeWithText("From").performScrollTo().performClick()
+        compose.onNode(hasSetTextAction() and hasAnyAncestor(isDialog())).assertExists()
+        compose.onAllNodesWithContentDescription("input mode", substring = true).assertCountEquals(0)
     }
 }
