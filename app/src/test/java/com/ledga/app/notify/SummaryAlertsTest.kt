@@ -124,4 +124,38 @@ class SummaryAlertsTest {
         val monday = LocalDate.parse("2026-10-05")
         assertEquals(OpenedNotification("daily:2026-10-05", NotificationTap.Spending(monday, monday)), n.opened)
     }
+
+    @Test
+    fun `the biggest is named by the payment's own amount, as the list shows it (R117)`() = runTest {
+        db.transactionsDao().upsertAll(
+            listOf(
+                txRow(
+                    code = "TJK4AB12TA", kind = TxKind.SEND, amountCents = 5_000, feeCents = 700, name = "JANE TESTER", phone = "0712345111",
+                    account = null, categoryKey = Categories.SENT_TO_PEOPLE, at = Instant.parse("2026-10-05T07:00:00Z"),
+                ),
+                txRow(
+                    code = "TJK4AB12TB", kind = TxKind.SEND, flow = FlowKind.OWN_OUT, amountCents = 5_000_000, feeCents = 10_800,
+                    name = "EXAMPLE BANK", account = null, categoryKey = Categories.OWN_ACCOUNTS, at = Instant.parse("2026-10-05T08:00:00Z"),
+                ),
+            ),
+        )
+        assertTrue(summaries.daily(eightPm))
+        val a = db.alertsDao().observeWithTx().first().single().alert
+        assertEquals("Spent Ksh 165 today", a.title, "Spent keeps every fee")
+        assertEquals("Across 2 payments · biggest: Jane Tester Ksh 50", a.body, "the payment's own amount; a fee alone never outranks a payment")
+    }
+
+    @Test
+    fun `a day of fees only names the fee`() = runTest {
+        db.transactionsDao().upsertAll(
+            listOf(
+                txRow(
+                    code = "TJK4AB12TC", kind = TxKind.SEND, flow = FlowKind.OWN_OUT, amountCents = 1_000_000, feeCents = 3_300,
+                    name = "EXAMPLE BANK", account = null, categoryKey = Categories.OWN_ACCOUNTS, at = Instant.parse("2026-10-05T12:00:00Z"),
+                ),
+            ),
+        )
+        assertTrue(summaries.daily(eightPm))
+        assertEquals("One payment: Example Bank Ksh 33", db.alertsDao().observeWithTx().first().single().alert.body)
+    }
 }

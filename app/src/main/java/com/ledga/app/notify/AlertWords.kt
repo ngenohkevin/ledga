@@ -32,12 +32,15 @@ object AlertWords {
         return Alert("large:${tx.code}", AlertType.LARGE, title, body, tx.code, NotificationTap.Payment(tx.code))
     }
 
-    /** R104: "Fuliza covered Ksh 463" / "Of a Ksh 2,500 payment to Sample Supermarket · you owe Ksh 6,418.36, due 2 Nov". */
+    /** R104, R117: "Fuliza covered Ksh 463" / "Of a Ksh 2,500 payment + Ksh 7 fee to Sample Supermarket · you owe Ksh 6,418.36, due 2 Nov". */
     fun fulizaDraw(tx: TxRow): Alert {
         val payment = if (tx.kind == TxKind.FULIZA_ONLY) {
             null // the payment's own SMS never came: only what Fuliza covered is known
         } else {
-            "Of a ${ksh(tx.amountCents)} payment" + (name(tx.counterpartyName)?.let { " to $it" } ?: "")
+            // R117 (O1): Fuliza's draw also covers the M-Pesa fee, so without it the cover reads bigger than the payment.
+            val mpesaFee = tx.feeCents - (tx.fulizaFeeCents ?: 0L)
+            "Of a ${ksh(tx.amountCents)} payment" + (if (mpesaFee > 0) " + ${ksh(mpesaFee)} fee" else "") +
+                (name(tx.counterpartyName)?.let { " to $it" } ?: "")
         }
         val owed = tx.fulizaOutstandingCents?.let { o ->
             "you owe ${ksh(o)}" + (tx.fulizaDueDate?.let { ", due ${DateLabels.dayMonth(it)}" } ?: "")

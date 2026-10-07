@@ -215,12 +215,16 @@ interface LedgerDao {
     )
     suspend fun spentIn(from: Instant, to: Instant): SpentCount
 
-    /** A summary's biggest payment: the row that added most to Spent, the newest on a tie. */
+    /**
+     * A summary's biggest payment (R117, O2): the one with the largest amount, as Activity's row shows it; the newest on
+     * a tie. A row that only added fees (an own-account send's fee) is named only when nothing else was paid.
+     */
     @Query(
-        "SELECT l.code AS code, l.kind AS kind, t.counterpartyName AS name, l.spendCents + l.feeCents AS cents " +
+        "SELECT l.code AS code, l.kind AS kind, t.counterpartyName AS name, " +
+            "CASE WHEN l.spendCents > 0 THEN l.spendCents ELSE l.feeCents END AS cents " +
             "FROM ledger l JOIN transactions t ON t.code = l.code " +
             "WHERE l.occurredAt >= :from AND l.occurredAt < :to AND l.spendCents + l.feeCents > 0 " +
-            "ORDER BY cents DESC, l.occurredAt DESC, l.code DESC LIMIT 1",
+            "ORDER BY l.spendCents > 0 DESC, cents DESC, l.occurredAt DESC, l.code DESC LIMIT 1",
     )
     suspend fun biggest(from: Instant, to: Instant): BiggestPayment?
 }

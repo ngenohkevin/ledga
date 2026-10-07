@@ -30,7 +30,7 @@ class AlertWordsTest {
         val a = AlertWords.fulizaDraw(fulizaTxRow())
         assertEquals("fuliza-draw:TJK4AB12EA", a.key)
         assertEquals("Fuliza covered Ksh 463", a.title)
-        assertEquals("Of a Ksh 2,500 payment to Jane Tester · you owe Ksh 6,418.36, due 2 Nov", a.body)
+        assertEquals("Of a Ksh 2,500 payment + Ksh 7 fee to Jane Tester · you owe Ksh 6,418.36, due 2 Nov", a.body)
         val alone = fulizaTxRow().copy(kind = TxKind.FULIZA_ONLY, amountCents = 46_300, counterpartyName = null, fulizaDueDate = null)
         assertEquals("You owe Ksh 6,418.36", AlertWords.fulizaDraw(alone).body)
     }
@@ -62,5 +62,11 @@ class AlertWordsTest {
         assertEquals("Fuliza Ksh 6,418.36 due tomorrow", AlertWords.fulizaDue(FulizaDue(1, 641_836, due, 1), null).title)
         assertEquals("Due 2 Nov", AlertWords.fulizaDue(FulizaDue(1, 641_836, due, 1), null).body)
         assertEquals("fuliza-due:1:2026-11-02:0d", AlertWords.fulizaDue(FulizaDue(1, 641_836, due, 0), "Personal ··11").key)
+    }
+
+    @Test
+    fun `a draw for a payment with no M-Pesa fee names none (R117)`() {
+        val noFee = fulizaTxRow().copy(feeCents = 463) // only Fuliza's access fee
+        assertEquals("Of a Ksh 2,500 payment to Jane Tester · you owe Ksh 6,418.36, due 2 Nov", AlertWords.fulizaDraw(noFee).body)
     }
 }
