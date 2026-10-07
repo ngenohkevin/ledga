@@ -461,4 +461,28 @@ class TransactionEditsTest {
         assertFalse(db.categoriesDao().get(wedding)!!.archived)
         assertEquals(1, db.categoriesDao().all().count { it.name.equals("Wedding", ignoreCase = true) })
     }
+
+    @Test
+    fun `a rule of your own switched off, then deleted, comes back switched off with Undo (R73)`() = runTest {
+        ingest(Sms.paybill("TJK4AB12RD", "SAMPLE ACADEMY", "ADM 1024", "5,000.00"))
+        edits.addRule(Categories.SCHOOL, "SAMPLE ACADEMY", null)
+        val rule = userRules().single()
+        edits.setRuleEnabled(rule.id, false)
+        val removed = edits.removeRule(rule.id)!!
+        assertTrue(userRules().isEmpty())
+        edits.restoreRule(removed)
+        val back = userRules().single()
+        assertFalse(back.enabled, "Undo puts it back as it was: off")
+        assertEquals(Categories.OTHER, tx("TJK4AB12RD").categoryKey)
+    }
+
+    @Test
+    fun `switching off the last rule of a tracked category keeps it tracked, and its payments go to their default (R73)`() = runTest {
+        ingest(Sms.paybill("TJK4AB12RE", "SAMPLE ACADEMY", "ADM 1024", "5,000.00"))
+        edits.addRule(Categories.SCHOOL, "SAMPLE ACADEMY", null)
+        edits.setTracked(Categories.SCHOOL, true)
+        edits.setRuleEnabled(userRules().single().id, false)
+        assertTrue(db.categoriesDao().get(Categories.SCHOOL)!!.tracked)
+        assertEquals(Categories.OTHER, tx("TJK4AB12RE").categoryKey)
+    }
 }
