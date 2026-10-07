@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.StateFlow
  * once; like Activity's `TakeLinks` (R93).
  */
 @Composable
-fun TakeRequest(requested: StateFlow<Boolean>, take: () -> Unit) {
+fun <T : Any> TakeRequest(requested: StateFlow<T?>, take: (T) -> Unit) {
     val asked by requested.collectAsStateWithLifecycle()
-    LaunchedEffect(asked) { if (asked) take() }
+    LaunchedEffect(asked) { asked?.let(take) }
 }

@@ -21,7 +21,8 @@ class NotificationIntentsTest {
     fun `every kind of tap comes back as it went in`() {
         val taps = listOf(
             OpenedNotification("large:TJK4AB12FA", NotificationTap.Payment("TJK4AB12FA")),
-            OpenedNotification("fuliza-due:1:2026-11-02:3d", NotificationTap.Fuliza),
+            OpenedNotification("fuliza-due:1:2026-11-02:3d", NotificationTap.Fuliza(1)),
+            OpenedNotification("fuliza-due:none:2026-11-02:0d", NotificationTap.Fuliza(null)),
             OpenedNotification(
                 "weekly:2026-10-05",
                 NotificationTap.Spending(LocalDate.parse("2026-10-05"), LocalDate.parse("2026-10-11")),

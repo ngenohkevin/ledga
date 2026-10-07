@@ -38,6 +38,7 @@ import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -188,9 +189,20 @@ class HomeViewModel @Inject constructor(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeUi())
 
     /** R100: a Fuliza reminder's tap asks for the Fuliza sheet; `HomeRoute` takes it while Home is shown. */
-    val fulizaAsked: StateFlow<Boolean> = home.fulizaAsked
+    val fulizaAsked: StateFlow<FulizaRequest?> = home.fulizaAsked
 
-    fun fulizaShown() = home.fulizaShown()
+    /**
+     * The sheet is opening for [request]. When Home shows a different single line, it moves to the reminder's line first
+     * (owner 2026-10-07), as if the person had picked it; All lines already includes it and stays.
+     */
+    fun fulizaShown(request: FulizaRequest) {
+        home.fulizaShown()
+        val lineId = request.lineId ?: return
+        viewModelScope.launch {
+            val choice = line.choice.first()
+            if (choice.lineId != null && choice.lineId != lineId && choice.lines.any { it.id == lineId }) line.select(lineId)
+        }
+    }
 
     /**
      * On resume: access may have changed in Settings, and the greeting re-reads the clock (R60). SMS access that has

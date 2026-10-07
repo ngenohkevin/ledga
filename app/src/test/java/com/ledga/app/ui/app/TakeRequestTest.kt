@@ -15,10 +15,10 @@ class TakeRequestTest {
 
     @Test
     fun `the screen showing takes a request, once`() {
-        val requested = MutableStateFlow(false)
+        val requested = MutableStateFlow<Long?>(null)
         var taken = 0
-        compose.setContent { TakeRequest(requested) { taken++; requested.value = false } }
-        compose.runOnIdle { requested.value = true }
+        compose.setContent { TakeRequest(requested) { taken++; requested.value = null } }
+        compose.runOnIdle { requested.value = 1L }
         compose.waitForIdle()
         assertEquals(1, taken)
     }

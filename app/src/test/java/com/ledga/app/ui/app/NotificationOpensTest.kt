@@ -13,6 +13,7 @@ import com.ledga.app.testing.TestDb
 import com.ledga.app.testing.txRow
 import com.ledga.app.ui.activity.ActivityLink
 import com.ledga.app.ui.activity.ActivityLinks
+import com.ledga.app.ui.home.FulizaRequest
 import com.ledga.app.ui.home.HomeLinks
 import java.time.Instant
 import java.time.LocalDate
@@ -56,9 +57,9 @@ class NotificationOpensTest {
 
     @Test
     fun `a Fuliza reminder opens Home and asks for its Fuliza sheet`() = runTest {
-        opens.open(OpenedNotification("fuliza-due:1:2026-11-02:3d", NotificationTap.Fuliza))
+        opens.open(OpenedNotification("fuliza-due:1:2026-11-02:3d", NotificationTap.Fuliza(1)))
         assertEquals(OpenDestination.Home, opens.destination.value)
-        assertTrue(home.fulizaAsked.value)
+        assertEquals(FulizaRequest(1), home.fulizaAsked.value)
     }
 
     @Test

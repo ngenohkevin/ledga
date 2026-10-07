@@ -95,7 +95,7 @@ object AlertWords {
             else -> "Fuliza $owed due in ${due.daysLeft} days"
         }
         val body = (lineLabel?.let { "$it${DOT}due " } ?: "Due ") + DateLabels.dayMonth(due.dueDate)
-        return Alert(FulizaReminders.key(due), AlertType.FULIZA_DUE, title, body, null, NotificationTap.Fuliza)
+        return Alert(FulizaReminders.key(due), AlertType.FULIZA_DUE, title, body, null, NotificationTap.Fuliza(due.lineId))
     }
 
     internal fun ksh(cents: Long): String = Money(cents).kshText()

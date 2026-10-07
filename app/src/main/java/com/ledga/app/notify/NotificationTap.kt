@@ -10,8 +10,8 @@ sealed interface NotificationTap {
     /** A large payment or a Fuliza draw: that payment, over Alerts. */
     data class Payment(val code: String) : NotificationTap
 
-    /** A Fuliza reminder: Home's Fuliza sheet. */
-    data object Fuliza : NotificationTap
+    /** A Fuliza reminder: Home's Fuliza sheet, on the reminder's line ([lineId]; null = not on a line). */
+    data class Fuliza(val lineId: Long?) : NotificationTap
 
     /** A summary: Activity's payments on those Nairobi days, [from] to [to], both included. */
     data class Spending(val from: LocalDate, val to: LocalDate) : NotificationTap
@@ -27,7 +27,8 @@ object NotificationIntents {
     private const val CODE = "com.ledga.app.code"
     private const val FROM = "com.ledga.app.from"
     private const val TO = "com.ledga.app.to"
-    private val KEYS = listOf(ALERT, TAP, CODE, FROM, TO)
+    private const val LINE = "com.ledga.app.line"
+    private val KEYS = listOf(ALERT, TAP, CODE, FROM, TO, LINE)
 
     /** Starts Ledga, or reaches the one already open (`onNewIntent`), on its current screen. */
     fun intent(context: Context, opened: OpenedNotification): Intent = put(
@@ -40,7 +41,7 @@ object NotificationIntents {
         putExtra(ALERT, opened.alertKey)
         when (val tap = opened.tap) {
             is NotificationTap.Payment -> putExtra(TAP, "payment").putExtra(CODE, tap.code)
-            NotificationTap.Fuliza -> putExtra(TAP, "fuliza")
+            is NotificationTap.Fuliza -> putExtra(TAP, "fuliza").apply { tap.lineId?.let { putExtra(LINE, it) } }
             is NotificationTap.Spending -> putExtra(TAP, "spending").putExtra(FROM, tap.from.toString()).putExtra(TO, tap.to.toString())
         }
     }
@@ -51,7 +52,7 @@ object NotificationIntents {
         val key = intent.getStringExtra(ALERT) ?: return null
         val tap = when (intent.getStringExtra(TAP)) {
             "payment" -> NotificationTap.Payment(intent.getStringExtra(CODE) ?: return null)
-            "fuliza" -> NotificationTap.Fuliza
+            "fuliza" -> NotificationTap.Fuliza(if (intent.hasExtra(LINE)) intent.getLongExtra(LINE, 0L) else null)
             "spending" -> NotificationTap.Spending(date(intent.getStringExtra(FROM)) ?: return null, date(intent.getStringExtra(TO)) ?: return null)
             else -> return null
         }

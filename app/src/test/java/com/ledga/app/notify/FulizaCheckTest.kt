@@ -31,7 +31,7 @@ class FulizaCheckTest {
         val n = phone.posted.single()
         assertEquals("Fuliza Ksh 6,418.36 due in 3 days", n.title)
         assertEquals("Personal ··11 · due 2 Nov", n.body)
-        assertEquals(NotificationTap.Fuliza, n.opened.tap)
+        assertEquals(NotificationTap.Fuliza(1), n.opened.tap, "the reminder's line goes with its tap (R100)")
         assertEquals(0, check.check(), "once")
     }
 }

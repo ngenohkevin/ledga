@@ -48,8 +48,8 @@ class NotificationOpens @Inject constructor(
         readSafely { db.alertsDao().markRead(listOf(opened.alertKey), clock.instant()) }
         pending.value = when (val tap = opened.tap) {
             is NotificationTap.Payment -> OpenDestination.Alerts(tap.code.takeIf { readSafely { db.transactionsDao().get(it) }?.isHidden == false })
-            NotificationTap.Fuliza -> {
-                home.openFuliza()
+            is NotificationTap.Fuliza -> {
+                home.openFuliza(tap.lineId)
                 OpenDestination.Home
             }
             is NotificationTap.Spending -> {

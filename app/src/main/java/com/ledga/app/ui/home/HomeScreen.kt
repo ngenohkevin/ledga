@@ -182,9 +182,9 @@ fun HomeRoute(nav: HomeNav, vm: HomeViewModel = hiltViewModel()) {
         vm.refresh()
         onPauseOrDispose { }
     }
-    TakeRequest(vm.fulizaAsked) {
+    TakeRequest(vm.fulizaAsked) { request ->
+        vm.fulizaShown(request)
         sheets = sheets.copy(fuliza = true)
-        vm.fulizaShown()
     }
     val actions = HomeActions(
         onSearch = {

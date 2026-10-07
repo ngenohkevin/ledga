@@ -249,9 +249,23 @@ class HomeViewModelTest {
     @Test
     fun `a Fuliza reminder's request waits for Home until it has shown the sheet (R100)`() = runTest {
         val vm = vm()
-        homeLinks.openFuliza()
-        assertTrue(vm.fulizaAsked.value)
-        vm.fulizaShown()
-        assertFalse(vm.fulizaAsked.value)
+        homeLinks.openFuliza(null)
+        assertEquals(FulizaRequest(null), vm.fulizaAsked.value)
+        vm.fulizaShown(FulizaRequest(null))
+        assertNull(vm.fulizaAsked.value)
+    }
+
+    @Test
+    fun `a Fuliza reminder for the other line switches Home to that line, and All lines stays (R100, owner 2026-10-07)`() = runTest {
+        twoLines(db)
+        settings.setSelectedLine(2)
+        val vm = vm()
+        homeLinks.openFuliza(1)
+        vm.fulizaShown(FulizaRequest(1))
+        assertEquals(1L, settings.settings.first { it.selectedLineId == 1L }.selectedLineId)
+        settings.setSelectedLine(null)
+        homeLinks.openFuliza(2)
+        vm.fulizaShown(FulizaRequest(2))
+        assertNull(vm.ui.first { it.loaded }.line.lineId, "All lines stays All lines")
     }
 }
