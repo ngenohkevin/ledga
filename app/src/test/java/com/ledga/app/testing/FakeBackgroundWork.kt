@@ -9,6 +9,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 class FakeBackgroundWork : BackgroundWork {
     val calls = mutableListOf<String>()
     var chainRunning = false
+
+    /** What 5a queued (alerts, schedules, the 6-hourly check), kept apart from [calls] so 4a's tests stay as they are. */
+    val scheduled = mutableListOf<String>()
     override val history = MutableStateFlow<HistoryProgress?>(null)
     override val inboxImport = MutableStateFlow<ImportProgress>(ImportProgress.Idle)
     override val legacyImportFailed = MutableStateFlow(false)
@@ -30,4 +33,8 @@ class FakeBackgroundWork : BackgroundWork {
     }
 
     override suspend fun migrationChainRunning() = chainRunning
+
+    override fun alertsFor(codes: Set<String>) {
+        scheduled += "alertsFor ${codes.sorted().joinToString(",")}"
+    }
 }

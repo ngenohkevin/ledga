@@ -21,7 +21,9 @@ import com.ledga.app.data.room.LedgaDatabase
 import com.ledga.app.data.settings.SettingsStore
 import com.ledga.app.notify.AndroidPhoneNotifications
 import com.ledga.app.notify.Notifier
+import com.ledga.app.notify.PaymentAlerts
 import com.ledga.app.notify.PhoneNotifications
+import com.ledga.app.receiver.IncomingSms
 import com.ledga.app.startup.SmsAccess
 import com.ledga.app.startup.Startup
 import com.ledga.app.startup.V1Leftovers
@@ -109,6 +111,16 @@ object DataModule {
     @Provides
     @Singleton
     fun notifier(db: LedgaDatabase, phone: PhoneNotifications, clock: Clock): Notifier = Notifier(db, phone, clock)
+
+    /** The receiver's alerts (spec §7.2 step 4, R104). */
+    @Provides
+    fun paymentAlerts(db: LedgaDatabase, settings: SettingsStore, notifier: Notifier, clock: Clock): PaymentAlerts =
+        PaymentAlerts(db, settings, notifier, clock)
+
+    /** The receiver's pipeline (R112). */
+    @Provides
+    fun incomingSms(lines: LinesRepository, ingestor: SmsIngestor, work: BackgroundWork, clock: Clock): IncomingSms =
+        IncomingSms(lines, ingestor, work, clock)
 
     @Provides
     fun startup(

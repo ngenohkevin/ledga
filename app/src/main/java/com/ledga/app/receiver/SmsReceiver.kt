@@ -6,17 +6,12 @@ import android.content.Intent
 import android.provider.Telephony
 import android.telephony.SubscriptionManager
 import android.util.Log
-import com.ledga.app.data.ingest.RawSms
-import com.ledga.app.data.ingest.SmsIngestor
-import com.ledga.app.data.lines.LinesRepository
-import com.ledga.app.data.room.SmsSource
 import com.ledga.core.parse.MpesaParser
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
-import java.time.Clock
 import javax.inject.Inject
 
 /** One message, or one part of one, as SMS_RECEIVED delivers it. */
@@ -38,14 +33,12 @@ object ReceivedSms {
 }
 
 /**
- * Spec §9.1: SMS_RECEIVED at priority 999 (manifest). Joins multi-part messages, resolves the line and hands them to
- * `SmsIngestor`, which dedupes against the inbox scans. Phase 5 adds alerts for new codes here.
+ * Spec §9.1: SMS_RECEIVED at priority 999 (manifest). Joins multi-part messages and hands them to [IncomingSms], which
+ * stores them on their line and queues their alerts (spec §7.2 step 4, R112).
  */
 @AndroidEntryPoint
 class SmsReceiver : BroadcastReceiver() {
-    @Inject lateinit var ingestor: SmsIngestor
-    @Inject lateinit var lines: LinesRepository
-    @Inject lateinit var clock: Clock
+    @Inject lateinit var incoming: IncomingSms
 
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action != Telephony.Sms.Intents.SMS_RECEIVED_ACTION) return
@@ -57,11 +50,9 @@ class SmsReceiver : BroadcastReceiver() {
         val pending = goAsync()
         CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
             try {
-                val lineId = lines.lineFor(lines.resolve(subscription))
-                val now = clock.instant()
-                ingestor.ingestAll(messages.map { RawSms(it.sender, it.body, now, subscription, lineId, SmsSource.RECEIVER) })
+                incoming.store(messages, subscription)
             } catch (e: Exception) {
-                // Nothing is lost: the next start-up catch-up reads the same message from the inbox.
+                // Nothing is lost: the next catch-up reads the same message from the inbox (without an alert, spec §11).
                 Log.w(TAG, "could not store an incoming M-Pesa SMS", e)
             } finally {
                 pending.finish()

@@ -10,7 +10,10 @@ import com.ledga.core.parse.MpesaParser
 import com.ledga.core.parse.SmsText
 import java.time.Instant
 
-/** One SMS as a source delivers it (receiver, inbox scan, legacy, import). [lineId] is resolved by the caller (Phase 5). */
+/**
+ * One SMS as a source delivers it (receiver, inbox scan, legacy, import). The caller resolves [lineId]
+ * (`LinesRepository.resolve` + `lineFor`, spec §9.1).
+ */
 data class RawSms(
     val sender: String,
     val body: String,
@@ -20,7 +23,7 @@ data class RawSms(
     val source: SmsSource,
 )
 
-/** [newCodes]: PARSED codes of newly stored rows (Phase 5 fires alerts only for these). */
+/** [newCodes]: PARSED codes of newly stored rows; only the receiver's alert (spec §7.2 step 4). */
 data class IngestResult(val inserted: Int, val duplicates: Int, val rejected: Int, val newCodes: Set<String>)
 
 /**

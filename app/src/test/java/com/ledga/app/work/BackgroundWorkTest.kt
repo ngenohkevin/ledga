@@ -148,4 +148,16 @@ class BackgroundWorkTest {
         assertFalse(LegacyImportWorker.gaveUp(listOf(info(WorkInfo.State.SUCCEEDED, failed = false))))
         assertTrue(LegacyImportWorker.gaveUp(listOf(info(WorkInfo.State.SUCCEEDED, failed = true))))
     }
+
+    @Test
+    fun `the receiver's codes get one alert job, 30 seconds later (R103)`() {
+        WorkManagerBackgroundWork(wm).alertsFor(setOf("TJK4AB12FA", "TJK4AB12FB"))
+        val info = wm.getWorkInfosByTag(PaymentAlertWorker::class.java.name).get().single()
+        assertEquals(WorkInfo.State.ENQUEUED, info.state)
+        assertEquals(30_000L, info.initialDelayMillis)
+        WorkManagerBackgroundWork(wm).alertsFor(emptySet())
+        assertEquals(1, wm.getWorkInfosByTag(PaymentAlertWorker::class.java.name).get().size, "no codes, no job")
+        val codes = PaymentAlertWorker.request(setOf("TJK4AB12FA", "TJK4AB12FB")).workSpec.input.getStringArray(PaymentAlertWorker.KEY_CODES)
+        assertEquals(setOf("TJK4AB12FA", "TJK4AB12FB"), codes?.toSet())
+    }
 }

@@ -73,6 +73,9 @@ interface BackgroundWork {
     /** Onboarding's Import and You → Rescan: the whole inbox. */
     fun importInbox()
 
+    /** Spec §7.2 step 4 (R103): the receiver's new codes get their alerts a little later. */
+    fun alertsFor(codes: Set<String>)
+
     /** True while the post-migration chain has a step queued or running (its own rescan and rebuild are coming). */
     suspend fun migrationChainRunning(): Boolean
 
@@ -102,6 +105,11 @@ class WorkManagerBackgroundWork(private val wm: WorkManager) : BackgroundWork {
 
     override fun importInbox() {
         wm.enqueueUniqueWork(IMPORT, ExistingWorkPolicy.KEEP, InboxScanWorker.request(ScanMode.FULL))
+    }
+
+    override fun alertsFor(codes: Set<String>) {
+        if (codes.isEmpty()) return
+        wm.enqueue(PaymentAlertWorker.request(codes))
     }
 
     override suspend fun migrationChainRunning(): Boolean =
