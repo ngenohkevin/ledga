@@ -13,19 +13,17 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ledga.app.data.derive.TransactionFilter
 import com.ledga.app.data.settings.TextSize
 import com.ledga.app.ui.activity.ActivityLink
 import com.ledga.app.ui.activity.ActivityLinks
+import com.ledga.app.ui.activity.TakeLinks
 import com.ledga.app.ui.design.theme.Appearance
 import com.ledga.app.ui.design.theme.LedgaTheme
 import com.ledga.app.ui.home.HomeNav
 import com.ledga.app.ui.you.YouNav
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.launch
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -53,6 +51,7 @@ class LedgaNavHostTest {
 
         @Composable override fun Activity(openCategory: (String, String?) -> Unit) = Column {
             val probe = viewModel { LinkProbe(links) }
+            TakeLinks(links.requests, probe::take)
             val showing by probe.showing.collectAsState()
             Text("Activity screen")
             Text("Activity showing $showing")
@@ -113,20 +112,20 @@ class LedgaNavHostTest {
     }
 
     /** Stands in for ActivityViewModel's side of R61: it takes each request once, the way the real one does. */
-    class LinkProbe(links: ActivityLinks) : ViewModel() {
+    /**
+     * Stands in for ActivityViewModel's side of R61/R93: it applies a hand-off only when the screen hands it one through
+     * [TakeLinks], the way ActivityTab does — never by itself (final review I2).
+     */
+    class LinkProbe(private val links: ActivityLinks) : ViewModel() {
         val showing = MutableStateFlow("nothing")
 
-        init {
-            viewModelScope.launch {
-                links.requests.filterNotNull().collect { link ->
-                    showing.value = when (link) {
-                        is ActivityLink.Transactions -> "transactions ${link.filter.categoryKeys.joinToString()}"
-                        ActivityLink.Spending -> "spending"
-                        ActivityLink.People -> "people"
-                    }
-                    links.taken(link)
-                }
+        fun take(link: ActivityLink) {
+            showing.value = when (link) {
+                is ActivityLink.Transactions -> "transactions ${link.filter.categoryKeys.joinToString()}"
+                ActivityLink.Spending -> "spending"
+                ActivityLink.People -> "people"
             }
+            links.taken(link)
         }
     }
 
