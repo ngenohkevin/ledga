@@ -79,6 +79,18 @@ object AlertWords {
         }
     }
 
+    /** R105: "Fuliza Ksh 6,418.36 due in 3 days" / "Personal ··11 · due 2 Nov" (or "Due 2 Nov" without a line). */
+    fun fulizaDue(due: FulizaDue, lineLabel: String?): Alert {
+        val owed = ksh(due.outstandingCents)
+        val title = when (due.daysLeft) {
+            0 -> "Fuliza $owed due today"
+            1 -> "Fuliza $owed due tomorrow"
+            else -> "Fuliza $owed due in ${due.daysLeft} days"
+        }
+        val body = (lineLabel?.let { "$it${DOT}due " } ?: "Due ") + DateLabels.dayMonth(due.dueDate)
+        return Alert(FulizaReminders.key(due), AlertType.FULIZA_DUE, title, body, null, NotificationTap.Fuliza)
+    }
+
     internal fun ksh(cents: Long): String = Money(cents).kshText()
 
     private fun name(raw: String?): String? = raw?.takeIf { it.isNotBlank() }?.let(NameFormat::display)

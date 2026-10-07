@@ -20,6 +20,7 @@ import com.ledga.app.data.lines.SimDirectory
 import com.ledga.app.data.room.LedgaDatabase
 import com.ledga.app.data.settings.SettingsStore
 import com.ledga.app.notify.AndroidPhoneNotifications
+import com.ledga.app.notify.FulizaCheck
 import com.ledga.app.notify.Notifier
 import com.ledga.app.notify.PaymentAlerts
 import com.ledga.app.notify.PhoneNotifications
@@ -127,6 +128,10 @@ object DataModule {
     @Provides
     fun summaryAlerts(db: LedgaDatabase, ledger: LedgerQueries, notifier: Notifier, clock: Clock): SummaryAlerts =
         SummaryAlerts(db, ledger, notifier, clock)
+
+    /** The 9 AM Fuliza check (spec §11, R105). */
+    @Provides
+    fun fulizaCheck(db: LedgaDatabase, notifier: Notifier, clock: Clock): FulizaCheck = FulizaCheck(db, notifier, clock)
 
     @Provides
     fun startup(

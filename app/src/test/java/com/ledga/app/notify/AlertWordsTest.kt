@@ -54,4 +54,13 @@ class AlertWordsTest {
         assertEquals("weekly:2026-10-05", week.key)
         assertEquals("Most on Groceries (Ksh 6,000)", week.body)
     }
+
+    @Test
+    fun `a Fuliza reminder says how soon, and names the line only when given one`() {
+        val due = LocalDate.parse("2026-11-02")
+        assertEquals("Fuliza Ksh 6,418.36 due today", AlertWords.fulizaDue(FulizaDue(1, 641_836, due, 0), null).title)
+        assertEquals("Fuliza Ksh 6,418.36 due tomorrow", AlertWords.fulizaDue(FulizaDue(1, 641_836, due, 1), null).title)
+        assertEquals("Due 2 Nov", AlertWords.fulizaDue(FulizaDue(1, 641_836, due, 1), null).body)
+        assertEquals("fuliza-due:1:2026-11-02:0d", AlertWords.fulizaDue(FulizaDue(1, 641_836, due, 0), "Personal ··11").key)
+    }
 }

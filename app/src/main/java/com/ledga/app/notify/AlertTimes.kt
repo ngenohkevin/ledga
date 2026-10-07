@@ -12,6 +12,11 @@ object AlertTimes {
     val WEEKLY_DAY: DayOfWeek = DayOfWeek.SUNDAY
     val WEEKLY_AT: LocalTime = LocalTime.of(19, 0)
 
+    /** Spec §11: Fuliza reminders at 9 AM (R105: one check a day). */
+    val FULIZA_AT: LocalTime = LocalTime.of(9, 0)
+
+    fun nextFuliza(now: Instant): Instant = nextAt(now, FULIZA_AT)
+
     /** The daily summary at the person's time ([minuteOfDay] after midnight). */
     fun nextDaily(now: Instant, minuteOfDay: Int): Instant = nextAt(now, LocalTime.of(minuteOfDay / 60, minuteOfDay % 60))
 

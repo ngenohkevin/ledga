@@ -9,6 +9,7 @@ import androidx.work.testing.TestListenableWorkerBuilder
 import androidx.work.workDataOf
 import com.ledga.app.data.derive.LedgerQueries
 import com.ledga.app.data.settings.SettingsStore
+import com.ledga.app.notify.FulizaCheck
 import com.ledga.app.notify.Notifier
 import com.ledga.app.notify.SummaryAlerts
 import com.ledga.app.testing.FakeBackgroundWork
@@ -16,6 +17,7 @@ import com.ledga.app.testing.FakePhone
 import com.ledga.app.testing.FakePrefsStore
 import com.ledga.app.testing.MutableClock
 import com.ledga.app.testing.TestDb
+import com.ledga.app.testing.fulizaTxRow
 import com.ledga.app.testing.txRow
 import java.time.Instant
 import kotlin.test.assertEquals
@@ -38,7 +40,7 @@ class ScheduledAlertWorkerTest {
         override fun createWorker(appContext: Context, workerClassName: String, workerParameters: WorkerParameters): ListenableWorker? =
             if (workerClassName == ScheduledAlertWorker::class.java.name) {
                 val notifier = Notifier(db, phone, clock)
-                ScheduledAlertWorker(appContext, workerParameters, SummaryAlerts(db, LedgerQueries(db), notifier, clock), settings, work)
+                ScheduledAlertWorker(appContext, workerParameters, SummaryAlerts(db, LedgerQueries(db), notifier, clock), FulizaCheck(db, notifier, clock), settings, work)
             } else {
                 null
             }
@@ -72,5 +74,14 @@ class ScheduledAlertWorkerTest {
         run(Scheduled.WEEKLY, Instant.parse("2026-09-27T16:00:00Z")) // eight days late
         assertEquals(emptyList(), phone.posted)
         assertEquals(listOf("WEEKLY on replace=true"), work.scheduled)
+    }
+
+    @Test
+    fun `the Fuliza check writes today's reminder, and the next check is queued`() = runTest {
+        clock.instant = Instant.parse("2026-10-30T06:00:30Z") // 9 AM, Fri 30 Oct
+        db.transactionsDao().upsertAll(listOf(fulizaTxRow()))
+        run(Scheduled.FULIZA, Instant.parse("2026-10-30T06:00:00Z"))
+        assertEquals("Fuliza Ksh 6,418.36 due in 3 days", phone.posted.single().title)
+        assertEquals(listOf("FULIZA on replace=true"), work.scheduled)
     }
 }

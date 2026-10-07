@@ -8,17 +8,20 @@ import java.time.Instant
 enum class Scheduled(val uniqueName: String) {
     DAILY("ledga-daily"),
     WEEKLY("ledga-weekly"),
+    FULIZA("ledga-fuliza"),
     ;
 
     /** Its switch in You → Notifications. */
     fun isOn(s: Settings): Boolean = when (this) {
         DAILY -> s.notifyDaily
         WEEKLY -> s.notifyWeekly
+        FULIZA -> s.notifyFuliza
     }
 
     /** Its next time, strictly after [now]. */
     fun next(now: Instant, s: Settings): Instant = when (this) {
         DAILY -> AlertTimes.nextDaily(now, s.dailySummaryMinute)
         WEEKLY -> AlertTimes.nextWeekly(now)
+        FULIZA -> AlertTimes.nextFuliza(now)
     }
 }

@@ -197,4 +197,11 @@ class BackgroundWorkTest {
         assertEquals("DAILY", input.getString(ScheduledAlertWorker.KEY_KIND))
         assertEquals(at.toEpochMilli(), input.getLong(ScheduledAlertWorker.KEY_AT, 0L))
     }
+
+    @Test
+    fun `the Fuliza check waits for 9 AM`() {
+        WorkManagerBackgroundWork(wm, MutableClock(Instant.parse("2026-10-07T16:30:00Z")))
+            .schedule(Scheduled.FULIZA, Settings(), replace = false)
+        assertEquals((13 * 60 + 30) * 60_000L, wm.getWorkInfosForUniqueWork("ledga-fuliza").get().single().initialDelayMillis)
+    }
 }

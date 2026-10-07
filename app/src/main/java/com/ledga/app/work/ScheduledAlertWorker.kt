@@ -9,6 +9,7 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import com.ledga.app.data.settings.SettingsStore
+import com.ledga.app.notify.FulizaCheck
 import com.ledga.app.notify.SummaryAlerts
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
@@ -25,6 +26,7 @@ class ScheduledAlertWorker @AssistedInject constructor(
     @Assisted context: Context,
     @Assisted params: WorkerParameters,
     private val summaries: SummaryAlerts,
+    private val fuliza: FulizaCheck,
     private val settings: SettingsStore,
     private val work: BackgroundWork,
 ) : CoroutineWorker(context, params) {
@@ -37,6 +39,7 @@ class ScheduledAlertWorker @AssistedInject constructor(
                 when (kind) {
                     Scheduled.DAILY -> summaries.daily(at)
                     Scheduled.WEEKLY -> summaries.weekly(at)
+                    Scheduled.FULIZA -> fuliza.check()
                 }
             }
         } catch (e: CancellationException) {

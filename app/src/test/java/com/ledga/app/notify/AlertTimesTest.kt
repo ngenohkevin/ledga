@@ -26,4 +26,10 @@ class AlertTimesTest {
         assertEquals(at("2026-10-18T16:00:00Z"), AlertTimes.nextWeekly(at("2026-10-11T16:00:00Z")), "Sunday 7 PM itself")
         assertEquals(at("2026-10-18T16:00:00Z"), AlertTimes.nextWeekly(at("2026-10-11T21:30:00Z")), "Sunday in UTC, Monday in Nairobi")
     }
+
+    @Test
+    fun `the Fuliza check is at 9 AM every day`() {
+        assertEquals(at("2026-10-08T06:00:00Z"), AlertTimes.nextFuliza(at("2026-10-07T16:30:00Z")))
+        assertEquals(at("2026-10-07T06:00:00Z"), AlertTimes.nextFuliza(at("2026-10-07T05:59:00Z")))
+    }
 }
