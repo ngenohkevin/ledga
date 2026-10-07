@@ -20,6 +20,7 @@ fun OnboardingRoute(onDone: () -> Unit, vm: OnboardingViewModel = hiltViewModel(
         vm.onSmsResult(result[Manifest.permission.READ_SMS] == true)
     }
     val notify = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { vm.done() }
+    val phone = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { vm.onPhoneResult() }
     OnboardingScreen(
         state = state,
         onName = vm::onName,
@@ -31,5 +32,11 @@ fun OnboardingRoute(onDone: () -> Unit, vm: OnboardingViewModel = hiltViewModel(
         onAllowNotifications = {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) notify.launch(Manifest.permission.POST_NOTIFICATIONS) else vm.done()
         },
+        restore = RestoreOfferActions(
+            onRestore = vm::restore,
+            onStartFresh = vm::startFresh,
+            onAnswer = vm::answer,
+            onAllowPhone = { phone.launch(Manifest.permission.READ_PHONE_STATE) },
+        ),
     )
 }

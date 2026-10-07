@@ -38,6 +38,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.ledga.app.ui.app.HeroIcon
 import com.ledga.app.ui.app.grouped
+import com.ledga.app.ui.backup.LineQuestionsContent
 import com.ledga.app.ui.design.components.Banner
 import com.ledga.app.ui.design.components.BannerTone
 import com.ledga.app.ui.design.components.LinkButton
@@ -51,6 +52,15 @@ import com.ledga.app.ui.design.tokens.Sizes
 import com.ledga.app.ui.design.tokens.Spacing
 import com.ledga.app.ui.design.type.LedgaType
 import com.ledga.app.work.ImportProgress
+import com.ledga.app.work.RestoreProgress
+
+/** R126: what the import step's backup offer does. */
+data class RestoreOfferActions(
+    val onRestore: () -> Unit = {},
+    val onStartFresh: () -> Unit = {},
+    val onAnswer: (Long, Int?) -> Unit = { _, _ -> },
+    val onAllowPhone: () -> Unit = {},
+)
 
 /**
  * Spec §10.4 onboarding, one step at a time. Stateless: [OnboardingRoute] owns the ViewModel and the permission
@@ -67,12 +77,12 @@ fun OnboardingScreen(
     onImport: () -> Unit,
     onLineName: (Long, String) -> Unit,
     onAllowNotifications: () -> Unit,
+    restore: RestoreOfferActions = RestoreOfferActions(),
 ) {
     when (state.step) {
         Step.WELCOME -> WelcomeStep(state, onName, onNext)
         Step.SMS -> SmsStep(state, onAllowSms, onSkip)
-        Step.IMPORT -> ImportStep(state, onImport, onNext)
-        Step.LINES -> LinesStep(state, onLineName, onNext)
+        Step.IMPORT -> ImportStep(state, onImport, onNext, onLineName, restore)
         Step.NOTIFICATIONS -> NotificationsStep(state, onAllowNotifications, onSkip)
     }
 }
@@ -115,7 +125,9 @@ private fun SmsStep(state: OnboardingState, onAllowSms: () -> Unit, onSkip: () -
 }
 
 @Composable
-private fun ImportStep(state: OnboardingState, onImport: () -> Unit, onNext: () -> Unit) {
+private fun ImportStep(state: OnboardingState, onImport: () -> Unit, onNext: () -> Unit, onLineName: (Long, String) -> Unit, restore: RestoreOfferActions) {
+    val offer = state.offer
+    if (offer != null && !state.restored) return RestoreStep(state, offer, restore)
     val preview = state.preview
     when (val p = state.import) {
         is ImportProgress.Running -> StepFrame(
@@ -135,9 +147,22 @@ private fun ImportStep(state: OnboardingState, onImport: () -> Unit, onNext: () 
             state,
             icon = "fluent_check_mark_button",
             title = "Your history is ready",
-            lead = "Ledga read ${grouped(p.found)} M-Pesa ${messages(p.found)}.",
+            lead = "Ledga read ${grouped(p.found)} M-Pesa ${messages(p.found)}." +
+                if (state.lines.size >= 2) " It found ${state.lines.size} lines on this phone: give each a name you'll recognise." else "",
             actions = { Primary("Continue", onNext) },
-        )
+        ) {
+            state.lines.forEach { line ->
+                OutlinedTextField(
+                    value = line.name,
+                    onValueChange = { onLineName(line.id, it) },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text(line.label) },
+                    singleLine = true,
+                    textStyle = LedgaType.body,
+                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words, imeAction = ImeAction.Next),
+                )
+            }
+        }
         ImportProgress.Failed -> StepFrame(
             state,
             icon = "fluent_warning",
@@ -161,33 +186,67 @@ private fun ImportStep(state: OnboardingState, onImport: () -> Unit, onNext: () 
                 state,
                 icon = "fluent_magnifying_glass_tilted_left",
                 title = "Found ${grouped(preview.count)} M-Pesa ${messages(preview.count)}",
-                lead = span(preview) + "Ledga reads them once and keeps your history on this phone.",
+                lead = if (state.restored) {
+                    "Your backup is back. Ledga now adds this phone's messages and skips any it already has."
+                } else {
+                    span(preview) + "Ledga reads them once and keeps your history on this phone."
+                },
                 actions = { Primary("Import", onImport) },
             )
         }
     }
 }
 
+/** R126: the backup a fresh install found, before anything is imported. */
 @Composable
-private fun LinesStep(state: OnboardingState, onLineName: (Long, String) -> Unit, onNext: () -> Unit) = StepFrame(
-    state,
-    icon = "fluent_label",
-    title = "Name your lines",
-    lead = "Ledga found ${state.lines.size} M-Pesa lines on this phone. Give each one a name you'll recognise.",
-    actions = { Primary("Continue", onNext) },
-) {
-    state.lines.forEach { line ->
-        OutlinedTextField(
-            value = line.name,
-            onValueChange = { onLineName(line.id, it) },
-            modifier = Modifier.fillMaxWidth(),
-            label = { Text(line.label) },
-            singleLine = true,
-            textStyle = LedgaType.body,
-            keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words, imeAction = ImeAction.Next),
+private fun RestoreStep(state: OnboardingState, offer: RestoreOffer, actions: RestoreOfferActions) {
+    val date = DateLabels.date(DateLabels.nairobiDate(offer.writtenAt))
+    when (val r = state.restore) {
+        is RestoreProgress.Running -> StepFrame(
+            state,
+            icon = "fluent_floppy_disk",
+            title = "Restoring your backup",
+            lead = "Ledga is putting back your payments, categories, rules and notes.",
+            actions = {},
+        ) {
+            Banner("Restoring$ELLIPSIS", BannerTone.Progress, progress = r.fraction)
+        }
+        is RestoreProgress.Failed -> StepFrame(
+            state,
+            icon = "fluent_warning",
+            title = "The restore didn't finish",
+            lead = r.message,
+            actions = {
+                PrimaryPill("Try again", actions.onRestore, Modifier.fillMaxWidth(), enabled = offer.ready)
+                LinkButton("Start fresh", actions.onStartFresh)
+            },
         )
+        else -> StepFrame(
+            state,
+            icon = "fluent_floppy_disk",
+            title = "Restore your Ledga backup",
+            lead = "From $date · ${grouped(offer.payments)} ${if (offer.payments == 1) "payment" else "payments"}, with your categories, " +
+                "rules and notes. Ledga then adds this phone's messages.",
+            actions = {
+                PrimaryPill("Restore", actions.onRestore, Modifier.fillMaxWidth(), enabled = offer.ready)
+                LinkButton("Start fresh", actions.onStartFresh)
+            },
+        ) {
+            if (offer.simsUnreadable && !state.phoneAccess) {
+                Banner(
+                    "Allow phone access so Ledga can put your backup's lines on this phone's SIMs.",
+                    BannerTone.Info,
+                    icon = Ph.SimCard,
+                    actionLabel = "Allow",
+                    onAction = actions.onAllowPhone,
+                )
+            }
+            LineQuestionsContent(offer.questions, offer.answers, actions.onAnswer)
+        }
     }
 }
+
+private val ELLIPSIS = Char(0x2026)
 
 @Composable
 private fun NotificationsStep(state: OnboardingState, onAllow: () -> Unit, onSkip: () -> Unit) = StepFrame(
