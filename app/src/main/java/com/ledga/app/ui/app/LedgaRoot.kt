@@ -175,8 +175,15 @@ fun LedgaNavHost(
             when (destination) {
                 // A second payment's tap replaces an Alerts already on top: Back still returns where you were.
                 is OpenDestination.Alerts -> nav.navigate(AlertsRoute(destination.code)) { popUpTo<AlertsRoute> { inclusive = true } }
-                OpenDestination.Home -> nav.openTab(Tab.HOME)
-                OpenDestination.Activity -> nav.openTab(Tab.ACTIVITY)
+                // To the tab's own screen: re-selecting a tab restores what was pushed on it (final review I1).
+                OpenDestination.Home -> {
+                    nav.openTab(Tab.HOME)
+                    nav.popBackStack<HomeRoute>(inclusive = false)
+                }
+                OpenDestination.Activity -> {
+                    nav.openTab(Tab.ACTIVITY)
+                    nav.popBackStack<ActivityRoute>(inclusive = false)
+                }
             }
         }
         onOpened(destination)

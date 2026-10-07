@@ -368,4 +368,25 @@ class LedgaNavHostTest {
         compose.onNodeWithText("Onboarding screen").assertIsDisplayed()
         assertEquals(listOf<OpenDestination>(OpenDestination.Alerts("TJK4AB12FA")), opened, "taken, so it never opens later")
     }
+
+    @Test
+    fun `a Fuliza reminder opens Home even with Alerts open over it (final review I1)`() {
+        show()
+        tap("Home bell")
+        notificationOpens(OpenDestination.Home)
+        compose.onNodeWithText("Home screen").assertIsDisplayed()
+        compose.onNodeWithText("Alerts screen").assertDoesNotExist()
+    }
+
+    @Test
+    fun `a summary opens Activity even with a category page open inside it (final review I1)`() {
+        show()
+        tap("Activity")
+        tap("Spending row")
+        compose.onNodeWithText("Category page").assertIsDisplayed()
+        StandIns.links.open(ActivityLink.Transactions(TransactionFilter(categoryKeys = setOf("groceries"))))
+        notificationOpens(OpenDestination.Activity)
+        compose.onNodeWithText("Activity showing transactions groceries").assertIsDisplayed()
+        compose.onNodeWithText("Category page").assertDoesNotExist()
+    }
 }
