@@ -126,7 +126,7 @@ Everything lives in `com.ledga.app.ui.design`. Until Phase 4 uses it, R8 strips 
   draws, so the badge is a sibling over the button's corner, not its child (a child was cut off). Opening Alerts marks every alert
   read; what was unread stays "New" for that visit. A row opens its payment only while the payment exists and isn't
   hidden; Undo after Hide lives in Alerts' own snackbar host.
-- **Categories & rules (4d, R67, R72–R74).** A rule's whole row is its switch (`toggleable`, role Switch); your own rule
+- **Categories & rules (4d, R67, R72–R74; its list and screen were replaced in 4e by the Categories tab and the category page, below).** A rule's whole row is its switch (`toggleable`, role Switch); your own rule
   also has a delete button (Undo). Built-in categories keep their icon and colour; your own choose from
   `CategoryLooks.ICONS` and `SWATCHES` (`IconChoiceContent`, `ColourChoiceContent`, radio groups). Archived categories
   sit under "Archived" with "Bring back". Each group's "+ New category" chip tells TalkBack its group. The add-rule and rename sheets are shared with Tracker detail (`ui/rules`:
@@ -140,6 +140,27 @@ Everything lives in `com.ledga.app.ui.design`. Until Phase 4 uses it, R8 strips 
   in full (it is the point of the row; as a one-line subtitle it was cut to "Expected K…" at 1.3×), hidden from
   TalkBack because the row's phrase already says it. With two or more lines, "Not on a line" reads "Left out · could be
   either line", sits last, and a caption under the lines card says why.
+- **The category page (4e D1, R89, R94, R96).** The only screen for a category: the chart (a month from Spending starts
+  selected; older than a year opens on All), the tiles, Top places (the five biggest counterparties over the last
+  twelve months and this one: payees, payers or accounts by measure), the payments, then Settings (icon, colour, Reset
+  to default for a built-in category whose looks changed, Show on Trackers), 4d's rules list and Archive. Its words
+  follow what it counts: "Spent, fees included", "Money received", "Money moved, either way" (§3.3). Stopping tracking
+  never closes it; the page offers Undo itself.
+- **The Categories tab (4e D2, R92, R95, R97, R98).** Search folds case, accents and spaces (`TextFold`) and lists
+  matches in picker order, archived ones marked; no match offers "Create '<query>'". Then the trackers' chart and rows,
+  "All categories" by group with this month's amount in each category's measure, and "Archived (N)", folded for the
+  visit. "+" and Create open New category with a name and a group (Everyday first).
+- **Icons (4e D5, R85, R86, R91).** The 60 drawables plus the catalog in `assets/icons3d` (lossy q90, 1,535 WebPs,
+  `index.tsv`). `CategoryIcon` draws a drawable, else the asset (decoded off the main thread into `CatalogBitmaps`),
+  else `Fluent.FALLBACK`. The icon sheet (`IconPickerSheet`) is search, Suggested (`CategoryLooks.ICONS`), then the set
+  by group; every copy of the current icon is ringed. Goldens that draw catalog icons call `CatalogBitmaps.preload`.
+- **Home's strip (4e D8, R88).** `StripLayout.tileWidth` shows whole tiles and half of the next, never under 13 caption
+  sizes; the strip runs to the screen's right edge, ends in a See all tile and returns to its first tile when the set of
+  tracked keys changes.
+- **Ways in (4e D3, R90, R93).** `CategoryRoute(categoryKey, month)`, pushed on the tab that opened it: Categories rows,
+  Home tiles, Spending's rows by category (with the month), a payment's View (Home, Activity, Alerts, History check; not
+  on the page itself). See all pops back to Activity's root when the page was opened inside Activity and hops from any
+  other tab. Activity takes a hand-off only while its screen is started (`TakeLinks`).
 
 ## Screenshot tests
 
@@ -168,3 +189,5 @@ Everything lives in `com.ledga.app.ui.design`. Until Phase 4 uses it, R8 strips 
 - A ViewModel callback that runs after a suspend edit (e.g. `addRule(…) { onDone }`) arrives after the UI state has already changed. Wait on a `CompletableDeferred` rather than reading a flag at once.
 - A route test with its real ViewModel (`TrackersRouteTest`) runs `viewModelScope` on Robolectric's main looper: clean up with `TestViewModels.stopAllOnMainLooper()` (plain `stopAll()` blocks that thread and times out), and step `mainClock` by hand around a snackbar, or auto-advance runs straight through its timeout.
 - Text that must fit at large font scales: check `TextLayoutResult` (`maxIntrinsicWidth` ≤ width for a line that mustn't be cut, `minIntrinsicWidth` ≤ width for no word broken, `lineCount` for no wrap). Size containers that hold text in the text's own font size, not dp.
+- (4e) Goldens are only compared with `-Proborazzi.test.verify=true`. A change to the bottom bar re-records every
+  `ShellFrame(Tab.*)` golden: diff each against `HEAD` (bounding box of the change) and expect it inside the bar.

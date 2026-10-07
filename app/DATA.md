@@ -121,6 +121,20 @@
   or more lines the group not on a line is left out of the verdict (`LineCheckUi.mixed`): its payments could be either
   line's, so its balances jump between SIMs and read as breaks (owner, 2026-10-07).
 
+## Categories (Phase 4e)
+
+- **Measures.** `CategoryMeasure.of(group)`: spent (spend + fees) for the four spending groups, received for Money in,
+  moved for Not spending. `LedgerDao.categoryMonthTotals` returns all three per category per Nairobi month; moved is
+  `ledger.amountCents` of rows whose `transactions.isReversed = 0` (the view's spend/in are 0 for those flows). Hidden
+  rows never count (the `ledger` view). `spentByCategoryMonth` is gone; the trackers pick `SPENT` from the same query.
+- **Readers.** `Trackers.category(key, lineId, now)` (was `detail`): the summary in the category's measure, all months,
+  this year so far, `topPlaces` (`LedgerDao.topPlaces`, measure-aware, the last 12 months and this one, rows without a
+  counterparty left out) and the newest payments. `Trackers.monthTotals(lineId, now)`: this month's amount for every
+  category; a category with nothing has no entry.
+- **Looks.** `TransactionEdits.setCategoryIcon` takes any `fluent_[a-z0-9_]+` key and `setCategoryColor` any swatch, for
+  any category (D6, R91); `resetCategoryLooks` (built-in only) writes the seed's icon and clears both colours
+  (`CategoriesDao.resetLooks`). Archive stays for your own categories. No schema change.
+
 ## Phase 5 acceptance step (from the 2026-10-05 Phase 1 review)
 
 The v1 export can't prove inbox-wide coverage: v1 never stored the messages its parser rejected. So after the first full inbox rescan **on the owner's phone**, record:
