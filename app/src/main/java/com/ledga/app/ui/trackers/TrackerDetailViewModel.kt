@@ -10,7 +10,7 @@ import com.ledga.app.data.lines.LineChoice
 import com.ledga.app.data.lines.SelectedLine
 import com.ledga.app.data.room.CategoryRow
 import com.ledga.app.data.room.TxRow
-import com.ledga.app.data.trackers.TrackerDetail
+import com.ledga.app.data.trackers.CategoryDetail
 import com.ledga.app.data.trackers.Trackers
 import com.ledga.app.time.LiveClock
 import com.ledga.app.ui.activity.ActivityLink
@@ -102,7 +102,7 @@ class TrackerDetailViewModel @Inject constructor(
         .distinctUntilChanged()
         .flatMapLatest { (today, choice) ->
             val now = live.now()
-            combine(trackers.detail(categoryKey, choice.lineId, now), range, chosen, editing) { d, r, pick, edit ->
+            combine(trackers.category(categoryKey, choice.lineId, now), range, chosen, editing) { d, r, pick, edit ->
                 build(d, today, now, choice, r, pick, edit)
             }
         }
@@ -167,7 +167,7 @@ class TrackerDetailViewModel @Inject constructor(
     /** R61: "See all" opens Transactions filtered to this category on the chosen line. */
     fun openAll() = links.open(ActivityLink.Transactions(TransactionFilter(categoryKeys = setOf(categoryKey), lineId = ui.value.line.lineId)))
 
-    private fun build(d: TrackerDetail?, today: LocalDate, now: Instant, choice: LineChoice, r: DetailRange, pick: Int?, edit: Boolean): TrackerDetailUi {
+    private fun build(d: CategoryDetail?, today: LocalDate, now: Instant, choice: LineChoice, r: DetailRange, pick: Int?, edit: Boolean): TrackerDetailUi {
         if (d == null) return TrackerDetailUi(loaded = true, missing = true, line = choice, today = today)
         val s = d.summary
         val buckets = when (r) {

@@ -7,6 +7,7 @@ import com.ledga.app.data.room.RuleRow
 import com.ledga.app.data.room.TxRow
 import com.ledga.app.data.room.dao.CategoryMonthTotal
 import com.ledga.app.data.room.dao.CategorySpend
+import com.ledga.app.data.room.dao.PersonTotal
 import com.ledga.core.chart.Bucket
 import com.ledga.core.chart.Bucketing
 import com.ledga.core.money.Money
@@ -20,6 +21,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import java.time.Instant
 import java.time.YearMonth
 
@@ -41,12 +43,15 @@ data class TrackerSummary(
     val lastMonth: Bucket get() = months[months.lastIndex - 1]
 }
 
-/** Tracker detail (spec §10.4): the summary, every month since the first payment, this year so far, the rules, the latest payments. */
-data class TrackerDetail(
+/** A category's page (4e §3.2): its summary, every month since the first payment, this year so far, top places, the latest payments. */
+data class CategoryDetail(
     val summary: TrackerSummary,
+    val measure: CategoryMeasure,
     /** From the first payment's month (the running month when there is none) to the running one. */
     val allMonths: List<Bucket>,
     val yearSoFarCents: Long,
+    val topPlaces: List<PersonTotal>,
+    /** Tracker detail's "Matched by" chips; Task 5's page reads 4d's rule list instead and drops this (R94). */
     val rules: List<RuleRow>,
     val payments: List<TxRow>,
 )
@@ -60,7 +65,7 @@ class Trackers(private val db: LedgaDatabase, private val ledger: LedgerQueries)
         val periods = Periods.lastN(PeriodType.MONTH, now, MONTHS)
         val keys = tracked.map { it.key }
         combine(
-            ledger.spentByCategoryMonth(keys, InstantRange(periods.first().startInstant, null), lineId),
+            ledger.categoryMonthTotals(keys, InstantRange(periods.first().startInstant, null), lineId).map { rows -> rows.map { it.pick(CategoryMeasure.SPENT) } },
             combine(keys.map { ledger.latestSpends(it, lineId, LATEST) }) { it.toList() },
         ) { monthly, latest ->
             val byCategory = monthly.groupBy { it.categoryKey }
@@ -69,25 +74,40 @@ class Trackers(private val db: LedgaDatabase, private val ledger: LedgerQueries)
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    fun detail(categoryKey: String, lineId: Long?, now: Instant): Flow<TrackerDetail?> = db.categoriesDao().observe(categoryKey).flatMapLatest { category ->
+    fun category(categoryKey: String, lineId: Long?, now: Instant): Flow<CategoryDetail?> = db.categoriesDao().observe(categoryKey).flatMapLatest { category ->
         if (category == null) return@flatMapLatest flowOf(null)
+        val measure = CategoryMeasure.of(category.groupKey)
+        val periods = Periods.lastN(PeriodType.MONTH, now, MONTHS)
         combine(
-            ledger.spentByCategoryMonth(listOf(categoryKey), InstantRange(Instant.EPOCH, null), lineId),
+            ledger.categoryMonthTotals(listOf(categoryKey), InstantRange(Instant.EPOCH, null), lineId).map { rows -> rows.map { it.pick(measure) } },
             ledger.latestSpends(categoryKey, lineId, LATEST),
+            ledger.topPlaces(categoryKey, measure, periods.first().startInstant, lineId),
             db.rulesDao().observeForCategory(categoryKey),
             ledger.recent(lineId, categoryKey),
-        ) { monthly, latest, rules, payments ->
+        ) { monthly, latest, places, rules, payments ->
             val first = monthly.filter { it.count > 0 }.minByOrNull { it.month }
                 ?.let { YearMonth.parse(it.month).atDay(1).atStartOfDay(Nairobi.ZONE).toInstant() }
             val all = buckets(monthly, Periods.since(PeriodType.MONTH, first ?: now, now))
             val year = Periods.dateOf(now).year
-            TrackerDetail(
-                summary = summary(category, Periods.lastN(PeriodType.MONTH, now, MONTHS), monthly, latest, now),
+            CategoryDetail(
+                summary = summary(category, periods, monthly, latest, now),
+                measure = measure,
                 allMonths = all,
                 yearSoFarCents = all.filter { it.period.start.year == year }.sumOf { it.total.cents },
+                topPlaces = places,
                 rules = rules,
                 payments = payments,
             )
+        }
+    }
+
+    /** R95: this month's amount for every category, each in its own measure; a category with nothing has no entry. */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun monthTotals(lineId: Long?, now: Instant): Flow<Map<String, Long>> = db.categoriesDao().observeAll().flatMapLatest { categories ->
+        val measures = categories.associate { it.key to CategoryMeasure.of(it.groupKey) }
+        val month = Periods.current(PeriodType.MONTH, now)
+        ledger.categoryMonthTotals(categories.map { it.key }, InstantRange(month.startInstant, null), lineId).map { rows ->
+            rows.mapNotNull { r -> measures[r.categoryKey]?.let { r.categoryKey to r.pick(it).cents } }.filter { it.second != 0L }.toMap()
         }
     }
 

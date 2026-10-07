@@ -1,7 +1,8 @@
 package com.ledga.app.data.derive
 
 import com.ledga.app.data.room.dao.CategorySpend
-import com.ledga.app.data.room.dao.CategoryMonthTotal
+import com.ledga.app.data.room.dao.CategoryMonthTotals
+import com.ledga.app.data.trackers.CategoryMeasure
 import com.ledga.core.time.PeriodType
 import com.ledga.app.data.room.dao.PeriodSum
 import com.ledga.app.data.room.FulizaReading
@@ -21,6 +22,7 @@ import com.ledga.core.money.Money
 import com.ledga.core.time.InstantRange
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import java.time.Instant
 import java.time.LocalDate
 
 /** The read side screens use (spec §7.5). Ranges are `:core` InstantRanges; an open range (live period) has a null end. */
@@ -86,9 +88,13 @@ class LedgerQueries(private val db: LedgaDatabase) {
         return rows.map { list -> list.associateBy { it.period } }
     }
 
-    /** Spent per category per Nairobi month (the trackers, R52). */
-    fun spentByCategoryMonth(keys: List<String>, range: InstantRange, lineId: Long? = null): Flow<List<CategoryMonthTotal>> =
-        db.ledgerDao().spentByCategoryMonth(keys, range.start, range.endExclusive, lineId)
+    /** Every measure per category per Nairobi month (4e §3.3; the trackers, a category's page, the Categories tab). */
+    fun categoryMonthTotals(keys: List<String>, range: InstantRange, lineId: Long? = null): Flow<List<CategoryMonthTotals>> =
+        db.ledgerDao().categoryMonthTotals(keys, range.start, range.endExclusive, lineId)
+
+    /** D4: a category's biggest counterparties since [from]. */
+    fun topPlaces(categoryKey: String, measure: CategoryMeasure, from: Instant, lineId: Long?, limit: Int = TOP_PLACES): Flow<List<PersonTotal>> =
+        db.ledgerDao().topPlaces(categoryKey, measure.name, from, lineId, limit)
 
     /** A category's newest [limit] payments that counted. */
     fun latestSpends(categoryKey: String, lineId: Long?, limit: Int): Flow<List<CategorySpend>> =
@@ -112,6 +118,9 @@ class LedgerQueries(private val db: LedgaDatabase) {
     companion object {
         /** Home's Recent and Tracker detail's payments (spec §10.4: "last 5"). */
         const val RECENT = 5
+
+        /** D4: a category page's Top places. */
+        const val TOP_PLACES = 5
 
         /** Σ of each line's latest balance; with no line attribution at all, the latest overall (§7.5). */
         fun combine(latest: List<LineBalance>): Money? {

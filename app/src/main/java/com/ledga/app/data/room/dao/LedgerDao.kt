@@ -1,5 +1,7 @@
 package com.ledga.app.data.room.dao
 
+import com.ledga.app.data.trackers.CategoryMeasure
+
 import androidx.room.Dao
 import androidx.room.Query
 import com.ledga.app.data.room.LedgerRow
@@ -32,6 +34,24 @@ data class PeriodTotals(val spentCents: Long, val feeCents: Long, val inCents: L
 
 /** Spent in one category in one Nairobi month ([month] reads "2026-09"): the trackers (R52). */
 data class CategoryMonthTotal(val categoryKey: String, val month: String, val cents: Long, val count: Int)
+
+/** A category's Nairobi month in all three measures (4e §3.3); `pick` takes the category's own. */
+data class CategoryMonthTotals(
+    val categoryKey: String,
+    val month: String,
+    val spentCents: Long,
+    val spentCount: Int,
+    val receivedCents: Long,
+    val receivedCount: Int,
+    val movedCents: Long,
+    val movedCount: Int,
+) {
+    fun pick(measure: CategoryMeasure): CategoryMonthTotal = when (measure) {
+        CategoryMeasure.SPENT -> CategoryMonthTotal(categoryKey, month, spentCents, spentCount)
+        CategoryMeasure.RECEIVED -> CategoryMonthTotal(categoryKey, month, receivedCents, receivedCount)
+        CategoryMeasure.MOVED -> CategoryMonthTotal(categoryKey, month, movedCents, movedCount)
+    }
+}
 
 /** One payment that counts in a category: when, what it counted (amount and fees) and who was paid. */
 data class CategorySpend(val code: String, val categoryKey: String, val occurredAt: Instant, val cents: Long, val name: String?)
@@ -132,14 +152,38 @@ interface LedgerDao {
     )
     fun spentByYear(from: Instant, to: Instant?, lineId: Long?): Flow<List<PeriodSum>>
 
-    /** Trackers (R52): spent per category per Nairobi month, fees included, like `spentByCategory`. */
+    /**
+     * Every measure per category per Nairobi month (4e §3.3): spent like `spentByCategory` (fees included), received
+     * like `moneyIn`, and moved = the amount of rows not reversed. The `ledger` view keeps hidden rows out.
+     */
     @Query(
-        "SELECT categoryKey, strftime('%Y-%m', (occurredAt + " + NAIROBI_OFFSET_MS + ") / 1000, 'unixepoch') AS month, " +
-            "SUM(spendCents + feeCents) AS cents, SUM(spendCents + feeCents > 0) AS count FROM ledger " +
-            "WHERE categoryKey IN (:keys) AND occurredAt >= :from AND (:to IS NULL OR occurredAt < :to) " +
-            "AND (:lineId IS NULL OR lineId = :lineId) GROUP BY categoryKey, month",
+        "SELECT l.categoryKey AS categoryKey, strftime('%Y-%m', (l.occurredAt + " + NAIROBI_OFFSET_MS + ") / 1000, 'unixepoch') AS month, " +
+            "SUM(l.spendCents + l.feeCents) AS spentCents, SUM(l.spendCents + l.feeCents > 0) AS spentCount, " +
+            "SUM(l.inCents) AS receivedCents, SUM(l.inCents > 0) AS receivedCount, " +
+            "SUM(CASE WHEN t.isReversed = 0 THEN l.amountCents ELSE 0 END) AS movedCents, " +
+            "SUM(t.isReversed = 0 AND l.amountCents > 0) AS movedCount " +
+            "FROM ledger l JOIN transactions t ON t.code = l.code " +
+            "WHERE l.categoryKey IN (:keys) AND l.occurredAt >= :from AND (:to IS NULL OR l.occurredAt < :to) " +
+            "AND (:lineId IS NULL OR l.lineId = :lineId) GROUP BY l.categoryKey, month",
     )
-    fun spentByCategoryMonth(keys: List<String>, from: Instant, to: Instant?, lineId: Long?): Flow<List<CategoryMonthTotal>>
+    fun categoryMonthTotals(keys: List<String>, from: Instant, to: Instant?, lineId: Long?): Flow<List<CategoryMonthTotals>>
+
+    /** D4, R96: a category's biggest counterparties since [from], in its own measure, names as People shows them. */
+    @Query(
+        "SELECT t.counterpartyKey AS counterpartyKey, " +
+            "(SELECT n.counterpartyName FROM transactions n WHERE n.counterpartyKey = t.counterpartyKey " +
+            "AND n.counterpartyName IS NOT NULL ORDER BY n.occurredAt DESC LIMIT 1) AS name, " +
+            "(SELECT p.counterpartyPhone FROM transactions p WHERE p.counterpartyKey = t.counterpartyKey " +
+            "AND p.counterpartyPhone IS NOT NULL ORDER BY p.occurredAt DESC LIMIT 1) AS phone, " +
+            "COUNT(*) AS count, " +
+            "SUM(CASE :measure WHEN 'SPENT' THEN l.spendCents + l.feeCents WHEN 'RECEIVED' THEN l.inCents ELSE l.amountCents END) AS totalCents, " +
+            "MAX(l.occurredAt) AS lastAt " +
+            "FROM ledger l JOIN transactions t ON t.code = l.code " +
+            "WHERE l.categoryKey = :categoryKey AND t.counterpartyKey IS NOT NULL AND t.isReversed = 0 AND l.occurredAt >= :from " +
+            "AND (:lineId IS NULL OR l.lineId = :lineId) " +
+            "GROUP BY t.counterpartyKey ORDER BY totalCents DESC, t.counterpartyKey LIMIT :limit",
+    )
+    fun topPlaces(categoryKey: String, measure: String, from: Instant, lineId: Long?, limit: Int): Flow<List<PersonTotal>>
 
     /** A category's newest payments that counted: "usually by the Nth", the last payment, who was paid. */
     @Query(
