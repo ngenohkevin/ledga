@@ -12,7 +12,6 @@ import com.ledga.app.data.room.dao.LegacyCategoryRow
 import com.ledga.app.data.room.dao.LegacyRuleRow
 import com.ledga.app.data.room.dao.LegacyTxRow
 import com.ledga.app.data.room.toCore
-import com.ledga.core.derive.Classifier
 import com.ledga.core.derive.LegacyAutoCategorizer
 import com.ledga.core.derive.LegacyCategoryMap
 import com.ledga.core.derive.LegacyMapping
@@ -178,18 +177,11 @@ class LegacyImporter(
         for (t in txRows) {
             var categoryKey: String? = null
             var own: Boolean? = null
-            val legacyId = t.categoryId
-            if (legacyId != null && LegacyAutoCategorizer.isUserChoice(legacyId, t.type, t.recipientName, t.accountNumber, v1Rules)) {
-                val parsed = parsedByCode[t.code]
-                val ruleCategory = parsed?.let { p ->
-                    engine.categoryFor(p.counterparty, Classifier.flowOf(p.kind, engine.isOwnAccount(p.counterparty)))
-                }
-                LegacyCategoryMap.overrideFor(legacyId, ruleCategory)?.let { mapping ->
-                    val (key, isOwn) = targets.resolve(mapping, legacyId)
+            LegacyChoice.of(t.categoryId, t.type, t.recipientName, t.accountNumber, v1Rules, parsedByCode[t.code], engine, targets::resolve)
+                ?.let { (key, isOwn) ->
                     categoryKey = key
                     own = isOwn
                 }
-            }
             val car = t.carTag?.let(LegacyCategoryMap::carTag)
             if (car != null) categoryKey = car
             val note = t.note?.trim()?.takeIf { it.isNotEmpty() }
