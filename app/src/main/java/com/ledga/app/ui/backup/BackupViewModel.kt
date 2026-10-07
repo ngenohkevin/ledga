@@ -158,15 +158,21 @@ class BackupViewModel @Inject constructor(
     }
 
     /** "Choose a file": copied into no-backup storage first (R122), then read. */
-    fun pick(uri: Uri) = read(deleteAfter = true) {
+    fun pick(uri: Uri) = read(deleteAfter = true) { copyIn { documents.read(uri) } }
+
+    /**
+     * A copy on this phone (R120, R121), restored from a copy of it: "Before your last restore" is the file a restore
+     * rewrites first, so read in place a retried job would restore the phone's own state (final review C1). The
+     * original is never deleted.
+     */
+    fun pickSource(source: RestoreSource) = read(deleteAfter = true) { copyIn { source.info.file.inputStream() } }
+
+    private fun copyIn(open: () -> java.io.InputStream): File {
         dirs.incoming.mkdirs()
         val copy = File(dirs.incoming, "incoming-${clock.millis()}.ledga")
-        documents.read(uri).use { input -> copy.outputStream().use { input.copyTo(it) } }
-        copy
+        open().use { input -> copy.outputStream().use { input.copyTo(it) } }
+        return copy
     }
-
-    /** A copy on this phone (R120, R121): read in place, never deleted. */
-    fun pickSource(source: RestoreSource) = read(deleteAfter = false) { source.info.file }
 
     private fun read(deleteAfter: Boolean, open: suspend () -> File) {
         state.update { it.copy(reading = true, error = null) }

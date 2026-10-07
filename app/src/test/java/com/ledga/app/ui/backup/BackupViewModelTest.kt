@@ -14,6 +14,7 @@ import com.ledga.app.data.backup.Restorer
 import com.ledga.app.data.backup.SnapshotStore
 import com.ledga.app.data.backup.BackupCounts
 import com.ledga.app.data.backup.BackupData
+import com.ledga.app.data.backup.SmsEntry
 import com.ledga.app.data.derive.Deriver
 import com.ledga.app.data.ingest.RawSms
 import com.ledga.app.data.ingest.SmsIngestor
@@ -198,5 +199,23 @@ class BackupViewModelTest {
         vm.ui.first { it.restore is RestoreProgress.Running }
         work.restoreProgress.value = RestoreProgress.Done(1, 1)
         assertEquals(RestoreProgress.Done(1, 1), vm.ui.first { it.restore is RestoreProgress.Done }.restore)
+    }
+
+    @Test
+    fun `a copy on this phone is restored from a copy of it, so a retry can't read what the restore overwrote (final review C1)`() = runTest {
+        // "Before your last restore" is the very file a restore rewrites first: read in place, a retried job would
+        // restore the phone's own state and the undo copy would be gone.
+        val store = SnapshotStore(dirs.snapshots)
+        val sms = SmsEntry("MPESA", Sms.SEND, Sms.at("2026-03-21T10:30:00Z").toEpochMilli(), source = "INBOX")
+        store.write(store.beforeRestore, BackupData(writtenAt = 5, appVersion = "2.0.0-test", counts = BackupCounts(1, 1), sms = listOf(sms)))
+        val vm = vm()
+        vm.pickSource(vm.ui.first { it.sources.isNotEmpty() }.sources.single())
+        val draft = vm.ui.first { it.draft != null }.draft!!
+        assertEquals(dirs.incoming, draft.file.parentFile)
+        assertTrue(draft.deleteAfter)
+        vm.start()
+        val request = work.restores.single()
+        assertEquals(draft.file, request.file)
+        assertEquals(store.read(store.beforeRestore), BackupFiles.read(request.file).data, "the copy holds what was offered")
     }
 }
