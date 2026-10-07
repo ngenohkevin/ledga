@@ -9,6 +9,7 @@ import com.ledga.app.data.derive.DateFilter
 import com.ledga.app.data.derive.LedgerQueries
 import com.ledga.app.data.derive.TransactionFilter
 import com.ledga.app.data.room.CategoryRow
+import com.ledga.app.data.trackers.CategoryMeasure
 import com.ledga.app.data.room.LedgaDatabase
 import com.ledga.app.data.room.dao.CategoryTotal
 import com.ledga.app.data.room.dao.MonthTotal
@@ -59,6 +60,11 @@ data class ShareRow(
     val fraction: Float,
     /** What a tap filters Transactions to. */
     val categoryKeys: Set<String>,
+    /**
+     * D3: a category row opens its page only when the category counts as spending; a Money in or Not spending category
+     * here is only its fees, which its page (received or moved) wouldn't show, so it opens Transactions (final review I1).
+     */
+    val opensPage: Boolean = false,
 )
 
 /** D3: what a "Where it went" row opens — a category's page at the month shown, or (by group) Transactions. */
@@ -161,9 +167,12 @@ class SpendingViewModel @Inject constructor(
         return TransactionFilter(categoryKeys = row.categoryKeys, dates = DateFilter.Month(m), lineId = ui.value.line.lineId)
     }
 
-    /** D3: a category row opens its page at this month; a group row still opens Transactions narrowed to its categories. */
+    /**
+     * D3: a spending category's row opens its page at this month; a group row, or a category that is only fees here
+     * (final review I1), opens Transactions narrowed to it.
+     */
     fun tap(row: ShareRow): ShareTap =
-        if (ui.value.byGroup) ShareTap.Transactions(transactionsFor(row)) else ShareTap.Page(row.id, ui.value.month?.toString())
+        if (row.opensPage) ShareTap.Page(row.id, ui.value.month?.toString()) else ShareTap.Transactions(transactionsFor(row))
 
     private fun load(s: Selection): Flow<SpendingUi> {
         val now = live.now()
@@ -225,7 +234,10 @@ class SpendingViewModel @Inject constructor(
         val entries = if (!byGroup) {
             rows.map { r ->
                 val cat = byKey[r.categoryKey]
-                ShareRow(r.categoryKey, cat?.name ?: "Other", cat?.icon3d ?: FALLBACK_ICON, r.categoryKey, cat?.color, cat?.colorDark, r.cents, r.count, 0f, setOf(r.categoryKey))
+                ShareRow(
+                    r.categoryKey, cat?.name ?: "Other", cat?.icon3d ?: FALLBACK_ICON, r.categoryKey, cat?.color, cat?.colorDark, r.cents, r.count, 0f,
+                    setOf(r.categoryKey), opensPage = cat != null && CategoryMeasure.of(cat.groupKey) == CategoryMeasure.SPENT,
+                )
             }
         } else {
             rows.groupBy { byKey[it.categoryKey]?.groupKey ?: CategoryGroup.MONEY }.map { (group, list) ->

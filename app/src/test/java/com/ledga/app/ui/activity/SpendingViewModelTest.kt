@@ -27,6 +27,8 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
+import com.ledga.core.model.FlowKind
+import com.ledga.core.model.TxKind
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -171,5 +173,21 @@ class SpendingViewModelTest {
         val group = vm.ui.first { it.byGroup && it.shares.isNotEmpty() }.shares.first()
         val tap = vm.tap(group)
         assertTrue(tap is ShareTap.Transactions && tap.filter.categoryKeys.contains(Categories.ELECTRICITY))
+    }
+
+    @Test
+    fun `a row whose category doesn't count as spending opens its payments, not a page with other numbers (final review I1)`() = runTest {
+        // A paybill to your own bank: Ksh 20,000 moved, Ksh 57 fee. Only the fee is spending, so Spending lists Own accounts at Ksh 57.
+        db.transactionsDao().upsertAll(
+            listOf(
+                txRow(code = "TJK4AB12YB", kind = TxKind.PAYBILL, flow = FlowKind.OWN_OUT, name = "EXAMPLE BANK", account = "SAVINGS 1",
+                    categoryKey = Categories.OWN_ACCOUNTS, amountCents = 2_000_000, feeCents = 5_700, at = Instant.parse("2026-10-02T07:00:00Z")),
+            ),
+        )
+        val vm = vm()
+        val row = vm.ui.first { ui -> ui.shares.any { it.id == Categories.OWN_ACCOUNTS } }.shares.first { it.id == Categories.OWN_ACCOUNTS }
+        assertEquals(5_700, row.cents)
+        val tap = vm.tap(row)
+        assertTrue(tap is ShareTap.Transactions && tap.filter.categoryKeys == setOf(Categories.OWN_ACCOUNTS), "its payments, where the Ksh 57 is")
     }
 }
