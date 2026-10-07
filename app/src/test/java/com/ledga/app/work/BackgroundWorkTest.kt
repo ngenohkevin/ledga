@@ -225,10 +225,17 @@ class BackgroundWorkTest {
     }
 
     @Test
-    fun `leaving the screen queues the snapshot job, which writes only when one is due (R119)`() {
+    fun `leaving the screen queues one snapshot job (R119)`() {
         WorkManagerBackgroundWork(wm).snapshotSoon()
         val info = wm.getWorkInfosForUniqueWork(SnapshotWorker.UNIQUE_NAME).get().single()
-        assertEquals(WorkInfo.State.SUCCEEDED, info.state)
+        assertTrue(SnapshotWorker::class.java.name in info.tags)
+    }
+
+    @Test
+    fun `the snapshot job writes only when one is due (R119)`() = runTest {
+        // Run directly: a CoroutineWorker finishes off the test executor, so its state right after enqueue is a race.
+        val worker = TestListenableWorkerBuilder<SnapshotWorker>(context).setWorkerFactory(factory).build()
+        assertEquals(ListenableWorker.Result.success(), worker.doWork())
         assertFalse(SnapshotStore(tmp.root).current.exists(), "not onboarded: nothing written")
     }
 }
