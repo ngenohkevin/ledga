@@ -17,6 +17,11 @@ data class LinePlacement(val placed: Map<String, Long>, val left: Int)
  * every line's running balance is known (a line not seen yet could be its line). Payments already on a line are the
  * anchors, and a placed one counts as on its line; passes alternate forward and back until a round places nothing.
  * Within one minute the SMS order isn't known, so the next payment handled is whichever fits, else the first.
+ *
+ * A line's running balance is kept only while it is certain (final review C2). It is dropped when a payment on the line
+ * says nothing about the balance (a Fuliza companion whose payment never came); when a payment Ledga couldn't place
+ * could be that line's (it fits it, or its balance is unknown); and for every line when a payment fits none while all
+ * are known (some line lost a message, and Ledga can't tell which). A dropped line is known again at its next anchor.
  */
 object LinePlacer {
     private class Step(val code: String, val line: Long?, val at: Instant, val delta: Money?, val after: Money?) {
@@ -61,10 +66,33 @@ object LinePlacer {
             while (pending.isNotEmpty()) {
                 val next = pending.firstOrNull(::continues) ?: pending.first()
                 pending.remove(next)
-                val line = owner(next) ?: fitting(next).singleOrNull()?.also { placed[next.code] = it } ?: continue
+                val line = owner(next) ?: fitting(next).singleOrNull()?.also { placed[next.code] = it }
+                if (line == null) {
+                    forget(next, lines, running, back)
+                    continue
+                }
                 val moved = next.delta?.let { d -> running[line]?.let { r -> if (back) r - d else r + d } }
-                (exit(next) ?: moved)?.let { running[line] = it }
+                val value = exit(next) ?: moved
+                if (value == null) running.remove(line) else running[line] = value
             }
+        }
+    }
+
+    /**
+     * A payment Ledga couldn't place belongs to some line it can't name: every known line that could be that line loses
+     * its running balance. [running] holds only certain balances, so a known line whose balance isn't where this payment
+     * started can't be its line — unless every line is known and none fits, which means a line lost a message.
+     */
+    private fun forget(step: Step, lines: Set<Long>, running: HashMap<Long, Money>, back: Boolean) {
+        val entry = if (back) step.after else step.before
+        if (entry == null) {
+            running.clear() // its balance is unknown: any line could be its line
+            return
+        }
+        val fits = running.filterValues { it == entry }.keys
+        when {
+            fits.isNotEmpty() -> fits.forEach(running::remove)
+            lines.all { it in running } -> running.clear()
         }
     }
 }

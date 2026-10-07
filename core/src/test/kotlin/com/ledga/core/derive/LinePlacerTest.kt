@@ -137,4 +137,58 @@ class LinePlacerTest {
         val r = LinePlacer.place(listOf(tx("TJK4AB13HA", TxKind.RECEIVE, "2026-03-21T05:00:00Z", "1000", "1000")), emptySet())
         assertEquals(LinePlacement(emptyMap(), 1), r)
     }
+
+    @Test
+    fun `after a payment with no balance a line is lost until it is anchored again, and nothing is guessed onto the other (final review C2)`() {
+        // Line 1 pays with Fuliza and only the companion came (no balance); line 2 sits at Ksh 0. Line 1's next payment
+        // starts from 0 too: it could be either line's, so neither it nor the ones after it are placed.
+        val r = LinePlacer.place(
+            listOf(
+                tx("TJK4AB16AA", TxKind.RECEIVE, "2026-03-21T05:00:00Z", "500", "500", line = 1),
+                tx("TJK4AB16AB", TxKind.SEND, "2026-03-21T05:30:00Z", "500", "0", line = 2),
+                tx("TJK4AB16AC", TxKind.FULIZA_ONLY, "2026-03-21T06:00:00Z", "463", null, line = 1),
+                tx("TJK4AB16AD", TxKind.RECEIVE, "2026-03-21T07:00:00Z", "200", "200"),
+                tx("TJK4AB16AE", TxKind.SEND, "2026-03-21T08:00:00Z", "50", "150"),
+                tx("TJK4AB16AF", TxKind.SEND, "2026-03-21T09:00:00Z", "50", "100"),
+            ),
+            lines,
+        )
+        assertEquals(emptyMap(), r.placed)
+        assertEquals(3, r.left)
+    }
+
+    @Test
+    fun `a payment that fits both lines leaves both lost, so a later coincidence is never placed (final review C2)`() {
+        // TJK4AB16BC is line 1's (500 to 600) but line 2 was at 500 too. Line 2 then reaches 600 on its own; line 1's
+        // next payment starts from 600 and must not be put on line 2.
+        val r = LinePlacer.place(
+            listOf(
+                tx("TJK4AB16BA", TxKind.RECEIVE, "2026-03-21T05:00:00Z", "500", "500", line = 1),
+                tx("TJK4AB16BB", TxKind.RECEIVE, "2026-03-21T05:30:00Z", "500", "500", line = 2),
+                tx("TJK4AB16BC", TxKind.RECEIVE, "2026-03-21T06:00:00Z", "100", "600"),
+                tx("TJK4AB16BD", TxKind.RECEIVE, "2026-03-21T07:00:00Z", "100", "600", line = 2),
+                tx("TJK4AB16BE", TxKind.SEND, "2026-03-21T08:00:00Z", "100", "500"),
+            ),
+            lines,
+        )
+        assertEquals(emptyMap(), r.placed)
+        assertEquals(2, r.left)
+    }
+
+    @Test
+    fun `a payment that continues no line while every line is known loses them all (final review C2)`() {
+        // A missing message on one line: Ledga can't tell which line slipped, so nothing after it is placed until an
+        // anchor says so again.
+        val r = LinePlacer.place(
+            listOf(
+                tx("TJK4AB16CA", TxKind.RECEIVE, "2026-03-21T05:00:00Z", "1000", "1000", line = 1),
+                tx("TJK4AB16CB", TxKind.RECEIVE, "2026-03-21T05:30:00Z", "3000", "3000", line = 2),
+                tx("TJK4AB16CC", TxKind.SEND, "2026-03-21T06:00:00Z", "100", "700"),
+                tx("TJK4AB16CD", TxKind.SEND, "2026-03-21T07:00:00Z", "100", "2900"),
+            ),
+            lines,
+        )
+        assertEquals(emptyMap(), r.placed, "the second fits line 2 exactly, but line 1's slip could have been line 2's")
+        assertEquals(2, r.left)
+    }
 }
