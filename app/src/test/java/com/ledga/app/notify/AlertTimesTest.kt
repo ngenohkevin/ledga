@@ -1,6 +1,7 @@
 package com.ledga.app.notify
 
 import java.time.Instant
+import java.time.LocalDate
 import kotlin.test.assertEquals
 import org.junit.Test
 
@@ -31,5 +32,13 @@ class AlertTimesTest {
     fun `the Fuliza check is at 9 AM every day`() {
         assertEquals(at("2026-10-08T06:00:00Z"), AlertTimes.nextFuliza(at("2026-10-07T16:30:00Z")))
         assertEquals(at("2026-10-07T06:00:00Z"), AlertTimes.nextFuliza(at("2026-10-07T05:59:00Z")))
+    }
+
+    @Test
+    fun `a summary before noon is about the day before, and from noon on about its own day (final review I2)`() {
+        assertEquals(LocalDate.parse("2026-10-05"), AlertTimes.summaryDay(at("2026-10-05T21:00:00Z")), "12:00 AM on Tue 6 Oct")
+        assertEquals(LocalDate.parse("2026-10-05"), AlertTimes.summaryDay(at("2026-10-06T08:59:00Z")), "11:59 AM")
+        assertEquals(LocalDate.parse("2026-10-06"), AlertTimes.summaryDay(at("2026-10-06T09:00:00Z")), "12:00 PM")
+        assertEquals(LocalDate.parse("2026-10-06"), AlertTimes.summaryDay(at("2026-10-06T17:00:00Z")), "8:00 PM")
     }
 }

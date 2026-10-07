@@ -37,4 +37,12 @@ class NotificationTextTest {
         assertEquals("All off", NotificationText.summary(Settings(notifyDaily = false, notifyWeekly = false, notifyFuliza = false), allowed = true))
         assertEquals("Off for Ledga in Android settings", NotificationText.summary(Settings(), allowed = false))
     }
+
+    @Test
+    fun `an early summary time says it covers the day before (final review I2)`() {
+        assertEquals("What you spent the day before, at 7:00 AM. Skipped on days with no spending.", NotificationText.dailyDetail(7 * 60))
+        assertEquals("What you spent the day before, at 12:00 AM. Skipped on days with no spending.", NotificationText.dailyDetail(0))
+        assertEquals("What you spent that day, at 12:00 PM. Skipped on days with no spending.", NotificationText.dailyDetail(12 * 60))
+        assertEquals("What you spent that day, at 8:00 PM. Skipped on days with no spending.", NotificationText.dailyDetail(20 * 60))
+    }
 }

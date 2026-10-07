@@ -50,9 +50,16 @@ object AlertWords {
     /** A weekly summary's biggest category, by name. */
     data class CategoryShare(val name: String, val cents: Long)
 
-    /** R106: "Spent Ksh 3,533 today" / "Across 3 payments · biggest: Jane Tester Ksh 2,500"; a late one names its day. */
+    /**
+     * R106: "Spent Ksh 3,533 today" / "Across 3 payments · biggest: Jane Tester Ksh 2,500". An early summary's day is
+     * "yesterday" (I2); a late one names its day.
+     */
     fun daily(day: LocalDate, today: LocalDate, spent: SpentCount, biggest: BiggestPayment): Alert {
-        val title = "Spent ${ksh(spent.cents)} " + if (day == today) "today" else "on ${DateLabels.dayMonth(day)}"
+        val title = "Spent ${ksh(spent.cents)} " + when (day) {
+            today -> "today"
+            today.minusDays(1) -> "yesterday"
+            else -> "on ${DateLabels.dayMonth(day)}"
+        }
         val top = "${name(biggest.name) ?: TxText.kindLabel(biggest.kind)} ${ksh(biggest.cents)}"
         val body = if (spent.count <= 1) "One payment: $top" else "Across ${grouped(spent.count)} payments${DOT}biggest: $top"
         return Alert("daily:$day", AlertType.DAILY, title, body, null, NotificationTap.Spending(day, day))

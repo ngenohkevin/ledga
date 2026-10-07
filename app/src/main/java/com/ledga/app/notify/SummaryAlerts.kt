@@ -22,11 +22,11 @@ class SummaryAlerts(
     private val notifier: Notifier,
     private val clock: Clock,
 ) {
-    /** The summary of the Nairobi day [at] falls on, sent at most once. */
+    /** The summary of the day [at] sums up (`AlertTimes.summaryDay`: before noon, the day before), sent at most once. */
     suspend fun daily(at: Instant): Boolean {
         val now = clock.instant()
         if (Duration.between(at, now) > LATE) return false
-        val alert = dailyAlert(Periods.dateOf(at), Periods.dateOf(now)) ?: return false
+        val alert = dailyAlert(AlertTimes.summaryDay(at), Periods.dateOf(now)) ?: return false
         return notifier.send(alert)
     }
 

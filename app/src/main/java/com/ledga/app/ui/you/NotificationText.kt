@@ -28,7 +28,11 @@ object NotificationText {
 
     fun threshold(cents: Long): String = "${AmountFormat.CURRENCY} ${AmountFormat.plain(cents, Decimals.NEVER)}"
 
-    fun dailyDetail(minute: Int): String = "What you spent that day, at ${time(minute)}. Skipped on days with no spending."
+    /** A time before noon sums up the day before (owner 2026-10-07, final review I2). */
+    fun dailyDetail(minute: Int): String {
+        val day = if (minute < 12 * 60) "the day before" else "that day"
+        return "What you spent $day, at ${time(minute)}. Skipped on days with no spending."
+    }
 
     fun largeDetail(cents: Long): String = "When a payment of ${threshold(cents)} or more arrives."
 

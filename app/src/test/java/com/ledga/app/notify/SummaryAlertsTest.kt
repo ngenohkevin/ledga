@@ -85,7 +85,7 @@ class SummaryAlertsTest {
         assertFalse(summaries.daily(eightPm))
         clock.instant = Instant.parse("2026-10-06T02:00:00Z") // 5 AM: 9 hours late
         assertTrue(summaries.daily(eightPm))
-        assertEquals("Spent Ksh 3,533 on 5 Oct", phone.posted.single().title)
+        assertEquals("Spent Ksh 3,533 yesterday", phone.posted.single().title, "its own day, named from the morning after (I2 wording)")
     }
 
     @Test
@@ -110,5 +110,18 @@ class SummaryAlertsTest {
         assertEquals("20% less than last week · most on Groceries (Ksh 6,000)", n.body)
         val monday = LocalDate.parse("2026-10-05")
         assertEquals(OpenedNotification("weekly:2026-10-05", NotificationTap.Spending(monday, monday.plusDays(6))), n.opened)
+    }
+
+    @Test
+    fun `a midnight summary sums up the day that just ended, as yesterday (final review I2)`() = runTest {
+        monday()
+        val midnight = Instant.parse("2026-10-05T21:00:00Z") // 12:00 AM on Tue 6 Oct
+        clock.instant = midnight.plusSeconds(30)
+        assertTrue(summaries.daily(midnight))
+        val n = phone.posted.single()
+        assertEquals("Spent Ksh 3,533 yesterday", n.title)
+        assertEquals("Across 3 payments · biggest: Jane Tester Ksh 2,500", n.body)
+        val monday = LocalDate.parse("2026-10-05")
+        assertEquals(OpenedNotification("daily:2026-10-05", NotificationTap.Spending(monday, monday)), n.opened)
     }
 }

@@ -3,6 +3,7 @@ package com.ledga.app.notify
 import com.ledga.core.time.Nairobi
 import java.time.DayOfWeek
 import java.time.Instant
+import java.time.LocalDate
 import java.time.LocalTime
 import java.time.temporal.TemporalAdjusters
 
@@ -16,6 +17,15 @@ object AlertTimes {
     val FULIZA_AT: LocalTime = LocalTime.of(9, 0)
 
     fun nextFuliza(now: Instant): Instant = nextAt(now, FULIZA_AT)
+
+    /** A daily summary set before this time sums up the day before ("yesterday", owner 2026-10-07, final review I2). */
+    val SUMMARY_DAY_TURNS: LocalTime = LocalTime.NOON
+
+    /** The Nairobi day a summary at [at] sums up: the day before when [at] is before noon, else [at]'s own day. */
+    fun summaryDay(at: Instant): LocalDate {
+        val local = at.atZone(Nairobi.ZONE)
+        return if (local.toLocalTime() < SUMMARY_DAY_TURNS) local.toLocalDate().minusDays(1) else local.toLocalDate()
+    }
 
     /** The daily summary at the person's time ([minuteOfDay] after midnight). */
     fun nextDaily(now: Instant, minuteOfDay: Int): Instant = nextAt(now, LocalTime.of(minuteOfDay / 60, minuteOfDay % 60))
