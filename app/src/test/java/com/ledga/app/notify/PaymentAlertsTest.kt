@@ -96,4 +96,17 @@ class PaymentAlertsTest {
         assertEquals(0, alerts.check(listOf("TJK4AB12FB")), "reversed")
         assertEquals(emptyList(), phone.posted)
     }
+
+    @Test
+    fun `a companion checked before its payment alerts only the draw, and the payment's large alert follows (final review I3)`() = runTest {
+        clock.instant = Instant.parse("2026-06-09T17:00:00Z")
+        settings.setNotifyLarge(true)
+        settings.setLargeThreshold(40_000) // Ksh 400: what Fuliza covered (Ksh 463) would pass on its own
+        ingest(Sms.COMPANION)
+        assertEquals(1, alerts.check(listOf("TJK4AB12EA")))
+        assertEquals(listOf("fuliza-draw:TJK4AB12EA"), logged().map { it.key })
+        ingest(Sms.PURCHASE) // the payment's own SMS, after its companion's job had run
+        assertEquals(1, alerts.check(listOf("TJK4AB12EA")))
+        assertEquals("Ksh 2,500 to Sample Supermarket", logged().single { it.key == "large:TJK4AB12EA" }.title)
+    }
 }

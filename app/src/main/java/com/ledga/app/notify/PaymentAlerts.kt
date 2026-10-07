@@ -4,6 +4,7 @@ import com.ledga.app.data.room.LedgaDatabase
 import com.ledga.app.data.room.TxRow
 import com.ledga.app.data.settings.SettingsStore
 import com.ledga.core.model.FlowKind
+import com.ledga.core.model.TxKind
 import java.time.Clock
 import java.time.Duration
 
@@ -41,8 +42,12 @@ class PaymentAlerts(
         /** Spec §7.2 step 4: only payments from the last 2 hours. */
         val WINDOW: Duration = Duration.ofHours(2)
 
-        /** R104: a spend of the threshold or more, by its amount (fees not counted); a reversed one isn't spending. */
+        /**
+         * R104: a spend of the threshold or more, by its amount (fees not counted); a reversed one isn't spending. A Fuliza
+         * companion whose payment hasn't come yet is not the payment: its amount is only what Fuliza covered, and the
+         * payment's own alert follows when its SMS does (final review I3).
+         */
         fun isLarge(tx: TxRow, thresholdCents: Long): Boolean =
-            tx.flow == FlowKind.SPEND && !tx.isReversed && tx.amountCents >= thresholdCents
+            tx.flow == FlowKind.SPEND && tx.kind != TxKind.FULIZA_ONLY && !tx.isReversed && tx.amountCents >= thresholdCents
     }
 }
