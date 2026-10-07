@@ -82,7 +82,8 @@ fun FilterSheetContent(current: TransactionFilter, categories: List<CategoryRow>
     Column(Modifier.fillMaxWidth()) {
         SectionLabel("Category")
         FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.s), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-            categories.filterNot { it.archived }.forEach { cat ->
+            // An archived category stays while it is one of this filter's (R72): "Filters, 1 on" must show what is on.
+            categories.filter { !it.archived || it.key in current.categoryKeys }.forEach { cat ->
                 ChoiceChip(cat.name, cat.key in keys, { keys = if (cat.key in keys) keys - cat.key else keys + cat.key })
             }
         }

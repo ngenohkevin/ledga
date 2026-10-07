@@ -22,6 +22,10 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
+import androidx.compose.ui.test.assertIsSelected
+import com.ledga.app.data.room.CategoryOrigin
+import com.ledga.app.data.room.CategoryRow
+import com.ledga.core.model.CategoryGroup
 
 /** R70: the custom range in the filter sheet. */
 @RunWith(RobolectricTestRunner::class)
@@ -60,5 +64,24 @@ class FilterSheetBehaviourTest {
     fun `a month Spending sent reads as that month`() {
         show(TransactionFilter(dates = DateFilter.Month(YearMonth.of(2026, 9))), mutableListOf())
         compose.onNodeWithText("September 2026").performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
+    fun `a category archived while it is chosen still shows, chosen, and can be cleared (R72)`() {
+        val wedding = CategoryRow("user_wedding", "Wedding", CategoryGroup.EVERYDAY, "fluent_church", null, null, false, 100, CategoryOrigin.USER, true)
+        val chama = CategoryRow("user_chama", "Chama", CategoryGroup.EVERYDAY, "fluent_label", null, null, false, 101, CategoryOrigin.USER, true)
+        val applied = mutableListOf<TransactionFilter>()
+        compose.setContent {
+            LedgaTheme(Appearance.LIGHT, reducedMotion = true) {
+                Column(Modifier.verticalScroll(rememberScrollState())) {
+                    FilterSheetContent(TransactionFilter(categoryKeys = setOf(wedding.key)), listOf(wedding, chama), today) { applied += it }
+                }
+            }
+        }
+        compose.onNodeWithText("Wedding").assertIsSelected()
+        compose.onNodeWithText("Chama").assertDoesNotExist()
+        compose.onNodeWithText("Wedding").performClick()
+        compose.onNodeWithText("Show results").performScrollTo().performClick()
+        assertEquals(emptySet(), applied.single().categoryKeys)
     }
 }
