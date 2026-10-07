@@ -12,9 +12,9 @@ class PhosphorTest {
         "Bell", "BellSlash", "CalendarBlank", "CaretDown", "CaretLeft", "CaretRight", "CaretUp", "ChartBar",
         "Check", "CheckCircle", "Copy", "DotsThree", "DownloadSimple", "EyeSlash", "HandCoins", "House", "Info",
         "MagnifyingGlass", "PencilSimple", "Plus", "Receipt", "ShareNetwork", "SimCard", "SlidersHorizontal",
-        "Trash", "UserCircle", "Warning", "WarningCircle", "X",
+        "SquaresFour", "Trash", "UserCircle", "Warning", "WarningCircle", "X",
     )
-    private val fill = listOf("ChartBarFill", "HouseFill", "ReceiptFill", "UserCircleFill")
+    private val fill = listOf("ChartBarFill", "HouseFill", "ReceiptFill", "SquaresFourFill", "UserCircleFill")
     private val bold = listOf(
         "ArrowDownLeftBold", "ArrowUpRightBold", "CaretDownBold", "CaretRightBold", "CaretUpBold",
         "CheckBold", "PlusBold", "XBold",
@@ -22,7 +22,7 @@ class PhosphorTest {
 
     @Test
     fun `the full chrome set is vendored`() {
-        assertEquals(35, regular.size)
+        assertEquals(36, regular.size)
         assertEquals((regular + fill + bold).sorted(), Ph.all.keys.sorted())
     }
 

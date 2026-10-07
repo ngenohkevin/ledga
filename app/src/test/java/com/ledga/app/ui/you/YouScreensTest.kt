@@ -25,8 +25,6 @@ class YouScreensTest {
         payments = 6_385,
         since = LocalDate.parse("2024-03-14"),
         lines = listOf(PERSONAL, BUSINESS),
-        tracked = 4,
-        rules = 52,
         notifications = "Daily 8 PM · Weekly Sun · Fuliza",
         appearance = "System theme · Default text",
         unreadable = 2,

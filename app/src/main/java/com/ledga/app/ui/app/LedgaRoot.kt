@@ -107,7 +107,7 @@ fun LedgaNavHost(onboarded: Boolean, screens: LedgaScreens = AppScreens) {
                 screens.Home(
                     HomeNav(
                         openActivity = { hop(Tab.HOME) },
-                        openTrackers = { nav.openTab(Tab.TRACKERS) },
+                        openTrackers = { nav.openTab(Tab.CATEGORIES) },
                         openTracker = { openCategory(it) },
                         openYou = { nav.openTab(Tab.YOU) },
                         openAlerts = { nav.navigate(AlertsRoute) { launchSingleTop = true } },
@@ -122,12 +122,11 @@ fun LedgaNavHost(onboarded: Boolean, screens: LedgaScreens = AppScreens) {
                 }
                 screens.Activity()
             }
-            composable<TrackersRoute> { screens.Trackers(onOpen = { openCategory(it) }) }
+            composable<CategoriesRoute> { screens.Categories(onOpen = { openCategory(it) }) }
             composable<YouRoute> {
                 screens.You(
                     YouNav(
                         openLines = { push(LinesRoute) },
-                        openCategories = { push(CategoriesRoute) },
                         openPeople = { hop(Tab.YOU) },
                         openNotifications = { push(NotificationsRoute) },
                         openAppearance = { push(AppearanceRoute) },
@@ -138,7 +137,6 @@ fun LedgaNavHost(onboarded: Boolean, screens: LedgaScreens = AppScreens) {
                 )
             }
             composable<LinesRoute> { screens.Lines(onBack = back) }
-            composable<CategoriesRoute> { screens.Categories(onBack = back, onOpen = { openCategory(it) }) }
             composable<CategoryRoute> { screens.Category(onBack = back, onSeeAll = { hop(owningTab()) }) }
             composable<NotificationsRoute> { screens.NotificationSettings(onBack = back) }
             composable<AppearanceRoute> { screens.AppearanceSettings(onBack = back) }

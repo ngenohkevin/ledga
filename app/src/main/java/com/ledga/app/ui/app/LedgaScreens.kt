@@ -4,10 +4,9 @@ import androidx.compose.runtime.Composable
 import com.ledga.app.ui.activity.ActivityTab
 import com.ledga.app.ui.alerts.AlertsScreen
 import com.ledga.app.ui.home.HomeNav
-import com.ledga.app.ui.trackers.TrackersTab
 import com.ledga.app.ui.home.HomeRoute as HomeScreenRoute
 import com.ledga.app.ui.onboarding.OnboardingRoute as OnboardingScreenRoute
-import com.ledga.app.ui.categories.CategoriesScreen
+import com.ledga.app.ui.categories.CategoriesTab
 import com.ledga.app.ui.categories.CategoryPageScreen
 import com.ledga.app.ui.you.AppearanceScreen
 import com.ledga.app.ui.you.HistoryCheckScreen
@@ -30,13 +29,11 @@ interface LedgaScreens {
 
     @Composable fun Activity()
 
-    @Composable fun Trackers(onOpen: (String) -> Unit)
-
     @Composable fun You(nav: YouNav)
 
     @Composable fun Lines(onBack: () -> Unit)
 
-    @Composable fun Categories(onBack: () -> Unit, onOpen: (String) -> Unit)
+    @Composable fun Categories(onOpen: (String) -> Unit)
 
     @Composable fun Category(onBack: () -> Unit, onSeeAll: () -> Unit)
 
@@ -63,13 +60,11 @@ object AppScreens : LedgaScreens {
 
     @Composable override fun Activity() = ActivityTab()
 
-    @Composable override fun Trackers(onOpen: (String) -> Unit) = TrackersTab(onOpen = onOpen)
-
     @Composable override fun You(nav: YouNav) = YouScreen(nav)
 
     @Composable override fun Lines(onBack: () -> Unit) = LinesScreen(onBack = onBack)
 
-    @Composable override fun Categories(onBack: () -> Unit, onOpen: (String) -> Unit) = CategoriesScreen(onBack = onBack, onOpen = onOpen)
+    @Composable override fun Categories(onOpen: (String) -> Unit) = CategoriesTab(onOpen = onOpen)
 
     @Composable override fun Category(onBack: () -> Unit, onSeeAll: () -> Unit) = CategoryPageScreen(onBack = onBack, onSeeAll = onSeeAll)
 

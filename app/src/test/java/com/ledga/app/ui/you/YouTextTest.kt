@@ -21,8 +21,6 @@ class YouTextTest {
     fun `the Money and Data rows sum up their screens`() {
         assertEquals("Personal ··11 · Business ··78", YouText.linesLine(listOf(PERSONAL, BUSINESS)))
         assertEquals("No lines yet", YouText.linesLine(emptyList()))
-        assertEquals("4 tracked · 31 rules", YouText.categoriesLine(4, 31))
-        assertEquals("1 tracked · 1 rule", YouText.categoriesLine(1, 1))
         assertEquals("None", YouText.unreadableLine(0))
         assertEquals("1 message", YouText.unreadableLine(1))
         assertEquals("3 messages", YouText.unreadableLine(3))

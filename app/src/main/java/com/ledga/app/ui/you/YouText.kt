@@ -40,7 +40,6 @@ object YouText {
     fun linesLine(lines: List<LineRow>): String =
         lines.joinToString(" · ") { TxText.lineLabel(it) }.ifEmpty { "No lines yet" }
 
-    fun categoriesLine(tracked: Int, rules: Int): String = "$tracked tracked · $rules ${if (rules == 1) "rule" else "rules"}"
 
     fun unreadableLine(n: Int): String = when (n) {
         0 -> "None"

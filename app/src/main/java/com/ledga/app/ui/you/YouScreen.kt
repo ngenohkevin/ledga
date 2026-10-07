@@ -60,7 +60,6 @@ import com.ledga.app.ui.design.type.LedgaType
 /** Where You's rows lead (wired in `LedgaNavHost`). Every default does nothing. */
 data class YouNav(
     val openLines: () -> Unit = {},
-    val openCategories: () -> Unit = {},
     val openPeople: () -> Unit = {},
     val openNotifications: () -> Unit = {},
     val openAppearance: () -> Unit = {},
@@ -73,7 +72,6 @@ data class YouNav(
 data class YouActions(
     val onProfile: () -> Unit = {},
     val onLines: () -> Unit = {},
-    val onCategories: () -> Unit = {},
     val onPeople: () -> Unit = {},
     val onNotifications: () -> Unit = {},
     val onAppearance: () -> Unit = {},
@@ -98,8 +96,6 @@ fun YouContent(ui: YouUi, actions: YouActions, modifier: Modifier = Modifier) {
             Profile(ui, actions.onProfile)
             Group("Money") {
                 ListRow("M-Pesa lines", subtitle = YouText.linesLine(ui.lines), iconKey = "fluent_mobile_phone_with_arrow", onClick = actions.onLines)
-                Divider()
-                ListRow("Categories & rules", subtitle = YouText.categoriesLine(ui.tracked, ui.rules), iconKey = "fluent_label", onClick = actions.onCategories)
                 Divider()
                 ListRow("People", subtitle = "Who you send to and receive from", iconKey = "fluent_busts_in_silhouette", onClick = actions.onPeople)
             }
@@ -202,7 +198,6 @@ fun YouScreen(nav: YouNav, vm: YouViewModel = hiltViewModel()) {
         YouActions(
             onProfile = { sheet = YouSheet.NAME },
             onLines = nav.openLines,
-            onCategories = nav.openCategories,
             onPeople = {
                 vm.openPeople()
                 nav.openPeople()

@@ -57,17 +57,16 @@ class LedgaNavHostTest {
             Text("Activity showing $showing")
         }
 
-        @Composable override fun Trackers(onOpen: (String) -> Unit) = Column {
-            Button(onClick = { onOpen("electricity") }) { Text("Trackers row") }
+        @Composable override fun Categories(onOpen: (String) -> Unit) = Column {
+            Button(onClick = { onOpen("electricity") }) { Text("Categories row") }
             // Two taps before the first has drawn anything (a quick double tap).
-            Button(onClick = { onOpen("electricity"); onOpen("electricity") }) { Text("Trackers row twice") }
+            Button(onClick = { onOpen("electricity"); onOpen("electricity") }) { Text("Categories row twice") }
         }
 
 
         @Composable override fun You(nav: YouNav) = Column {
             Text("You screen")
             Button(onClick = nav.openLines) { Text("You lines") }
-            Button(onClick = nav.openCategories) { Text("You categories") }
             Button(onClick = nav.openPeople) { Text("You people") }
             Button(onClick = nav.openNotifications) { Text("You notifications") }
             Button(onClick = nav.openAppearance) { Text("You appearance") }
@@ -78,10 +77,6 @@ class LedgaNavHostTest {
 
         @Composable override fun Lines(onBack: () -> Unit) = Text("Lines screen")
 
-        @Composable override fun Categories(onBack: () -> Unit, onOpen: (String) -> Unit) = Column {
-            Text("Categories screen")
-            Button(onClick = { onOpen("groceries") }) { Text("Categories row") }
-        }
 
         @Composable override fun Category(onBack: () -> Unit, onSeeAll: () -> Unit) = Column {
             Text("Category page")
@@ -157,10 +152,10 @@ class LedgaNavHostTest {
     }
 
     @Test
-    fun `Back from See all returns to the page opened on the Trackers tab`() {
+    fun `Back from See all returns to the page opened on the Categories tab`() {
         show()
-        tap("Trackers")
-        tap("Trackers row")
+        tap("Categories")
+        tap("Categories row")
         tap("See all")
         compose.onNodeWithText("Activity screen").assertIsDisplayed()
         back()
@@ -179,8 +174,8 @@ class LedgaNavHostTest {
     @Test
     fun `a tab tapped after See all ends the way back, and Back goes Home as usual`() {
         show()
-        tap("Trackers")
-        tap("Trackers row")
+        tap("Categories")
+        tap("Categories row")
         tap("See all")
         tap("Home")
         tap("Activity")
@@ -191,10 +186,10 @@ class LedgaNavHostTest {
     @Test
     fun `a double tap on a tracker opens it once`() {
         show()
-        tap("Trackers")
-        tap("Trackers row twice")
+        tap("Categories")
+        tap("Categories row twice")
         back()
-        compose.onNodeWithText("Trackers row").assertIsDisplayed()
+        compose.onNodeWithText("Categories row").assertIsDisplayed()
     }
 
     @Test
@@ -202,7 +197,7 @@ class LedgaNavHostTest {
         show()
         tap("Home bell")
         compose.onNodeWithText("Alerts screen").assertIsDisplayed()
-        compose.onNodeWithText("Trackers").assertDoesNotExist()
+        compose.onNodeWithText("Categories").assertDoesNotExist()
         back()
         compose.onNodeWithText("Home screen").assertIsDisplayed()
         tap("Home bell")
@@ -215,31 +210,18 @@ class LedgaNavHostTest {
         show()
         tap("You")
         listOf(
-            "You lines" to "Lines screen", "You categories" to "Categories screen", "You notifications" to "Notifications screen",
+            "You lines" to "Lines screen", "You notifications" to "Notifications screen",
             "You appearance" to "Appearance screen", "You unreadable" to "Unreadable screen", "You history" to "History check screen",
             "You licences" to "Licences screen",
         ).forEach { (row, screen) ->
             tap(row)
             compose.onNodeWithText(screen).assertIsDisplayed()
-            compose.onNodeWithText("Trackers").assertDoesNotExist()
+            compose.onNodeWithText("Categories").assertDoesNotExist()
             back()
             compose.onNodeWithText("You screen").assertIsDisplayed()
         }
     }
 
-    @Test
-    fun `a category's See payments opens Activity, and Back returns to the category (R83)`() {
-        show()
-        tap("You")
-        tap("You categories")
-        tap("Categories row")
-        tap("See all")
-        compose.onNodeWithText("Activity screen").assertIsDisplayed()
-        back()
-        compose.onNodeWithText("Category page").assertIsDisplayed()
-        back()
-        compose.onNodeWithText("Categories screen").assertIsDisplayed()
-    }
 
     @Test
     fun `People from You opens Activity, and Back returns to You (R82)`() {

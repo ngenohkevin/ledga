@@ -10,7 +10,7 @@ import com.ledga.app.ui.design.components.NavTab
 enum class Tab(val nav: NavTab, val route: Any) {
     HOME(LedgaTabs.Home, HomeRoute),
     ACTIVITY(LedgaTabs.Activity, ActivityRoute),
-    TRACKERS(LedgaTabs.Trackers, TrackersRoute),
+    CATEGORIES(LedgaTabs.Categories, CategoriesRoute),
     YOU(LedgaTabs.You, YouRoute),
     ;
 
@@ -20,7 +20,7 @@ enum class Tab(val nav: NavTab, val route: Any) {
             destination == null -> null
             destination.hasRoute<HomeRoute>() -> HOME
             destination.hasRoute<ActivityRoute>() -> ACTIVITY
-            destination.hasRoute<TrackersRoute>() -> TRACKERS
+            destination.hasRoute<CategoriesRoute>() -> CATEGORIES
             destination.hasRoute<YouRoute>() -> YOU
             else -> null
         }

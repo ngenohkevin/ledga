@@ -36,13 +36,13 @@ import com.ledga.app.ui.design.type.LedgaType
 @Immutable
 data class NavTab(val label: String, val icon: ImageVector, val selectedIcon: ImageVector)
 
-/** Spec §10.4: four tabs, Home · Activity · Trackers · You. */
+/** Spec §10.4 + 4e D2: four tabs, Home · Activity · Categories · You. */
 object LedgaTabs {
     val Home = NavTab("Home", Ph.House, Ph.HouseFill)
     val Activity = NavTab("Activity", Ph.Receipt, Ph.ReceiptFill)
-    val Trackers = NavTab("Trackers", Ph.ChartBar, Ph.ChartBarFill)
+    val Categories = NavTab("Categories", Ph.SquaresFour, Ph.SquaresFourFill)
     val You = NavTab("You", Ph.UserCircle, Ph.UserCircleFill)
-    val all = listOf(Home, Activity, Trackers, You)
+    val all = listOf(Home, Activity, Categories, You)
 }
 
 /**

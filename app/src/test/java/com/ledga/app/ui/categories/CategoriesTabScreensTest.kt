@@ -1,8 +1,9 @@
-package com.ledga.app.ui.trackers
+package com.ledga.app.ui.categories
 
 import com.ledga.app.data.room.CategoryOrigin
 import com.ledga.app.data.room.CategoryRow
 import com.ledga.app.data.room.dao.CategorySpend
+import com.ledga.app.data.trackers.CategoryMeasure
 import com.ledga.app.data.trackers.TrackerSummary
 import com.ledga.app.testing.snapScreen
 import com.ledga.app.testing.snapScreenLandscape
@@ -12,6 +13,7 @@ import com.ledga.app.ui.design.charts.Bar
 import com.ledga.app.ui.design.components.SheetScaffold
 import com.ledga.core.chart.Bucket
 import com.ledga.core.model.Categories
+import com.ledga.core.model.CategoryGroup
 import com.ledga.core.money.Money
 import com.ledga.core.time.PeriodType
 import com.ledga.core.time.Periods
@@ -23,11 +25,11 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
-/** Spec §15.2: Trackers (mockup `trackers`) light/dark × 1.0/1.3, empty, the "Track a category" sheet, landscape. Synthetic values. */
+/** 4e D2: the Categories tab (trackers, all categories, archived folded), its search and no-match states, the New category and Track sheets, landscape. Synthetic values. */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(qualifiers = "xhdpi")
-class TrackersScreensTest {
+class CategoriesTabScreensTest {
     private val now = Instant.parse("2026-10-06T06:00:00Z")
     private val categories = Categories.SEED.map {
         CategoryRow(it.key, it.name, it.group, it.icon3d, null, null, it.tracked, it.sortOrder, CategoryOrigin.SYSTEM, false)
@@ -54,7 +56,11 @@ class TrackersScreensTest {
     private val bars = labels.mapIndexed { i, label -> Bar(label, trackers.map { it.months[7 + i].total.cents }, label, inProgress = i == 5) }
     private val untracked = categories.filter { !it.tracked && it.groupKey.accepts(com.ledga.core.model.FlowKind.SPEND) }
 
-    private val ui = TrackersUi(
+    private fun line(key: String, cents: Long) = byKey.getValue(key).let { CategoryLineUi(it, cents, CategoryMeasure.of(it.groupKey)) }
+    private val wedding = CategoryRow("user_wedding", "Wedding", CategoryGroup.EVERYDAY, "fluent_church", null, null, false, 100, CategoryOrigin.USER, true)
+    private val greenClub = CategoryRow("user_green_grocer_club", "Green Grocer Club", CategoryGroup.EVERYDAY, "fluent_seedling", null, null, false, 101, CategoryOrigin.USER, true)
+
+    private val ui = CategoriesTabUi(
         loaded = true,
         trackers = trackers,
         bars = bars,
@@ -62,20 +68,34 @@ class TrackersScreensTest {
         thisMonthCents = 325_000,
         heading = "All trackers · last 6 months",
         untracked = untracked,
+        groups = listOf(
+            TabGroupUi(CategoryGroup.BILLS_UTILITIES, listOf(line(Categories.INTERNET, 300_000), line(Categories.TV, 0), line(Categories.RENT, 2_500_000))),
+            TabGroupUi(CategoryGroup.EVERYDAY, listOf(line(Categories.GROCERIES, 64_000), line(Categories.FOOD, 12_500), line(Categories.TRANSPORT, 24_500))),
+            TabGroupUi(CategoryGroup.MONEY_IN, listOf(line(Categories.RECEIVED, 500_000), line(Categories.CASH_DEPOSIT, 0))),
+        ),
+        archived = listOf(CategoryLineUi(wedding, 0, CategoryMeasure.SPENT)),
         today = LocalDate.parse("2026-10-06"),
     )
 
     @Test
-    fun trackers() = snapScreen("trackers") { ShellFrame(Tab.TRACKERS, onSelect = {}) { TrackersContent(ui, TrackersActions()) } }
+    fun tab() = snapScreen("categories_tab") { ShellFrame(Tab.CATEGORIES, onSelect = {}) { CategoriesTabContent(ui, CategoriesTabActions()) } }
 
     @Test
-    fun empty() = snapScreen("trackers_empty") {
-        ShellFrame(Tab.TRACKERS, onSelect = {}) { TrackersContent(TrackersUi(loaded = true, untracked = untracked, today = ui.today), TrackersActions()) }
+    fun search() = snapScreen("categories_tab_search") {
+        ShellFrame(Tab.CATEGORIES, onSelect = {}) {
+            CategoriesTabContent(ui.copy(query = "gro", results = listOf(line(Categories.GROCERIES, 64_000), CategoryLineUi(greenClub, 0, CategoryMeasure.SPENT))), CategoriesTabActions())
+        }
     }
+
+    @Test
+    fun none() = snapScreen("categories_tab_none") { ShellFrame(Tab.CATEGORIES, onSelect = {}) { CategoriesTabContent(ui.copy(query = "Chama", results = emptyList()), CategoriesTabActions()) } }
+
+    @Test
+    fun newCategory() = snapScreen("new_category") { SheetScaffold("New category") { NewCategoryContent("Pets", {}, CategoryGroup.EVERYDAY, {}, {}) } }
 
     @Test
     fun trackSheet() = snapScreen("track_sheet") { SheetScaffold("Track a category") { TrackCategoryContent(untracked, onTrack = {}) } }
 
     @Test
-    fun landscape() = snapScreenLandscape("trackers") { ShellFrame(Tab.TRACKERS, onSelect = {}) { TrackersContent(ui, TrackersActions()) } }
+    fun landscape() = snapScreenLandscape("categories_tab") { ShellFrame(Tab.CATEGORIES, onSelect = {}) { CategoriesTabContent(ui, CategoriesTabActions()) } }
 }

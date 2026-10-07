@@ -7,7 +7,6 @@ import kotlinx.serialization.Serializable
 
 @Serializable data object ActivityRoute
 
-@Serializable data object TrackersRoute
 
 @Serializable data object YouRoute
 
@@ -19,7 +18,7 @@ import kotlinx.serialization.Serializable
 /** You → M-Pesa lines (R65). */
 @Serializable data object LinesRoute
 
-/** Categories & rules (R67). */
+/** The Categories tab (4e D2). */
 @Serializable data object CategoriesRoute
 
 /** A category's page (4e D1). [month] is "2026-09" when Spending opened it at that month (D3). The ViewModel reads both by name. */

@@ -16,9 +16,9 @@ REGULAR = [
     "bell", "bell-slash", "calendar-blank", "caret-down", "caret-left", "caret-right", "caret-up", "chart-bar",
     "check", "check-circle", "copy", "dots-three", "download-simple", "eye-slash", "hand-coins", "house", "info",
     "magnifying-glass", "pencil-simple", "plus", "receipt", "share-network", "sim-card", "sliders-horizontal",
-    "trash", "user-circle", "warning", "warning-circle", "x",
+    "squares-four", "trash", "user-circle", "warning", "warning-circle", "x",
 ]
-FILL = ["chart-bar", "house", "receipt", "user-circle"]
+FILL = ["chart-bar", "house", "receipt", "squares-four", "user-circle"]
 BOLD = ["arrow-down-left", "arrow-up-right", "caret-down", "caret-right", "caret-up", "check", "plus", "x"]
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]

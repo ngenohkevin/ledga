@@ -31,7 +31,6 @@ class YouBehaviourTest {
                     YouActions(
                         onProfile = { opened += "profile" },
                         onLines = { opened += "lines" },
-                        onCategories = { opened += "categories" },
                         onPeople = { opened += "people" },
                         onNotifications = { opened += "notifications" },
                         onAppearance = { opened += "appearance" },
@@ -44,10 +43,10 @@ class YouBehaviourTest {
             }
         }
         listOf(
-            "Amani", "M-Pesa lines", "Categories & rules", "People", "Notifications", "Appearance",
+            "Amani", "M-Pesa lines", "People", "Notifications", "Appearance",
             "Rescan SMS inbox", "Messages Ledga couldn't read", "History check", "Open-source licences",
         ).forEach { compose.onNodeWithText(it).performScrollTo().performClick() }
-        assertEquals(listOf("profile", "lines", "categories", "people", "notifications", "appearance", "rescan", "unreadable", "history", "licences"), opened)
+        assertEquals(listOf("profile", "lines", "people", "notifications", "appearance", "rescan", "unreadable", "history", "licences"), opened)
         compose.onNodeWithText("Version").performScrollTo().assertHasNoClickAction()
     }
 }

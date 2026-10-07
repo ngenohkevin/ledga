@@ -65,8 +65,6 @@ class YouViewModelTest {
         settings.setDisplayName("Amani")
         val ui = vm().ui.first { it.loaded && it.name == "Amani" && it.payments == 2 && it.lines.size == 2 }
         assertEquals(LocalDate.parse("2025-09-12"), ui.since)
-        assertEquals(db.categoriesDao().all().count { it.tracked && !it.archived }, ui.tracked)
-        assertEquals(db.rulesDao().all().size, ui.rules)
         assertEquals("Daily 8 PM · Weekly Sun · Fuliza", ui.notifications)
         assertEquals("System theme · Default text", ui.appearance)
         assertEquals(BuildConfig.VERSION_NAME, ui.version)

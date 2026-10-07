@@ -44,8 +44,6 @@ data class YouUi(
     val payments: Int = 0,
     val since: LocalDate? = null,
     val lines: List<LineRow> = emptyList(),
-    val tracked: Int = 0,
-    val rules: Int = 0,
     val notifications: String = "",
     val appearance: String = "",
     val unreadable: Int = 0,
@@ -91,15 +89,15 @@ class YouViewModel @Inject constructor(
         }
     }
 
-    private data class Counts(val span: TxSpan, val tracked: Int, val rules: Int, val unreadable: Int)
+    private data class Counts(val span: TxSpan, val unreadable: Int)
 
     private data class Access(val sms: Boolean, val smsBlocked: Boolean, val notify: Boolean)
 
     val ui: StateFlow<YouUi> = combine(
         settings.settings,
         lines.observe(),
-        combine(db.transactionsDao().observeSpan(), db.categoriesDao().observeTracked(), db.rulesDao().observeAll(), db.smsDao().observeUnreadableCount()) { span, tracked, rules, unreadable ->
-            Counts(span, tracked.size, rules.size, unreadable)
+        combine(db.transactionsDao().observeSpan(), db.smsDao().observeUnreadableCount()) { span, unreadable ->
+            Counts(span, unreadable)
         },
         rescan,
         combine(smsGranted, smsBlocked, notifyAllowed) { a, b, c -> Access(a, b, c) },
@@ -110,8 +108,6 @@ class YouViewModel @Inject constructor(
             payments = counts.span.count,
             since = counts.span.firstAt?.let(Periods::dateOf),
             lines = ls,
-            tracked = counts.tracked,
-            rules = counts.rules,
             notifications = NotificationText.summary(s, access.notify),
             appearance = YouText.appearanceLine(s.appearance, s.textSize),
             unreadable = counts.unreadable,

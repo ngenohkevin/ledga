@@ -43,9 +43,9 @@ class ChromeTest {
         compose.setContent { LedgaTheme(Appearance.LIGHT, reducedMotion = true) { LedgaBottomBar(selected = tab, onSelect = { tab = it }) } }
         compose.onAllNodes(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Tab)).assertCountEquals(4)
         compose.onNodeWithText("Home").assertIsSelected().assertHeightIsAtLeast(48.dp)
-        compose.onNodeWithText("Trackers").performClick()
+        compose.onNodeWithText("Categories").performClick()
         assertEquals(2, tab)
-        compose.onNodeWithText("Trackers").assertIsSelected()
+        compose.onNodeWithText("Categories").assertIsSelected()
     }
 
     @Test
