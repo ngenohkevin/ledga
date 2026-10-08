@@ -1,6 +1,7 @@
 package com.ledga.app.data.update
 
 import android.content.Context
+import android.content.pm.PackageManager
 import android.provider.Settings
 import androidx.test.core.app.ApplicationProvider
 import kotlin.test.assertEquals
@@ -44,5 +45,11 @@ class PackageInstallerUpdatesTest {
         val intent = PackageInstallerUpdates.settingsIntent(context)
         assertEquals(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, intent.action)
         assertEquals("package:${context.packageName}", intent.dataString)
+    }
+
+    @Test
+    fun `Ledga asks Android for one-tap updates, which it honours only with this permission (R138, final review I2)`() {
+        val requested = context.packageManager.getPackageInfo(context.packageName, PackageManager.GET_PERMISSIONS).requestedPermissions.orEmpty()
+        assertTrue("android.permission.UPDATE_PACKAGES_WITHOUT_USER_ACTION" in requested)
     }
 }
