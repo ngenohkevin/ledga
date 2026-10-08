@@ -94,4 +94,11 @@ class UpdatePolicyTest {
     fun `a clock set back makes a check due`() {
         assertTrue(UpdatePolicy.checkDue(now.plus(Duration.ofHours(2)), now))
     }
+
+    @Test
+    fun `a version is held while skipped or snoozed, and released when the snooze ends (final review I1)`() {
+        assertTrue(UpdatePolicy.held(v("2.0.1"), skipped = v("2.0.1"), snoozedUntil = null, now = now))
+        assertTrue(UpdatePolicy.held(v("2.0.1"), skipped = null, snoozedUntil = now.plusSeconds(1), now = now))
+        assertFalse(UpdatePolicy.held(v("2.0.1"), skipped = v("2.0.0"), snoozedUntil = now, now = now))
+    }
 }

@@ -18,14 +18,17 @@ import com.ledga.app.data.update.UpdateFiles
 import com.ledga.app.data.update.UpdateHttp
 import com.ledga.app.data.update.UpdateMessages
 import com.ledga.app.data.update.UpdateNotices
+import com.ledga.app.data.update.UpdateStore
 import com.ledga.core.update.AppVersion
 import com.ledga.core.update.ManifestCheck
 import com.ledga.core.update.Release
 import com.ledga.core.update.Sha256
+import com.ledga.core.update.UpdatePolicy
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import java.io.File
 import java.io.IOException
+import java.time.Clock
 import java.time.Duration
 import kotlinx.coroutines.CancellationException
 
@@ -43,6 +46,8 @@ class DownloadWorker @AssistedInject constructor(
     private val files: UpdateFiles,
     private val notices: UpdateNotices,
     private val inspector: ApkInspector,
+    private val store: UpdateStore,
+    private val clock: Clock,
 ) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result {
@@ -52,6 +57,8 @@ class DownloadWorker @AssistedInject constructor(
         val manifestUrl = inputData.getString(KEY_MANIFEST_URL)
         val user = inputData.getBoolean(KEY_USER, false)
         if (version == null || apkName == null || apkUrl == null || manifestUrl == null) return failure(version, UpdateMessages.DOWNLOAD_FAILED)
+        // R135 (final review I1): a quiet download of a skipped or snoozed version has nothing to do.
+        if (!user && held(version)) return Result.success()
         files.dir()
         val part = files.partial(version)
         part.delete()
@@ -73,7 +80,8 @@ class DownloadWorker @AssistedInject constructor(
                 return failure(version, UpdateMessages.NOT_THIS_APP, part)
             }
             if (!part.renameTo(files.apk(version))) throw IOException("couldn't keep the download")
-            notices.ready(version.toString())
+            // Kept either way; announced only when the person asked for it or it is still offered (final review I1).
+            if (user || !held(version)) notices.ready(version.toString())
             Result.success(workDataOf(KEY_VERSION to version.toString()))
         } catch (e: CancellationException) {
             part.delete()
@@ -86,6 +94,11 @@ class DownloadWorker @AssistedInject constructor(
         } finally {
             if (user) notices.clearProgress()
         }
+    }
+
+    private suspend fun held(version: AppVersion): Boolean {
+        val p = store.current()
+        return UpdatePolicy.held(version, p.skipped, p.snoozedUntil, clock.instant())
     }
 
     private fun failure(version: AppVersion?, message: String, part: File? = null): Result {

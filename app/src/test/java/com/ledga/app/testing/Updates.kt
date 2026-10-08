@@ -36,6 +36,9 @@ class FakeUpdateHttp : UpdateHttp {
     /** Downloads write half the file, then the connection drops. */
     var failDownloads = false
 
+    /** Runs while a download is under way (e.g. the person taps Later meanwhile). */
+    var duringDownload: suspend () -> Unit = {}
+
     override suspend fun releases(url: String, etag: String?): ReleasesResponse {
         checks += url to etag
         return if (answers.size > 1) answers.removeFirst() else answers.firstOrNull() ?: ReleasesResponse.Failed(CheckFailure.OFFLINE)
@@ -45,6 +48,7 @@ class FakeUpdateHttp : UpdateHttp {
 
     override suspend fun download(url: String, to: File, onProgress: suspend (done: Long, total: Long) -> Unit) {
         downloads += url
+        duringDownload()
         val bytes = files[url] ?: throw IOException("nothing at $url")
         if (failDownloads) {
             to.writeBytes(bytes.copyOf(bytes.size / 2))
@@ -98,6 +102,10 @@ class FakeUpdateWork : UpdateWork {
 
     override fun cancelDownload() {
         calls += "cancelDownload"
+    }
+
+    override suspend fun cancelQuietDownload() {
+        calls += "cancelQuietDownload"
     }
 }
 

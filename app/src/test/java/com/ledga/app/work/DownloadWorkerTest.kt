@@ -9,12 +9,16 @@ import androidx.work.testing.TestListenableWorkerBuilder
 import com.ledga.app.data.update.ApkInfo
 import com.ledga.app.data.update.UpdateFiles
 import com.ledga.app.data.update.UpdateMessages
+import com.ledga.app.data.update.UpdateStore
+import com.ledga.app.testing.FakePrefsStore
 import com.ledga.app.testing.FakeUpdateHttp
 import com.ledga.app.testing.FakeUpdateNotices
+import com.ledga.app.testing.MutableClock
 import com.ledga.app.testing.sha256Hex
 import com.ledga.core.update.AppVersion
 import com.ledga.core.update.Release
 import com.ledga.core.update.ReleaseAsset
+import java.time.Instant
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -41,6 +45,8 @@ class DownloadWorkerTest {
     private val notices = FakeUpdateNotices()
     private val files by lazy { UpdateFiles(tmp.newFolder("updates")) }
     private var apkInfo: ApkInfo? = null
+    private val store = UpdateStore(FakePrefsStore())
+    private val clock = MutableClock(Instant.parse("2026-10-07T06:00:00Z"))
 
     private val release = Release(
         tag = "v2.0.1-beta.2", version = version, prerelease = true, draft = false, publishedAt = null, notes = "",
@@ -56,7 +62,7 @@ class DownloadWorkerTest {
     private val factory = object : WorkerFactory() {
         override fun createWorker(appContext: Context, workerClassName: String, workerParameters: WorkerParameters): ListenableWorker? =
             if (workerClassName == DownloadWorker::class.java.name) {
-                DownloadWorker(appContext, workerParameters, http, files, notices) { apkInfo }
+                DownloadWorker(appContext, workerParameters, http, files, notices, { apkInfo }, store, clock)
             } else {
                 null
             }
@@ -138,5 +144,23 @@ class DownloadWorkerTest {
         assertEquals(UpdateMessages.NETWORK, failedWith(run(user = false, attempt = 2)))
         assertEquals(UpdateMessages.NETWORK, failedWith(run(user = true, attempt = 0)))
         assertEquals(0, files.dir().list()!!.size)
+    }
+
+    @Test
+    fun `a quiet download of a skipped or snoozed version neither downloads nor says it is ready (final review I1)`() = runTest {
+        store.skip(version)
+        assertIs<ListenableWorker.Result.Success>(run(user = false))
+        assertTrue(http.downloads.isEmpty())
+        assertTrue(notices.events.isEmpty())
+    }
+
+    @Test
+    fun `a version put off while it downloaded is kept but not announced, unless the person asked for it (final review I1)`() = runTest {
+        http.duringDownload = { store.snoozeUntil(clock.instant.plusSeconds(3_600)) }
+        assertIs<ListenableWorker.Result.Success>(run(user = false))
+        assertTrue(files.ready(version) != null)
+        assertTrue(notices.events.none { it.startsWith("ready") })
+        assertIs<ListenableWorker.Result.Success>(run(user = true))
+        assertTrue("ready 2.0.1-beta.2" in notices.events)
     }
 }

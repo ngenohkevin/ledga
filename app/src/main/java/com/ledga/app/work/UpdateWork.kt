@@ -67,6 +67,9 @@ interface UpdateWork {
     /** The release it was fetching is no longer the one offered (the channel changed). */
     fun cancelDownload()
 
+    /** R135 (final review I1): Skip or Later stops a quiet download, queued or running; a person's is left alone. */
+    suspend fun cancelQuietDownload()
+
     val download: Flow<DownloadProgress>
 }
 
@@ -99,6 +102,11 @@ class WorkManagerUpdateWork(private val wm: WorkManager) : UpdateWork {
 
     override fun cancelDownload() {
         wm.cancelUniqueWork(DownloadWorker.UNIQUE_NAME)
+    }
+
+    override suspend fun cancelQuietDownload() {
+        val open = wm.getWorkInfosForUniqueWorkFlow(DownloadWorker.UNIQUE_NAME).first().filter { !it.state.isFinished }
+        if (open.any { DownloadWorker.TAG_QUIET in it.tags }) wm.cancelUniqueWork(DownloadWorker.UNIQUE_NAME)
     }
 
     override val download: Flow<DownloadProgress> = wm.getWorkInfosForUniqueWorkFlow(DownloadWorker.UNIQUE_NAME).map(DownloadProgress::of)

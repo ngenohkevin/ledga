@@ -69,6 +69,12 @@ object UpdatePolicy {
         }
 
     /** R135: what Home's banner, the quiet download and the "ready" notice may offer: not a skipped version, not while snoozed. */
-    fun offered(newest: Release?, skipped: AppVersion?, snoozedUntil: Instant?, now: Instant): Boolean =
-        newest != null && newest.version != skipped && (snoozedUntil == null || !now.isBefore(snoozedUntil))
+    fun offered(newest: Release?, skipped: AppVersion?, snoozedUntil: Instant?, now: Instant): Boolean {
+        val version = newest?.version ?: return false
+        return !held(version, skipped, snoozedUntil, now)
+    }
+
+    /** R135 (final review I1): [version] is skipped, or everything is snoozed until later. */
+    fun held(version: AppVersion, skipped: AppVersion?, snoozedUntil: Instant?, now: Instant): Boolean =
+        version == skipped || (snoozedUntil != null && now.isBefore(snoozedUntil))
 }

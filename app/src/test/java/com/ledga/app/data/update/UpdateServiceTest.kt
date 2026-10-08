@@ -123,6 +123,8 @@ class UpdateServiceTest {
         assertFalse(skipped.offered)
         assertEquals("v2.0.0-beta.2", skipped.newest?.tag) // Updates still shows it (R135)
         assertTrue("clearReady" in notices.events)
+        assertEquals(listOf("cancelQuietDownload"), work.calls) // final review I1
+        work.calls.clear()
         s.check(force = true)
         assertTrue(s.state.first().offered)
         assertEquals(listOf("download 2.0.0-beta.3 quiet"), work.calls)
@@ -235,5 +237,17 @@ class UpdateServiceTest {
         assertEquals(CheckFailure.SERVER, state.failure)
         assertEquals("v2.0.0-beta.2", state.newest?.tag)
         assertEquals(listOf("v2.0.0-beta.2"), state.history.map { it.tag })
+    }
+
+    @Test
+    fun `Skip and Later stop a quiet download, so nothing says it is ready (R135, final review I1)`() = runTest {
+        val s = service()
+        http.answers += fresh(ghRelease("v2.0.0-beta.2"))
+        s.check()
+        s.snooze()
+        assertTrue("cancelQuietDownload" in work.calls)
+        work.calls.clear()
+        s.skip()
+        assertTrue("cancelQuietDownload" in work.calls)
     }
 }

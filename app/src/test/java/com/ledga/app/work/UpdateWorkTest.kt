@@ -84,4 +84,14 @@ class UpdateWorkTest {
         val running = info(WorkInfo.State.RUNNING, user = false, DownloadWorker.progress(AppVersion.parse("2.0.1")!!, 40L, 100L, user = false))
         assertEquals(DownloadProgress.Running("2.0.1", 40L, 100L, user = false), DownloadProgress.of(listOf(running)))
     }
+
+    @Test
+    fun `stopping the quiet download leaves a person's download alone (final review I1)`() = runTest {
+        work.download(release, user = false)
+        work.cancelQuietDownload()
+        assertTrue(downloads().all { it.state.isFinished })
+        work.download(release, user = true)
+        work.cancelQuietDownload()
+        assertEquals(1, downloads().count { !it.state.isFinished })
+    }
 }

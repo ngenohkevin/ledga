@@ -134,12 +134,14 @@ class UpdateService(
     suspend fun skip() {
         val version = state.first().newest?.version ?: return
         store.skip(version)
+        work.cancelQuietDownload()
         afterChange()
     }
 
     /** "Later" (spec §13.4): three days. */
     suspend fun snooze() {
         store.snoozeUntil(clock.instant().plus(UpdatePolicy.SNOOZE))
+        work.cancelQuietDownload()
         notices.clearReady()
     }
 
