@@ -3,6 +3,7 @@ package com.ledga.app.startup
 import com.ledga.app.data.derive.Deriver
 import com.ledga.app.data.legacy.LegacyImporter
 import com.ledga.app.data.legacy.PreV6Snapshot
+import com.ledga.app.data.legacy.V1RuleRepair
 import com.ledga.app.data.lines.LinesRepository
 import com.ledga.app.data.room.LedgaDatabase
 import com.ledga.app.data.room.MetaKeys
@@ -82,6 +83,14 @@ class Startup(
             deriver.needsRebuild() -> work.rebuild()
             // Migrated, imported and rebuilt: the safety copy has done its job (spec §8 step 1), unless a beta keeps it (R159).
             snapshot.exists() && !keepPreV6Copy -> snapshot.delete()
+        }
+        // R175: once, after the import chain, v1's paybill-form name rules become the rules v2's reading matches. A
+        // failure leaves the flag unset (the next start tries again) and never routes to recovery.
+        if (!legacyPending && !chainRunning && meta.get(MetaKeys.MIGRATED_FROM_V1) != null && meta.get(MetaKeys.V1_RULES_REPAIRED) == null) {
+            runCatching {
+                if (V1RuleRepair(db).run() > 0) deriver.reclassifyAll()
+                meta.put(MetaRow(MetaKeys.V1_RULES_REPAIRED, "1"))
+            }
         }
         val s = runCatching { settings.current() }.getOrDefault(Settings())
         if (s.onboarded) {

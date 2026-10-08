@@ -161,6 +161,9 @@ object MetaKeys {
 
     /** Final review I1: the id of the last restore written ([com.ledga.app.work.RestoreRequest.id]). */
     const val RESTORE_REQUEST = "restoreRequest"
+
+    /** R175: v1's paybill-form name rules were rewritten on this phone (once, after the import). */
+    const val V1_RULES_REPAIRED = "v1RulesRepaired"
 }
 
 /** A line's latest stated wallet balance (query result, not a table). */

@@ -4,18 +4,28 @@ import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import androidx.test.core.app.ApplicationProvider
 import com.ledga.app.data.derive.Deriver
+import com.ledga.app.data.ingest.RawSms
+import com.ledga.app.data.ingest.SmsIngestor
 import com.ledga.app.data.legacy.LegacyImporter
 import com.ledga.app.data.legacy.PreV6Snapshot
 import com.ledga.app.data.lines.LinesRepository
 import com.ledga.app.data.room.LedgaDatabase
 import com.ledga.app.data.room.MetaKeys
 import com.ledga.app.data.room.MetaRow
+import com.ledga.app.data.room.RuleRow
+import com.ledga.app.data.room.SmsSource
 import com.ledga.app.data.settings.SettingsStore
 import com.ledga.app.testing.FakeBackgroundWork
 import com.ledga.app.testing.FakePrefsStore
 import com.ledga.app.testing.FakeSims
 import com.ledga.app.testing.FakeUpdateWork
+import com.ledga.app.testing.Sms
 import com.ledga.app.testing.TestDb
+import com.ledga.core.derive.RuleAction
+import com.ledga.core.derive.RuleField
+import com.ledga.core.derive.RuleOrigin
+import com.ledga.core.model.FlowKind
+import java.time.Instant
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
@@ -198,5 +208,34 @@ class StartupTest {
         assertTrue(snapshot.exists())
         startup(db, snapshot).run()
         assertFalse(snapshot.exists())
+    }
+
+    private suspend fun withV1PaybillRule(db: LedgaDatabase) {
+        db.rulesDao().insert(
+            RuleRow(field = RuleField.NAME_CONTAINS, pattern = "SAMPLE SACCO for account", action = RuleAction.MARK_OWN_ACCOUNT,
+                categoryKey = null, origin = RuleOrigin.USER, priority = 0, createdAt = Instant.parse("2026-09-01T06:00:00Z")),
+        )
+        val body = Sms.paybill("TJK4AB12GK", "SAMPLE SACCO", "7788", "2,500.00", "15/9/26 at 9:00 AM")
+        SmsIngestor(db, Deriver(db)).ingestAll(listOf(RawSms("MPESA", body, Instant.parse("2026-09-15T06:00:00Z"), null, null, SmsSource.INBOX)))
+    }
+
+    @Test
+    fun `a phone that imported v1 earlier gets its paybill-form rules repaired once, and its payments re-filed (R175)`() = runTest {
+        val db = TestDb.inMemory()
+        db.metaDao().put(MetaRow(MetaKeys.MIGRATED_FROM_V1, "1"))
+        withV1PaybillRule(db)
+        assertEquals(FlowKind.SPEND, db.transactionsDao().get("TJK4AB12GK")!!.flow, "before: the rule never matches")
+        startup(db).run()
+        assertEquals(FlowKind.OWN_OUT, db.transactionsDao().get("TJK4AB12GK")!!.flow)
+        assertEquals("SAMPLE SACCO", db.rulesDao().all().single { it.origin == RuleOrigin.USER }.pattern)
+        assertEquals("1", db.metaDao().get(MetaKeys.V1_RULES_REPAIRED))
+    }
+
+    @Test
+    fun `a phone that never came from v1 keeps its rules (R175)`() = runTest {
+        val db = TestDb.inMemory()
+        withV1PaybillRule(db)
+        startup(db).run()
+        assertEquals("SAMPLE SACCO for account", db.rulesDao().all().single { it.origin == RuleOrigin.USER }.pattern)
     }
 }

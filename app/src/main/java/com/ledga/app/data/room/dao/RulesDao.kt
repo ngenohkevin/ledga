@@ -4,6 +4,7 @@ import kotlinx.coroutines.flow.Flow
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
+import androidx.room.Update
 import com.ledga.app.data.room.RuleRow
 
 @Dao
@@ -17,6 +18,9 @@ interface RulesDao {
 
     @Insert
     suspend fun insert(row: RuleRow): Long
+
+    @Update
+    suspend fun update(row: RuleRow)
 
     @Query("SELECT * FROM rules WHERE id = :id")
     suspend fun get(id: Long): RuleRow?
