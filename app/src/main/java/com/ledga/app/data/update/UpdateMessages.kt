@@ -10,6 +10,9 @@ object UpdateMessages {
     const val NOT_THIS_APP = "That file isn't an update for this Ledga, so it wasn't kept."
     const val DOWNLOAD_FAILED = "The download didn't finish. Try again."
 
+    /** Final review M2: Android stopped the download each time (10 minutes isn't enough on this connection). */
+    const val TOO_SLOW = "The download keeps stopping on this connection. Try again on Wi-Fi."
+
     fun needsAndroid(minSdk: Int): String = "This update needs Android ${androidName(minSdk)} or newer."
 
     fun of(problem: ManifestProblem): String = when (problem) {

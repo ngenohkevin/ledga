@@ -163,4 +163,12 @@ class DownloadWorkerTest {
         assertIs<ListenableWorker.Result.Success>(run(user = true))
         assertTrue("ready 2.0.1-beta.2" in notices.events)
     }
+
+    @Test
+    fun `a download Android keeps stopping gives up instead of starting again forever (final review M2)`() = runTest {
+        assertEquals(UpdateMessages.TOO_SLOW, failedWith(run(user = true, attempt = 2)))
+        assertEquals(UpdateMessages.TOO_SLOW, failedWith(run(user = false, attempt = 3)))
+        assertTrue(http.downloads.isEmpty())
+        assertIs<ListenableWorker.Result.Success>(run(user = true, attempt = 1))
+    }
 }

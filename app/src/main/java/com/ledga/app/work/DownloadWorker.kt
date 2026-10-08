@@ -59,6 +59,9 @@ class DownloadWorker @AssistedInject constructor(
         if (version == null || apkName == null || apkUrl == null || manifestUrl == null) return failure(version, UpdateMessages.DOWNLOAD_FAILED)
         // R135 (final review I1): a quiet download of a skipped or snoozed version has nothing to do.
         if (!user && held(version)) return Result.success()
+        // Final review M2: a run Android stopped (its 10-minute window) comes back here from zero. A person's download
+        // gets one more try (R137), a quiet one two more (R136); then it says so instead of starting again forever.
+        if (runAttemptCount >= if (user) USER_ATTEMPTS else QUIET_RETRIES + 1) return failure(version, UpdateMessages.TOO_SLOW)
         files.dir()
         val part = files.partial(version)
         part.delete()
@@ -124,6 +127,9 @@ class DownloadWorker @AssistedInject constructor(
 
         /** R136: a quiet download is tried three times in all. */
         private const val QUIET_RETRIES = 2
+
+        /** R137: a person's download is tried twice in all. */
+        private const val USER_ATTEMPTS = 2
 
         fun progress(version: AppVersion, done: Long, total: Long, user: Boolean): Data =
             workDataOf(KEY_VERSION to version.toString(), KEY_DONE to done, KEY_TOTAL to total, KEY_USER to user)
