@@ -1,13 +1,25 @@
 package com.ledga.app.ui.activity
 
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.SemanticsNodeInteraction
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.hasScrollToIndexAction
+import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToIndex
 import androidx.compose.ui.test.performScrollToKey
+import androidx.compose.ui.test.performTextInput
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.ledga.app.data.derive.Deriver
@@ -20,6 +32,7 @@ import com.ledga.app.data.ingest.RawSms
 import com.ledga.app.data.ingest.SmsIngestor
 import com.ledga.app.data.lines.LinesRepository
 import com.ledga.app.data.room.SmsSource
+import com.ledga.app.data.room.TxRow
 import com.ledga.app.testing.FakeSims
 import com.ledga.app.testing.MutableClock
 import com.ledga.app.testing.Sms
@@ -27,18 +40,17 @@ import com.ledga.app.testing.TestDb
 import com.ledga.app.testing.TestViewModels
 import com.ledga.app.testing.selectedLine
 import com.ledga.app.testing.txRow
-import com.ledga.app.ui.home.FulizaSheetContent
-import com.ledga.app.ui.home.FulizaSheetViewModel
-import com.ledga.core.model.TxKind
-import com.ledga.app.data.room.TxRow
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.ui.Modifier
 import com.ledga.app.time.LiveClock
 import com.ledga.app.ui.design.theme.Appearance
 import com.ledga.app.ui.design.theme.LedgaTheme
+import com.ledga.app.ui.home.FulizaSheetContent
+import com.ledga.app.ui.home.FulizaSheetViewModel
 import com.ledga.core.model.Categories
+import com.ledga.core.model.TxKind
+import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
+import java.time.ZoneOffset
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -55,7 +67,8 @@ import org.robolectric.annotation.GraphicsMode
 /**
  * Owner report (2026-10-08): after setting a category on a payment deep in Activity › Transactions, the list was no
  * longer where he left it, so categorising his history meant scrolling back down after every payment. Each change
- * reloads the list from the database; it has to come back showing the same payments.
+ * reloads the list from the database; it has to come back showing the same payments. A new filter or search, though,
+ * starts at the top of its results (owner call, same day).
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -78,8 +91,9 @@ class ActivityScrollTest {
     private fun code(i: Int) = "TJK5%04dZA".format(i)
 
     /**
-     * [count] invented buy-goods payments, one a day back from 30 Oct 2026 (Shop 000 is the newest). One a day gives
-     * every payment its own day card, as a long history has hundreds of them above any deep point in the list.
+     * [count] invented payments, one a day back from 30 Oct 2026 (Shop 000 is the newest); buy goods unless [body] says
+     * otherwise. One a day gives every payment its own day card, as a long history has hundreds of them above any deep
+     * point in the list.
      */
     private fun ingest(count: Int, body: (Int, String) -> String = { i, at -> Sms.buyGoods(code(i), "SHOP %03d".format(i), "100.00", at) }) = runBlocking {
         val newest = LocalDate.parse("2026-10-30")
@@ -90,8 +104,10 @@ class ActivityScrollTest {
         SmsIngestor(db, deriver).ingestAll(bodies.map { RawSms("MPESA", it, clock.instant(), null, null, SmsSource.INBOX) })
     }
 
+    private fun vm() = vms.track(ActivityViewModel(LedgerQueries(db), db, LinesRepository(db.linesDao(), FakeSims(), clock), live, edits, ActivityLinks()))
+
     private fun show(): ActivityViewModel {
-        val vm = vms.track(ActivityViewModel(LedgerQueries(db), db, LinesRepository(db.linesDao(), FakeSims(), clock), live, edits, ActivityLinks()))
+        val vm = vm()
         compose.setContent {
             LedgaTheme(Appearance.LIGHT, reducedMotion = true) {
                 items = vm.items.collectAsLazyPagingItems()
@@ -104,7 +120,7 @@ class ActivityScrollTest {
 
     /**
      * Lets the list work until [done]: Room loads on its own threads, which `waitUntil` doesn't always give time to on
-     * a first load. [require] = false for a reload that may leave the loaded rows as they were.
+     * a first load. [require] = false only where nothing may change (the test then checks what is on screen).
      */
     private fun settle(require: Boolean = true, done: () -> Boolean) {
         repeat(200) {
@@ -120,20 +136,22 @@ class ActivityScrollTest {
     private fun loaded(): List<Pair<String, String>> =
         items.itemSnapshotList.filterIsInstance<ActivityItem.Tx>().map { it.row.code to it.row.categoryKey }
 
-    /** Scrolls down page by page until [code] has loaded, then brings it to the top. */
-    private fun scrollTo(code: String) {
-        val list = compose.onNode(hasScrollToIndexAction())
+    /** Scrolls [list] down until [isLoaded], then brings [key] to the top; [last] is its last index. */
+    private fun scrollTo(list: SemanticsNodeInteraction, key: String, last: () -> Int, isLoaded: () -> Boolean) {
         repeat(100) {
-            if (loaded().any { it.first == code }) {
-                list.performScrollToKey(code)
+            if (isLoaded()) {
+                list.performScrollToKey(key)
                 compose.waitForIdle()
                 return
             }
-            list.performScrollToIndex(items.itemCount - 1)
+            list.performScrollToIndex(last())
             compose.waitForIdle()
         }
-        error("$code never loaded")
+        error("$key never loaded")
     }
+
+    private fun scrollTo(code: String) =
+        scrollTo(compose.onNode(hasScrollToIndexAction()), code, { items.itemCount - 1 }) { loaded().any { it.first == code } }
 
     /** The payments on screen, by shop number, top to bottom. */
     private fun onScreen(): List<Int> = numbersOnScreen(Regex("(?i)shop (\\d{3})")) { it }
@@ -149,11 +167,10 @@ class ActivityScrollTest {
             .distinct()
             .sorted()
 
-    /** The category picker's choice, then waits for the list to reload (it may move; that's what's tested). */
+    /** The category picker's choice, then waits for the list to reload with it. */
     private fun setCategory(code: String, applyTo: ApplyTo = ApplyTo.THIS_ONE) {
-        val before = loaded()
         runBlocking { edits.setCategory(code, Categories.ELECTRICITY, applyTo) }
-        settle(require = false) { loaded() != before }
+        settle { loaded().none { it.first == code && it.second != Categories.ELECTRICITY } }
     }
 
     @Test
@@ -183,28 +200,123 @@ class ActivityScrollTest {
         val before = onScreen()
         assertEquals(400, before.first())
 
-        setCategory(code(400))
+        runBlocking { edits.setCategory(code(400), Categories.ELECTRICITY, ApplyTo.THIS_ONE) }
+        settle { loaded().none { it.first == code(400) } }
         val after = onScreen()
         assertFalse(400 in after)
         assertTrue(after.containsAll(before - 400), "still on screen: ${before - 400}, shown: $after")
     }
 
     @Test
-    fun `a new filter or search starts at the top of its results`() {
+    fun `a chip that narrows or widens the list starts at the top of its results (final review I1)`() {
+        // Every fifth payment is money in.
+        ingest(600) { i, at ->
+            if (i % 5 == 3) Sms.receive(code(i), "SHOP %03d 0712345111".format(i), "100.00", at) else Sms.buyGoods(code(i), "SHOP %03d".format(i), "100.00", at)
+        }
+        val vm = show()
+        scrollTo(code(398))
+        vm.setFlow(FlowFilter.IN)
+        settle { onScreen().firstOrNull() == 3 }
+        scrollTo(code(398))
+        assertEquals(398, onScreen().first())
+
+        vm.setFlow(FlowFilter.ALL)
+        settle(require = false) { onScreen().firstOrNull() == 0 }
+        assertEquals(0, onScreen().first(), "after All; on screen: ${onScreen()}")
+    }
+
+    @Test
+    fun `a search and clearing it start at the top of their results (final review I1)`() {
         ingest(600)
         val vm = show()
         scrollTo(code(400))
-        assertEquals(400, onScreen().first())
+        vm.setQuery("shop 01")
+        settle { onScreen().firstOrNull() == 10 }
+        scrollTo(code(15))
+        assertEquals(15, onScreen().first())
 
-        // Every payment is money out, so the chip keeps them all: only the place in the list can change.
-        vm.setFlow(FlowFilter.OUT)
+        vm.setQuery("")
         settle(require = false) { onScreen().firstOrNull() == 0 }
-        assertEquals(0, onScreen().first(), "after a chip")
+        assertEquals(0, onScreen().first(), "after clearing the search; on screen: ${onScreen()}")
+    }
 
+    @Test
+    fun `coming back to the list after it reloaded keeps the place (final review I2)`() {
+        ingest(600)
+        val vm = vm()
+        var shown by mutableStateOf(true)
+        compose.setContent {
+            LedgaTheme(Appearance.LIGHT, reducedMotion = true) {
+                // Leaving Activity (another tab, or a category's page) keeps its saved state, as navigation does.
+                val saved = rememberSaveableStateHolder()
+                if (shown) {
+                    saved.SaveableStateProvider("activity") {
+                        items = vm.items.collectAsLazyPagingItems()
+                        TransactionsPane(vm.ui.collectAsState().value, items, TransactionsActions())
+                    }
+                }
+            }
+        }
+        settle { items.itemCount > 0 }
         scrollTo(code(400))
-        vm.setQuery("shop")
-        settle(require = false) { onScreen().firstOrNull() == 0 }
-        assertEquals(0, onScreen().first(), "after a search")
+        val before = onScreen()
+        assertEquals(400, before.first())
+
+        shown = false
+        compose.waitForIdle()
+        // A change made elsewhere (the category's page) reloads the list while it is away.
+        runBlocking { edits.setCategory(code(400), Categories.ELECTRICITY, ApplyTo.THIS_ONE) }
+        settle(require = false) { false.also { Thread.sleep(5) } }
+        shown = true
+        settle { loaded().any { it.first == code(400) && it.second == Categories.ELECTRICITY } && onScreen().isNotEmpty() }
+        assertEquals(before, onScreen(), "after coming back")
+    }
+
+    @Test
+    @Config(qualifiers = "w800dp-h360dp-xhdpi")
+    fun `in a short pane a change deep in the list keeps the place too`() {
+        ingest(600)
+        show()
+        scrollTo(code(400))
+        val before = onScreen()
+        assertEquals(400, before.first())
+
+        setCategory(code(400))
+        assertEquals(before, onScreen(), "after the first change")
+        setCategory(code(401))
+        assertEquals(before, onScreen(), "after the second change")
+    }
+
+    @Test
+    @Config(qualifiers = "w800dp-h360dp-xhdpi")
+    fun `in a short pane at the top, a new payment arrives below the search (final review M1)`() {
+        ingest(600)
+        show()
+        compose.onNode(hasSetTextAction()).assertIsDisplayed()
+        runBlocking {
+            SmsIngestor(db, deriver).ingestAll(
+                listOf(RawSms("MPESA", Sms.buyGoods("TJK59999ZA", "SHOP 999", "100.00", "31/10/26 at 8:00 AM"), clock.instant(), null, null, SmsSource.INBOX)),
+            )
+        }
+        settle { loaded().firstOrNull()?.first == "TJK59999ZA" }
+        compose.onNode(hasSetTextAction()).assertIsDisplayed()
+        assertEquals(999, onScreen().first { it == 999 })
+    }
+
+    @Test
+    @Config(qualifiers = "w800dp-h360dp-xhdpi")
+    fun `in a short pane, typing a search keeps the field focused`() {
+        ingest(600)
+        show()
+        val field = compose.onNode(hasSetTextAction())
+        field.performClick()
+        compose.waitForIdle()
+        field.performTextInput("s")
+        settle(require = false) { false.also { Thread.sleep(5) } }
+        field.assertIsFocused()
+        field.performTextInput("h")
+        settle(require = false) { false.also { Thread.sleep(5) } }
+        field.assertIsFocused()
     }
 
     @Test
@@ -223,31 +335,24 @@ class ActivityScrollTest {
         }
         settle { rows.itemCount > 0 }
         fun loadedRows() = rows.itemSnapshotList.items.map { it.code to it.categoryKey }
-        val list = compose.onNode(hasScrollToIndexAction())
-        while (loadedRows().none { it.first == code(400) }) {
-            list.performScrollToIndex(rows.itemCount)
-            compose.waitForIdle()
-        }
-        list.performScrollToKey(code(400))
-        compose.waitForIdle()
+        scrollTo(compose.onNode(hasScrollToIndexAction()), code(400), { rows.itemCount }) { loadedRows().any { it.first == code(400) } }
         fun shown() = numbersOnScreen(Regex("(?i)Ksh ([0-9,]+) (?:sent|paid).*tester")) { it - 1_000 }
         val before = shown()
         assertEquals(400, before.first())
 
         listOf(code(400), code(401), code(402)).forEachIndexed { n, code ->
-            val was = loadedRows()
             runBlocking { edits.setCategory(code, Categories.ELECTRICITY, ApplyTo.THIS_ONE) }
-            settle(require = false) { loadedRows() != was }
+            settle { loadedRows().none { it.first == code && it.second != Categories.ELECTRICITY } }
             assertEquals(before, shown(), "after change ${n + 1}")
         }
     }
 
     @Test
     fun `changing a payment deep in the Fuliza sheet leaves its list where it was`() {
-        val newest = LocalDate.parse("2026-10-30").atTime(10, 0).toInstant(java.time.ZoneOffset.UTC)
+        val newest = LocalDate.parse("2026-10-30").atTime(10, 0).toInstant(ZoneOffset.UTC)
         val drawn = (0 until 600).map { i ->
             txRow(code = code(i), kind = TxKind.BUY_GOODS, name = "SHOP %03d".format(i), account = null, lineId = null,
-                at = newest.minus(java.time.Duration.ofDays(i.toLong())), categoryKey = Categories.OTHER, fulizaDrawnCents = 10_000)
+                at = newest.minus(Duration.ofDays(i.toLong())), categoryKey = Categories.OTHER, fulizaDrawnCents = 10_000)
         }
         runBlocking { db.transactionsDao().upsertAll(drawn) }
         val sheet = vms.track(FulizaSheetViewModel(LedgerQueries(db), db, selectedLine(db), live))
@@ -260,21 +365,14 @@ class ActivityScrollTest {
         }
         settle { rows.itemCount > 0 }
         fun loadedRows() = rows.itemSnapshotList.items.map { it.code to it.categoryKey }
-        val list = compose.onNode(hasScrollToIndexAction())
-        while (loadedRows().none { it.first == code(400) }) {
-            list.performScrollToIndex(rows.itemCount)
-            compose.waitForIdle()
-        }
-        list.performScrollToKey(code(400))
-        compose.waitForIdle()
+        scrollTo(compose.onNode(hasScrollToIndexAction()), code(400), { rows.itemCount }) { loadedRows().any { it.first == code(400) } }
         val before = onScreen()
         assertEquals(400, before.first())
 
         (400..402).forEachIndexed { n, i ->
-            val was = loadedRows()
             // Any write to a payment reloads the list; a category change is the common one.
             runBlocking { db.transactionsDao().upsertAll(listOf(drawn[i].copy(categoryKey = Categories.ELECTRICITY))) }
-            settle(require = false) { loadedRows() != was }
+            settle { loadedRows().none { it.first == code(i) && it.second != Categories.ELECTRICITY } }
             assertEquals(before, onScreen(), "after change ${n + 1}")
         }
     }

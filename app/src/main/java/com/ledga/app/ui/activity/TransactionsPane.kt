@@ -23,6 +23,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Stable
+import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.Alignment
@@ -184,10 +186,9 @@ private fun TransactionList(
             )
         }
         else -> {
-            // A new filter or search starts at the top of its results (owner call 2026-10-08); an edit keeps the place.
-            val list = rememberSaveable(ui.filter, ui.query, saver = LazyListState.Saver) { LazyListState() }
-            KeepPlace(list, items, lead = if (header != null) 1 else 0)
-            LazyColumn(Modifier.fillMaxSize(), state = list, contentPadding = PaddingValues(bottom = Spacing.xxl)) {
+            val place = rememberSaveable(saver = ListPlace.Saver) { ListPlace(LazyListState()) }
+            KeepPlace(place, items, lead = if (header != null) 1 else 0)
+            LazyColumn(Modifier.fillMaxSize(), state = place.list, contentPadding = PaddingValues(bottom = Spacing.xxl)) {
                 if (header != null) {
                     item(key = "controls", contentType = "controls") { Column(Modifier.padding(bottom = Spacing.s)) { header() } }
                 }
@@ -207,22 +208,69 @@ private fun TransactionList(
 }
 
 /**
+ * The list's scroll state, and what [KeepPlace] needs to hold the place: the load on screen ([ActivityItem.Tx.load])
+ * and, when the list comes back after being away, the item that was at the top when it left. Saved with the list, since
+ * an index alone is in the coordinates of the rows loaded then (final review I2).
+ */
+@Stable
+private class ListPlace(
+    val list: LazyListState,
+    var load: Int? = null,
+    var anchor: String? = null,
+    var anchorOffset: Int = 0,
+) {
+    /** The items before the payments (the controls in a short pane); [KeepPlace] keeps it current. */
+    var lead: Int = 0
+
+    companion object {
+        val Saver = listSaver<ListPlace, Any?>(
+            save = { p ->
+                // At the top of a short pane the controls are on screen: the index alone (0) is right, and anchoring a
+                // payment instead would push them off if one arrived meanwhile.
+                val top = p.list.layoutInfo.visibleItemsInfo.firstOrNull { it.key is String }?.takeIf { it.index >= p.lead }
+                listOf(p.list.firstVisibleItemIndex, p.list.firstVisibleItemScrollOffset, p.load, top?.key as String?, -(top?.offset ?: 0))
+            },
+            restore = { ListPlace(LazyListState(it[0] as Int, it[1] as Int), it[2] as Int?, it[3] as String?, it[4] as Int) },
+        )
+    }
+}
+
+/**
  * Keeps what is on screen in place when the list reloads (owner report 2026-10-08: after setting a category deep in the
  * list, it was no longer where he left it). A reload, after any edit, brings back the rows around the screen but not
  * the day headers above them, so every index moves; Compose looks for the top item's key only near its old index and,
- * deep in a long history, misses it. This finds the first item on screen in the new list and asks for it at the same
- * place. [lead] counts the items before the payments (the controls in a short pane). Not while a scroll runs: the
- * request would stop a fling, and the small moves paging makes as the list scrolls Compose follows by itself.
+ * deep in a long history, misses it. So, as the loaded rows change:
+ * - a new load (a new filter or search, R184) starts at the top, whether it narrows the list or widens it;
+ * - a list back from being away (R185) finds the item that was at the top when it left;
+ * - otherwise the first item on screen that is still there is asked for at the same place. Not while a scroll runs (the
+ *   request would stop a fling; the small moves paging makes as the list scrolls Compose follows by itself), and not
+ *   while the short pane's controls are on screen (a new payment arrives below them, final review M1).
  */
 @Composable
-private fun KeepPlace(list: LazyListState, items: LazyPagingItems<ActivityItem>, lead: Int) {
+private fun KeepPlace(place: ListPlace, items: LazyPagingItems<ActivityItem>, lead: Int) {
     val now = items.itemSnapshotList
     Snapshot.withoutReadObservation {
-        if (!list.isScrollInProgress) {
-            for (seen in list.layoutInfo.visibleItemsInfo) {
-                val at = now.items.indexOfFirst { it.key == seen.key }
-                if (at < 0) continue
-                val index = lead + now.placeholdersBefore + at
+        place.lead = lead
+        val load = now.items.firstNotNullOfOrNull { (it as? ActivityItem.Tx)?.load } ?: return@withoutReadObservation
+        val list = place.list
+        fun indexOf(key: Any): Int? = now.items.indexOfFirst { it.key == key }.takeIf { it >= 0 }?.let { lead + now.placeholdersBefore + it }
+        val anchor = place.anchor
+        when {
+            place.load == null -> place.load = load
+            load != place.load -> {
+                place.load = load
+                place.anchor = null
+                list.requestScrollToItem(0)
+            }
+            anchor != null -> {
+                place.anchor = null
+                indexOf(anchor)?.let { list.requestScrollToItem(it, place.anchorOffset) }
+            }
+            list.isScrollInProgress -> Unit
+            else -> for (seen in list.layoutInfo.visibleItemsInfo) {
+                if (seen.index < lead) break
+                if (seen.key !is String) continue
+                val index = indexOf(seen.key) ?: continue
                 if (index != seen.index) list.requestScrollToItem(index, -seen.offset)
                 break
             }

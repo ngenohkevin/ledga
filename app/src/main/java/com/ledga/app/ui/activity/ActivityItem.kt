@@ -16,10 +16,11 @@ sealed interface ActivityItem {
     val key: String
 
     data class Day(val day: LocalDate, val closesPrevious: Boolean) : ActivityItem {
-        override val key: String get() = "day-$day"
+        override val key: String = "day-$day"
     }
 
-    data class Tx(val row: TxRow) : ActivityItem {
+    /** [load] numbers the filter and search the list was loaded for: a new one starts at the top (final review I1). */
+    data class Tx(val row: TxRow, val load: Int = 0) : ActivityItem {
         override val key: String get() = row.code
     }
 
@@ -28,9 +29,12 @@ sealed interface ActivityItem {
     }
 }
 
-/** Day headers by Nairobi date (spec §6.4): before the first row, between days, and an end cap after the last. */
-fun PagingData<TxRow>.toActivityItems(): PagingData<ActivityItem> =
-    map<TxRow, ActivityItem> { ActivityItem.Tx(it) }.insertSeparators { before, after ->
+/**
+ * Day headers by Nairobi date (spec §6.4): before the first row, between days, and an end cap after the last. [load] is
+ * stamped on every row ([ActivityItem.Tx.load]).
+ */
+fun PagingData<TxRow>.toActivityItems(load: Int = 0): PagingData<ActivityItem> =
+    map<TxRow, ActivityItem> { ActivityItem.Tx(it, load) }.insertSeparators { before, after ->
         val b = (before as? ActivityItem.Tx)?.row
         val a = (after as? ActivityItem.Tx)?.row
         val dayAfter = a?.let { DateLabels.nairobiDate(it.occurredAt) }

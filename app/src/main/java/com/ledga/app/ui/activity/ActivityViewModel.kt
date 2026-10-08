@@ -32,6 +32,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.withIndex
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import javax.inject.Inject
@@ -89,10 +90,10 @@ class ActivityViewModel @Inject constructor(
             Load(run, t.takeIf { run.dates != null })
         }.distinctUntilChanged()
 
+    /** The paged list; each settled filter and search is a new numbered load (R184: a new one starts at the top). */
     @OptIn(ExperimentalCoroutinesApi::class)
-    val items: Flow<PagingData<ActivityItem>> = settled
-        .flatMapLatest { l -> Pager(PAGING) { ledger.transactions(l.filter, l.today) }.flow }
-        .map { it.toActivityItems() }
+    val items: Flow<PagingData<ActivityItem>> = settled.withIndex()
+        .flatMapLatest { (n, l) -> Pager(PAGING) { ledger.transactions(l.filter, l.today) }.flow.map { it.toActivityItems(load = n) } }
         .cachedIn(viewModelScope)
 
     private data class Extras(val lines: List<LineRow>, val today: LocalDate, val hasHistory: Boolean, val searchFocus: Int)
