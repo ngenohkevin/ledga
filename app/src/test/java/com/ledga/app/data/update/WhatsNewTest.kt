@@ -43,9 +43,11 @@ class WhatsNewTest {
     }
 
     @Test
-    fun `on a full disk the notes stay pending, without a crash (R155)`() = runTest {
-        val w = WhatsNew(UpdateStore(FullDiskPrefsStore()), { notes }, AppVersion.parse("2.0.0-beta.2")!!)
+    fun `on a full disk Done still closes the notes, and they show again at the next start (R155, final review I1)`() = runTest {
+        val full = UpdateStore(FullDiskPrefsStore())
+        val w = WhatsNew(full, { notes }, AppVersion.parse("2.0.0-beta.2")!!)
         w.seen()
-        assertEquals(notes, w.pending.first())
+        assertNull(w.pending.first(), "closed for this run, though nothing was saved")
+        assertEquals(notes, WhatsNew(full, { notes }, AppVersion.parse("2.0.0-beta.2")!!).pending.first(), "the next start shows them again")
     }
 }
