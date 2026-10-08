@@ -1,5 +1,8 @@
 package com.ledga.app.di
 
+import android.content.ContentResolver
+import android.content.Context
+import androidx.work.WorkManager
 import com.ledga.app.BuildConfig
 import com.ledga.app.data.backup.AndroidDeviceId
 import com.ledga.app.data.backup.AndroidDocuments
@@ -12,11 +15,6 @@ import com.ledga.app.data.backup.Exporter
 import com.ledga.app.data.backup.Restorer
 import com.ledga.app.data.backup.SnapshotStore
 import com.ledga.app.data.backup.Snapshots
-import com.ledga.app.data.trackers.Trackers
-import com.ledga.app.data.lines.SelectedLine
-import android.content.ContentResolver
-import android.content.Context
-import androidx.work.WorkManager
 import com.ledga.app.data.capture.InboxScanner
 import com.ledga.app.data.capture.InboxSource
 import com.ledga.app.data.capture.MpesaInbox
@@ -29,9 +27,11 @@ import com.ledga.app.data.legacy.PreV6Snapshot
 import com.ledga.app.data.lines.AndroidSimDirectory
 import com.ledga.app.data.lines.LinePlacements
 import com.ledga.app.data.lines.LinesRepository
+import com.ledga.app.data.lines.SelectedLine
 import com.ledga.app.data.lines.SimDirectory
 import com.ledga.app.data.room.LedgaDatabase
 import com.ledga.app.data.settings.SettingsStore
+import com.ledga.app.data.trackers.Trackers
 import com.ledga.app.notify.AndroidPhoneNotifications
 import com.ledga.app.notify.FulizaCheck
 import com.ledga.app.notify.Notifier
@@ -43,6 +43,7 @@ import com.ledga.app.startup.SmsAccess
 import com.ledga.app.startup.Startup
 import com.ledga.app.startup.V1Leftovers
 import com.ledga.app.work.BackgroundWork
+import com.ledga.app.work.UpdateWork
 import com.ledga.app.work.WorkManagerBackgroundWork
 import dagger.Module
 import dagger.Provides
@@ -201,6 +202,7 @@ object DataModule {
         settings: SettingsStore,
         work: BackgroundWork,
         sms: SmsAccess,
+        updates: UpdateWork,
         wm: WorkManager,
-    ): Startup = Startup(db, snapshot, importer, deriver, lines, settings, work, sms, V1Leftovers(context, wm))
+    ): Startup = Startup(db, snapshot, importer, deriver, lines, settings, work, sms, updates, V1Leftovers(context, wm))
 }

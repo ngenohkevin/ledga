@@ -10,6 +10,7 @@ import com.ledga.app.data.room.MetaRow
 import com.ledga.app.data.settings.Settings
 import com.ledga.app.data.settings.SettingsStore
 import com.ledga.app.work.BackgroundWork
+import com.ledga.app.work.UpdateWork
 import java.io.File
 
 sealed interface StartupState {
@@ -34,7 +35,8 @@ fun interface SmsAccess {
  * - after a parser or derivation version change: a rebuild;
  * - otherwise: deletes the pre-v6 copy once the migration's work is done (only with proof the migration happened here),
  *   and catches up on missed SMS (or runs the migration's full rescan if it never completed);
- * - once onboarded: keeps the 6-hourly check and the notification schedule queued (KEEP, R107, R108).
+ * - once onboarded: keeps the 6-hourly check and the notification schedule queued (KEEP, R107, R108), and the daily
+ *   update check, with a check soon (R134); before onboarding nothing touches the network.
  * `LedgaApp` has already taken the pre-v6 snapshot. Never throws: a failure becomes [StartupState.Failed].
  */
 class Startup(
@@ -46,6 +48,7 @@ class Startup(
     private val settings: SettingsStore,
     private val work: BackgroundWork,
     private val sms: SmsAccess,
+    private val updates: UpdateWork,
     private val leftovers: () -> Unit = {},
 ) {
     suspend fun run(): StartupState = try {
@@ -83,6 +86,9 @@ class Startup(
             // R107, R108: kept as they are (KEEP), so a start never pushes a queued alert back.
             work.keepSyncing()
             work.scheduleNotifications(s, replace = false)
+            // R134: the daily update check, and one soon (the check itself waits 6 hours between runs).
+            updates.keepChecking()
+            updates.checkSoon()
         }
         if (s.onboarded && sms.granted()) {
             runCatching { lines.syncActive() }

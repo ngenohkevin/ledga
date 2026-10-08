@@ -1,44 +1,49 @@
 package com.ledga.app.ui.onboarding
 
-import com.ledga.app.data.capture.InboxSms
 import com.ledga.app.data.backup.BackupReader
 import com.ledga.app.data.backup.DeviceId
 import com.ledga.app.data.backup.RestoreMode
 import com.ledga.app.data.backup.Restorer
 import com.ledga.app.data.backup.SnapshotStore
+import com.ledga.app.data.capture.InboxSms
 import com.ledga.app.data.derive.Deriver
 import com.ledga.app.data.ingest.RawSms
 import com.ledga.app.data.ingest.SmsIngestor
+import com.ledga.app.data.lines.LinesRepository
 import com.ledga.app.data.lines.PhoneAccess
 import com.ledga.app.data.lines.Sim
 import com.ledga.app.data.room.SmsSource
-import com.ledga.app.testing.PERSONAL
-import com.ledga.app.testing.testSnapshots
-import com.ledga.app.testing.twoLines
-import com.ledga.app.work.RestoreProgress
-import org.junit.After
-import org.junit.rules.TemporaryFolder
-import java.time.Clock
-import kotlin.test.assertNull
-import com.ledga.app.data.lines.LinesRepository
 import com.ledga.app.data.settings.SettingsStore
+import com.ledga.app.data.update.UpdateStore
+import com.ledga.app.data.update.WhatsNew
 import com.ledga.app.testing.FakeBackgroundWork
 import com.ledga.app.testing.FakePrefsStore
 import com.ledga.app.testing.FakeSims
+import com.ledga.app.testing.FakeUpdateWork
 import com.ledga.app.testing.MainDispatcherRule
+import com.ledga.app.testing.PERSONAL
 import com.ledga.app.testing.Sms
 import com.ledga.app.testing.TestDb
+import com.ledga.app.testing.testSnapshots
+import com.ledga.app.testing.twoLines
 import com.ledga.app.work.ImportProgress
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.test.runTest
-import org.junit.Rule
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.robolectric.RobolectricTestRunner
+import com.ledga.app.work.RestoreProgress
+import com.ledga.core.update.AppVersion
+import com.ledga.core.update.NotesSection
+import java.time.Clock
 import java.time.Instant
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.test.runTest
+import org.junit.After
+import org.junit.Rule
+import org.junit.Test
+import org.junit.rules.TemporaryFolder
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 
 @RunWith(RobolectricTestRunner::class)
 class OnboardingViewModelTest {
@@ -55,11 +60,13 @@ class OnboardingViewModelTest {
         InboxSms("MPESA", Sms.KPLC, Instant.parse("2026-03-23T12:00:30Z"), 1),
     )
     private var askNotifications = true
+    private val updates = FakeUpdateWork()
+    private val whatsNew = WhatsNew(UpdateStore(FakePrefsStore()), { listOf(NotesSection("What's new", listOf("A new Home"))) }, AppVersion.parse("2.0.0-beta.1")!!)
 
     private val snapshots by lazy { testSnapshots(db, tmp.root, settings) }
     private val restorer by lazy { Restorer(db, Deriver(db), settings, snapshots, sims, DeviceId { "this-phone" }, Clock.systemUTC()) }
 
-    private fun vm() = OnboardingViewModel(settings, { inbox }, work, lines, { askNotifications }, snapshots, restorer, db, PhoneAccess { true })
+    private fun vm() = OnboardingViewModel(settings, { inbox }, work, lines, { askNotifications }, snapshots, restorer, db, PhoneAccess { true }, updates, whatsNew)
 
     /** Android restored another phone's snapshot onto this one (two lines, one payment). */
     private suspend fun foundBackup() {
@@ -246,5 +253,14 @@ class OnboardingViewModelTest {
         vm.done()
         vm.state.first { it.finished }
         assertEquals(listOf("keepSyncing", "DAILY on replace=false", "WEEKLY on replace=false", "FULIZA on replace=false"), work.scheduled)
+    }
+
+    @Test
+    fun `finishing onboarding starts the update checks and files this version's notes as seen, unshown (R134, R141)`() = runTest {
+        val vm = vm()
+        vm.done()
+        vm.state.first { it.finished }
+        assertEquals(listOf("keepChecking", "checkSoon"), updates.calls)
+        assertNull(whatsNew.pending.first())
     }
 }

@@ -13,11 +13,16 @@ import com.ledga.app.data.lines.LinesRepository
 import com.ledga.app.data.lines.PhoneAccess
 import com.ledga.app.data.room.LedgaDatabase
 import com.ledga.app.data.settings.SettingsStore
+import com.ledga.app.data.update.WhatsNew
 import com.ledga.app.work.BackgroundWork
 import com.ledga.app.work.ImportProgress
 import com.ledga.app.work.RestoreProgress
 import com.ledga.app.work.RestoreRequest
+import com.ledga.app.work.UpdateWork
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.io.File
+import java.time.Instant
+import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -25,9 +30,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.io.File
-import java.time.Instant
-import javax.inject.Inject
 
 enum class Step { WELCOME, SMS, IMPORT, NOTIFICATIONS }
 
@@ -88,6 +90,8 @@ class OnboardingViewModel @Inject constructor(
     private val restorer: Restorer,
     private val db: LedgaDatabase,
     private val phone: PhoneAccess,
+    private val updates: UpdateWork,
+    private val whatsNew: WhatsNew,
 ) : ViewModel() {
     private val _state = MutableStateFlow(OnboardingState(steps = steps(), phoneAccess = phone.granted()))
     val state: StateFlow<OnboardingState> = _state.asStateFlow()
@@ -227,6 +231,10 @@ class OnboardingViewModel @Inject constructor(
         // R107, R108: the 6-hourly check and the notifications start now, not at the next start.
         work.keepSyncing()
         work.scheduleNotifications(settings.current(), replace = false)
+        // R134: update checks start now; R141: this version's notes are filed as seen, not shown, on a fresh install.
+        updates.keepChecking()
+        updates.checkSoon()
+        runCatching { whatsNew.seen() }
         _state.update { it.copy(finished = true) }
     }
 

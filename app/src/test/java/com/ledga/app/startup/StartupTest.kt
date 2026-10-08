@@ -14,20 +14,22 @@ import com.ledga.app.data.settings.SettingsStore
 import com.ledga.app.testing.FakeBackgroundWork
 import com.ledga.app.testing.FakePrefsStore
 import com.ledga.app.testing.FakeSims
+import com.ledga.app.testing.FakeUpdateWork
 import com.ledga.app.testing.TestDb
-import kotlinx.coroutines.test.runTest
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.robolectric.RobolectricTestRunner
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
+import kotlinx.coroutines.test.runTest
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 
 @RunWith(RobolectricTestRunner::class)
 class StartupTest {
     private val context: Context = ApplicationProvider.getApplicationContext()
     private val work = FakeBackgroundWork()
+    private val updates = FakeUpdateWork()
     private val settings = SettingsStore(FakePrefsStore())
     private var smsGranted = false
     private var leftoversCleared = 0
@@ -41,6 +43,7 @@ class StartupTest {
         settings = settings,
         work = work,
         sms = { smsGranted },
+        updates = updates,
         leftovers = { leftoversCleared++ },
     )
 
@@ -168,5 +171,18 @@ class StartupTest {
     fun `before onboarding nothing is scheduled`() = runTest {
         startup(TestDb.inMemory()).run()
         assertEquals(emptyList(), work.scheduled)
+    }
+
+    @Test
+    fun `an onboarded start keeps the daily update check and asks for one soon (R134)`() = runTest {
+        settings.setOnboarded()
+        startup(TestDb.inMemory()).run()
+        assertEquals(listOf("keepChecking", "checkSoon"), updates.calls)
+    }
+
+    @Test
+    fun `before onboarding nothing touches the network (R134)`() = runTest {
+        startup(TestDb.inMemory()).run()
+        assertEquals(emptyList(), updates.calls)
     }
 }
