@@ -9,6 +9,7 @@ import androidx.activity.viewModels
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
 import com.ledga.app.notify.NotificationIntents
+import com.ledga.app.notify.UpdateIntents
 import com.ledga.app.time.LiveClock
 import com.ledga.app.ui.app.AppViewModel
 import com.ledga.app.ui.app.LedgaRoot
@@ -48,6 +49,11 @@ class MainActivity : ComponentActivity() {
 
     /** R100: once; the extras are cleared, so a rotation or a restart never opens it again. */
     private fun openFrom(intent: Intent?) {
+        if (UpdateIntents.read(intent)) {
+            intent?.let(UpdateIntents::clear)
+            opens.openUpdates()
+            return
+        }
         val opened = NotificationIntents.read(intent) ?: return
         intent?.let(NotificationIntents::clear)
         lifecycleScope.launch { opens.open(opened) }

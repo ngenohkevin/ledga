@@ -144,12 +144,14 @@ fun LedgaNavHost(
                         openHistoryCheck = { push(HistoryCheckRoute) },
                         openLicences = { push(LicencesRoute) },
                         openBackup = { push(BackupRoute) },
+                        openUpdates = { push(UpdatesRoute) },
                     ),
                 )
             }
             composable<LinesRoute> { screens.Lines(onBack = back, onUnassigned = { push(UnassignedRoute) }) }
             composable<UnassignedRoute> { screens.Unassigned(onBack = back) }
             composable<BackupRoute> { screens.Backup(onBack = back) }
+            composable<UpdatesRoute> { screens.Updates(onBack = back) }
             composable<CategoryRoute> {
                 screens.Category(
                     onBack = back,
@@ -188,6 +190,11 @@ fun LedgaNavHost(
                 OpenDestination.Activity -> {
                     nav.openTab(Tab.ACTIVITY)
                     nav.popBackStack<ActivityRoute>(inclusive = false)
+                }
+                // R144: an update notice opens Updates over You; Back returns to You.
+                OpenDestination.Updates -> {
+                    nav.openTab(Tab.YOU)
+                    nav.navigate(UpdatesRoute) { launchSingleTop = true }
                 }
             }
         }

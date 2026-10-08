@@ -41,5 +41,8 @@ import kotlinx.serialization.Serializable
 /** You → Export & restore (R124, R125). */
 @Serializable data object BackupRoute
 
+/** You → About → Updates (spec §13.4). */
+@Serializable data object UpdatesRoute
+
 /** One licence's text; [asset] is its path under `assets/`. */
 @Serializable data class LicenceRoute(val asset: String)

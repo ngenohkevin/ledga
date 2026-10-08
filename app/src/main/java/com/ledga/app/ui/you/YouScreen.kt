@@ -67,6 +67,7 @@ data class YouNav(
     val openHistoryCheck: () -> Unit = {},
     val openLicences: () -> Unit = {},
     val openBackup: () -> Unit = {},
+    val openUpdates: () -> Unit = {},
 )
 
 /** What You's taps do. Every default does nothing, for screenshots and tests. */
@@ -81,6 +82,7 @@ data class YouActions(
     val onHistoryCheck: () -> Unit = {},
     val onLicences: () -> Unit = {},
     val onBackup: () -> Unit = {},
+    val onUpdates: () -> Unit = {},
 )
 
 const val RESCAN_TEXT = "Ledga reads every M-Pesa message on this phone again and adds any it missed. Your categories, notes and rules stay as they are."
@@ -117,8 +119,9 @@ fun YouContent(ui: YouUi, actions: YouActions, modifier: Modifier = Modifier) {
                 Divider()
                 ListRow("History check", subtitle = "Checks that your balances add up", iconKey = "fluent_check_mark_button", onClick = actions.onHistoryCheck)
             }
-            // R66: Updates and Version history join About in Phase 6.
             Group("About") {
+                ListRow("Updates", subtitle = ui.updates, iconKey = "fluent_inbox_tray", badge = if (ui.beta) "BETA" else null, onClick = actions.onUpdates)
+                Divider()
                 ListRow("Open-source licences", subtitle = "The fonts, icons and libraries Ledga uses", iconKey = "fluent_sparkles", onClick = actions.onLicences)
                 Divider()
                 ListRow("Version", iconKey = "fluent_rocket", trailing = RowTrailing.Value(ui.version))
@@ -214,6 +217,7 @@ fun YouScreen(nav: YouNav, vm: YouViewModel = hiltViewModel()) {
             onHistoryCheck = nav.openHistoryCheck,
             onLicences = nav.openLicences,
             onBackup = nav.openBackup,
+            onUpdates = nav.openUpdates,
         ),
     )
     when (sheet) {

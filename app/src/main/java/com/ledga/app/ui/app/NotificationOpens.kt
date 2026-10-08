@@ -28,6 +28,9 @@ sealed interface OpenDestination {
 
     /** Activity, which takes the waiting Transactions link from [ActivityLinks]. */
     data object Activity : OpenDestination
+
+    /** You → Updates: an update notice's tap (R144). */
+    data object Updates : OpenDestination
 }
 
 /**
@@ -58,6 +61,11 @@ class NotificationOpens @Inject constructor(
                 OpenDestination.Activity
             }
         }
+    }
+
+    /** R144: an update notice's tap; it marks no alert (update notices aren't in Alerts). */
+    fun openUpdates() {
+        pending.value = OpenDestination.Updates
     }
 
     fun taken(destination: OpenDestination) {

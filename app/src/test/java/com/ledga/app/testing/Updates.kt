@@ -1,17 +1,26 @@
 package com.ledga.app.testing
 
 import com.ledga.app.data.update.CheckFailure
+import com.ledga.app.data.update.InstallEvents
 import com.ledga.app.data.update.InstallStart
 import com.ledga.app.data.update.ReleasesResponse
+import com.ledga.app.data.update.UpdateEndpoint
+import com.ledga.app.data.update.UpdateFiles
 import com.ledga.app.data.update.UpdateHttp
 import com.ledga.app.data.update.UpdateInstaller
 import com.ledga.app.data.update.UpdateNotices
+import com.ledga.app.data.update.UpdateService
+import com.ledga.app.data.update.UpdateStore
 import com.ledga.app.work.DownloadProgress
 import com.ledga.app.work.UpdateWork
+import com.ledga.core.update.AppVersion
 import com.ledga.core.update.Release
 import java.io.File
 import java.io.IOException
 import java.security.MessageDigest
+import java.time.Clock
+import kotlin.io.path.createTempDirectory
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 
 /** GitHub as a test sets it: queued answers to checks (the last repeats), manifests by URL, and APK bytes by URL. */
@@ -115,3 +124,18 @@ fun ghRelease(tag: String, prerelease: Boolean = "-beta." in tag, withManifest: 
 }
 
 fun ghList(vararg releases: String): String = releases.joinToString(",", "[", "]")
+
+/** A real [UpdateService] over fakes, for ViewModel and screen tests. */
+fun testUpdateService(
+    dir: File = createTempDirectory("updates").toFile(),
+    installed: String = "2.0.0-beta.1",
+    http: FakeUpdateHttp = FakeUpdateHttp(),
+    work: FakeUpdateWork = FakeUpdateWork(),
+    clock: Clock = Clock.systemUTC(),
+    store: UpdateStore = UpdateStore(FakePrefsStore()),
+    endpoint: UpdateEndpoint = UpdateEndpoint("https://example.test/releases", offersUpdates = true),
+    installer: FakeInstaller = FakeInstaller(),
+    events: InstallEvents = InstallEvents(),
+): UpdateService = UpdateService(
+    store, http, { endpoint }, UpdateFiles(dir), work, installer, FakeUpdateNotices(), events, AppVersion.parse(installed)!!, clock, Dispatchers.Unconfined,
+)

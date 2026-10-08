@@ -1,7 +1,7 @@
 package com.ledga.app.ui.you
 
-import com.ledga.app.data.backup.BackupStatus
 import com.ledga.app.BuildConfig
+import com.ledga.app.data.backup.BackupStatus
 import com.ledga.app.data.lines.LinesRepository
 import com.ledga.app.data.settings.SettingsStore
 import com.ledga.app.startup.SmsAccess
@@ -10,8 +10,10 @@ import com.ledga.app.testing.FakePrefsStore
 import com.ledga.app.testing.FakeSims
 import com.ledga.app.testing.MainDispatcherRule
 import com.ledga.app.testing.MutableClock
+import com.ledga.app.testing.OFF_IN_SETTINGS
 import com.ledga.app.testing.TestDb
 import com.ledga.app.testing.TestViewModels
+import com.ledga.app.testing.testUpdateService
 import com.ledga.app.testing.twoLines
 import com.ledga.app.testing.txRow
 import com.ledga.app.ui.activity.ActivityLink
@@ -31,7 +33,6 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
-import com.ledga.app.testing.OFF_IN_SETTINGS
 
 /** Spec §10.4 You (R77, R81, R82). Synthetic data. */
 @RunWith(RobolectricTestRunner::class)
@@ -47,7 +48,7 @@ class YouViewModelTest {
     private val vms = TestViewModels()
 
     private fun vm() = vms.track(
-        YouViewModel(settings, db, LinesRepository(db.linesDao(), FakeSims(), clock), work, SmsAccess { smsGranted }, NotificationAccess { false }, links, BackupStatus { savedAt }, clock),
+        YouViewModel(settings, db, LinesRepository(db.linesDao(), FakeSims(), clock), work, SmsAccess { smsGranted }, NotificationAccess { false }, links, BackupStatus { savedAt }, clock, testUpdateService()),
     )
 
     @After fun close() {
@@ -114,7 +115,7 @@ class YouViewModelTest {
     @Test
     fun `with notifications off in Android's settings, You says so (R109)`() = runTest {
         val vm = vms.track(
-            YouViewModel(settings, db, LinesRepository(db.linesDao(), FakeSims(), clock), work, SmsAccess { smsGranted }, OFF_IN_SETTINGS, links, BackupStatus { savedAt }, clock),
+            YouViewModel(settings, db, LinesRepository(db.linesDao(), FakeSims(), clock), work, SmsAccess { smsGranted }, OFF_IN_SETTINGS, links, BackupStatus { savedAt }, clock, testUpdateService()),
         )
         assertEquals("Off for Ledga in Android settings", vm.ui.first { it.loaded }.notifications)
     }
@@ -126,5 +127,12 @@ class YouViewModelTest {
         savedAt = clock.instant()
         vm.refresh()
         assertTrue(vm.ui.first { it.backup.startsWith("Snapshot saved today") }.backup.isNotEmpty())
+    }
+
+    @Test
+    fun `About shows the version and where the update stands, with BETA on the beta channel (R149)`() = runTest {
+        val ui = vm().ui.first { it.loaded }
+        assertEquals("v2.0.0-beta.1", ui.updates)
+        assertTrue(ui.beta)
     }
 }

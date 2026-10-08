@@ -4,12 +4,13 @@ import androidx.compose.runtime.Composable
 import com.ledga.app.ui.activity.ActivityTab
 import com.ledga.app.ui.alerts.AlertsScreen
 import com.ledga.app.ui.backup.BackupScreen
-import com.ledga.app.ui.home.HomeNav
-import com.ledga.app.ui.lines.UnassignedScreen
-import com.ledga.app.ui.home.HomeRoute as HomeScreenRoute
-import com.ledga.app.ui.onboarding.OnboardingRoute as OnboardingScreenRoute
 import com.ledga.app.ui.categories.CategoriesTab
 import com.ledga.app.ui.categories.CategoryPageScreen
+import com.ledga.app.ui.home.HomeNav
+import com.ledga.app.ui.home.HomeRoute as HomeScreenRoute
+import com.ledga.app.ui.lines.UnassignedScreen
+import com.ledga.app.ui.onboarding.OnboardingRoute as OnboardingScreenRoute
+import com.ledga.app.ui.update.UpdatesScreen
 import com.ledga.app.ui.you.AppearanceScreen
 import com.ledga.app.ui.you.HistoryCheckScreen
 import com.ledga.app.ui.you.LicenceScreen
@@ -38,6 +39,8 @@ interface LedgaScreens {
     @Composable fun Unassigned(onBack: () -> Unit)
 
     @Composable fun Backup(onBack: () -> Unit)
+
+    @Composable fun Updates(onBack: () -> Unit)
 
     @Composable fun Categories(onOpen: (String) -> Unit)
 
@@ -73,6 +76,8 @@ object AppScreens : LedgaScreens {
     @Composable override fun Unassigned(onBack: () -> Unit) = UnassignedScreen(onBack = onBack)
 
     @Composable override fun Backup(onBack: () -> Unit) = BackupScreen(onBack = onBack)
+
+    @Composable override fun Updates(onBack: () -> Unit) = UpdatesScreen(onBack = onBack)
 
     @Composable override fun Categories(onOpen: (String) -> Unit) = CategoriesTab(onOpen = onOpen)
 

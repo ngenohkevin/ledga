@@ -30,6 +30,8 @@ class YouScreensTest {
         unreadable = 2,
         version = "2.0.0-beta.1",
         backup = "Snapshot saved today, 8:12 PM",
+        updates = "v2.0.0-beta.1 · up to date",
+        beta = true,
     )
 
     @Test

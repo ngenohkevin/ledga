@@ -9,14 +9,17 @@ import com.ledga.app.data.room.LedgaDatabase
 import com.ledga.app.data.room.LineRow
 import com.ledga.app.data.room.TxSpan
 import com.ledga.app.data.settings.SettingsStore
+import com.ledga.app.data.update.UpdateService
 import com.ledga.app.startup.SmsAccess
 import com.ledga.app.ui.activity.ActivityLink
 import com.ledga.app.ui.activity.ActivityLinks
 import com.ledga.app.ui.backup.BackupText
 import com.ledga.app.ui.onboarding.NotificationAccess
+import com.ledga.app.ui.update.UpdateText
 import com.ledga.app.work.BackgroundWork
 import com.ledga.app.work.ImportProgress
 import com.ledga.core.time.Periods
+import com.ledga.core.update.UpdateChannel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.time.Clock
 import java.time.Instant
@@ -58,9 +61,13 @@ data class YouUi(
     val version: String = "",
     /** R125: "Snapshot saved today, 8:12 PM" / "No snapshot yet". */
     val backup: String = "",
+    /** R149: "v2.0.0-beta.1 · up to date", "2.0.1 available"… */
+    val updates: String = "",
+    /** R149: the Updates row's BETA badge. */
+    val beta: Boolean = false,
 )
 
-/** You (spec §10.4). 5b added Export & restore and Android backup (R125); Phase 6 adds Updates and Version history (R66). */
+/** You (spec §10.4). 5b added Export & restore and Android backup (R125); Phase 6 added Updates and Version history (R149). */
 @HiltViewModel
 class YouViewModel @Inject constructor(
     private val settings: SettingsStore,
@@ -72,6 +79,7 @@ class YouViewModel @Inject constructor(
     private val links: ActivityLinks,
     private val backup: BackupStatus,
     private val clock: Clock,
+    private val updates: UpdateService,
 ) : ViewModel() {
     private val smsGranted = MutableStateFlow(sms.granted())
     private val smsBlocked = MutableStateFlow(false)
@@ -108,9 +116,9 @@ class YouViewModel @Inject constructor(
         combine(db.transactionsDao().observeSpan(), db.smsDao().observeUnreadableCount()) { span, unreadable ->
             Counts(span, unreadable)
         },
-        rescan,
+        combine(rescan, updates.state) { r, u -> r to u },
         combine(smsGranted, smsBlocked, notifyAllowed, savedAt) { a, b, c, d -> Access(a, b, c, d) },
-    ) { s, ls, counts, r, access ->
+    ) { s, ls, counts, (r, u), access ->
         YouUi(
             loaded = true,
             name = s.displayName,
@@ -125,6 +133,8 @@ class YouViewModel @Inject constructor(
             smsToSettings = access.smsBlocked,
             version = BuildConfig.VERSION_NAME,
             backup = BackupText.savedLine(access.savedAt, Periods.dateOf(clock.instant())),
+            updates = UpdateText.youLine(u),
+            beta = u.channel == UpdateChannel.BETA,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), YouUi())
 
