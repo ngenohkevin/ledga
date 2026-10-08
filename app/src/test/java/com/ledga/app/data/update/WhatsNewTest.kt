@@ -1,5 +1,6 @@
 package com.ledga.app.data.update
 
+import com.ledga.app.testing.FullDiskPrefsStore
 import com.ledga.app.testing.FakePrefsStore
 import com.ledga.core.update.AppVersion
 import com.ledga.core.update.NotesSection
@@ -39,5 +40,12 @@ class WhatsNewTest {
     @Test
     fun `it names the version without Ledga dev's suffix`() {
         assertEquals("2.0.0-beta.2", whatsNew().version)
+    }
+
+    @Test
+    fun `on a full disk the notes stay pending, without a crash (R155)`() = runTest {
+        val w = WhatsNew(UpdateStore(FullDiskPrefsStore()), { notes }, AppVersion.parse("2.0.0-beta.2")!!)
+        w.seen()
+        assertEquals(notes, w.pending.first())
     }
 }

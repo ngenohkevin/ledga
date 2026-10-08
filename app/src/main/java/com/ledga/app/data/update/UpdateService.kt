@@ -6,6 +6,7 @@ import com.ledga.core.update.AppVersion
 import com.ledga.core.update.Release
 import com.ledga.core.update.UpdateChannel
 import com.ledga.core.update.UpdatePolicy
+import java.io.IOException
 import java.time.Clock
 import java.time.Instant
 import kotlinx.coroutines.CoroutineDispatcher
@@ -100,30 +101,34 @@ class UpdateService(
     suspend fun check(force: Boolean = false): Boolean {
         // R154: the APK just installed, and anything older, goes at the next check, due or not.
         withContext(io) { files.dropThrough(installed) }
-        val ran = lock.withLock {
-            val p = store.current()
-            val endpoint = endpoints.current()
-            val now = clock.instant()
-            val sameSource = p.releasesUrl == endpoint.releasesUrl
-            if (!force && sameSource && !UpdatePolicy.checkDue(p.checkedAt, now)) return@withLock false
-            checking.value = true
-            try {
-                when (val answer = http.releases(endpoint.releasesUrl, p.etag.takeIf { sameSource })) {
-                    // Review Focus 1 (final review I3): a list with no Ledga release ("[]", or an error page's
-                    // JSON) is no answer; the cached list stays.
-                    is ReleasesResponse.Fresh ->
-                        if (runCatching { GitHubJson.releases(answer.body) }.getOrNull()?.any { it.version != null } == true) {
-                            store.saveReleases(answer.body, endpoint.releasesUrl, answer.etag, now)
-                        } else {
-                            store.checkFailed(CheckFailure.SERVER)
-                        }
-                    ReleasesResponse.NotModified -> store.checkedUnchanged(now)
-                    is ReleasesResponse.Failed -> store.checkFailed(answer.reason)
+        val ran = try {
+            lock.withLock {
+                val p = store.current()
+                val endpoint = endpoints.current()
+                val now = clock.instant()
+                val sameSource = p.releasesUrl == endpoint.releasesUrl
+                if (!force && sameSource && !UpdatePolicy.checkDue(p.checkedAt, now)) return@withLock false
+                checking.value = true
+                try {
+                    when (val answer = http.releases(endpoint.releasesUrl, p.etag.takeIf { sameSource })) {
+                        // Review Focus 1 (final review I3): a list with no Ledga release ("[]", or an error page's
+                        // JSON) is no answer; the cached list stays.
+                        is ReleasesResponse.Fresh ->
+                            if (runCatching { GitHubJson.releases(answer.body) }.getOrNull()?.any { it.version != null } == true) {
+                                store.saveReleases(answer.body, endpoint.releasesUrl, answer.etag, now)
+                            } else {
+                                store.checkFailed(CheckFailure.SERVER)
+                            }
+                        ReleasesResponse.NotModified -> store.checkedUnchanged(now)
+                        is ReleasesResponse.Failed -> store.checkFailed(answer.reason)
+                    }
+                } finally {
+                    checking.value = false
                 }
-            } finally {
-                checking.value = false
+                true
             }
-            true
+        } catch (e: IOException) {
+            false // R155: the answer couldn't be saved (a full disk); the cached list stays, and nothing crashes.
         }
         if (ran) afterChange()
         return ran
@@ -131,21 +136,21 @@ class UpdateService(
 
     /** Spec §13.4: You → Updates → Beta updates (R145). */
     suspend fun setChannel(channel: UpdateChannel) {
-        store.setChannel(channel)
+        if (!saved { store.setChannel(channel) }) return
         afterChange()
     }
 
     /** R135: the banner, the quiet download and the "ready" notice leave this version alone; a newer one is offered again. */
     suspend fun skip() {
         val version = state.first().newest?.version ?: return
-        store.skip(version)
+        if (!saved { store.skip(version) }) return
         work.cancelQuietDownload()
         afterChange()
     }
 
     /** "Later" (spec §13.4): three days. */
     suspend fun snooze() {
-        store.snoozeUntil(clock.instant().plus(UpdatePolicy.SNOOZE))
+        if (!saved { store.snoozeUntil(clock.instant().plus(UpdatePolicy.SNOOZE)) }) return
         work.cancelQuietDownload()
         notices.clearReady()
     }
@@ -182,6 +187,14 @@ class UpdateService(
         withContext(io) { files.keepOnly(newest?.version) }
         if (!s.offered || !s.ready) notices.clearReady()
         if (newest != null && s.offered && !s.ready && !s.refused && running == null) work.download(newest, user = false)
+    }
+
+    /** R155: a full disk makes the store's writes throw; the choice then isn't kept, and nothing crashes. */
+    private suspend fun saved(write: suspend () -> Unit): Boolean = try {
+        write()
+        true
+    } catch (e: IOException) {
+        false
     }
 
     private fun parse(json: String?): List<Release> = json?.let { runCatching { GitHubJson.releases(it) }.getOrNull() }.orEmpty()

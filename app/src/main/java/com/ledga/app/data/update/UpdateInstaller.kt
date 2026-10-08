@@ -10,6 +10,7 @@ import android.provider.Settings
 import com.ledga.app.receiver.InstallStatusReceiver
 import java.io.File
 import java.io.IOException
+import java.io.InputStream
 
 /** What [UpdateInstaller.install] did. Android's answer comes later, through `InstallStatusReceiver`. */
 enum class InstallStart { STARTED, NEEDS_PERMISSION, FAILED }
@@ -23,7 +24,12 @@ interface UpdateInstaller {
 }
 
 /** Spec §13.4: a `PackageInstaller` session, whose status goes to `InstallStatusReceiver`. */
-class PackageInstallerUpdates(private val context: Context, private val events: InstallEvents) : UpdateInstaller {
+class PackageInstallerUpdates(
+    private val context: Context,
+    private val events: InstallEvents,
+    /** The APK's bytes; a test makes reading fail (R155). */
+    private val read: (File) -> InputStream = { it.inputStream() },
+) : UpdateInstaller {
 
     override fun allowed(): Boolean = context.packageManager.canRequestPackageInstalls()
 
@@ -40,7 +46,7 @@ class PackageInstallerUpdates(private val context: Context, private val events: 
         return try {
             id = installer.createSession(params)
             installer.openSession(id).use { session ->
-                apk.inputStream().use { input ->
+                read(apk).use { input ->
                     session.openWrite(STREAM_NAME, 0, apk.length()).use { out ->
                         input.copyTo(out)
                         session.fsync(out)
@@ -52,7 +58,8 @@ class PackageInstallerUpdates(private val context: Context, private val events: 
             InstallStart.STARTED
         } catch (e: IOException) {
             notStarted(installer, id)
-        } catch (e: SecurityException) {
+        } catch (e: RuntimeException) {
+            // R155: Android's own refusals too (a SecurityException, too many open sessions), so no session is left open.
             notStarted(installer, id)
         }
     }

@@ -2,6 +2,7 @@ package com.ledga.app.data.update
 
 import com.ledga.core.update.AppVersion
 import com.ledga.core.update.NotesSection
+import java.io.IOException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -23,5 +24,12 @@ class WhatsNew(private val store: UpdateStore, private val notes: BundledNotes, 
         .map { seen -> if (seen == version) null else notes.read().takeIf { it.isNotEmpty() } }
         .flowOn(Dispatchers.IO)
 
-    suspend fun seen() = store.setSeen(version)
+    /** R155: on a full disk the notes aren't filed as seen (they show again next time) rather than crash. */
+    suspend fun seen() {
+        try {
+            store.setSeen(version)
+        } catch (e: IOException) {
+            // nothing was saved
+        }
+    }
 }

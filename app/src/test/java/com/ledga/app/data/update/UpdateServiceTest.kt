@@ -1,5 +1,6 @@
 package com.ledga.app.data.update
 
+import com.ledga.app.testing.FullDiskPrefsStore
 import com.ledga.app.testing.FakeInstaller
 import com.ledga.app.testing.FakePrefsStore
 import com.ledga.app.testing.FakeUpdateHttp
@@ -277,5 +278,23 @@ class UpdateServiceTest {
         store.saveReleases(ghList(ghRelease("v2.0.0-beta.3")), "https://example.test/releases", null, clock.instant)
         assertFalse(s.check(), "checked just now: not due")
         assertEquals(listOf("ledga-2.0.0-beta.3.apk"), files.dir().list()!!.toList())
+    }
+
+    @Test
+    fun `on a full disk a check, Skip, Later and the channel switch keep nothing and don't crash (R155)`() = runTest {
+        val seeded = FakePrefsStore()
+        UpdateStore(seeded).saveReleases(ghList(ghRelease("v2.0.0-beta.2")), "https://example.test/releases", null, clock.instant.minus(Duration.ofDays(1)))
+        val full = UpdateService(
+            UpdateStore(FullDiskPrefsStore(seeded.data.first())), http, { endpoint }, files, work, installer, notices, events,
+            v("2.0.0-beta.1"), clock, Dispatchers.Unconfined,
+        )
+        http.answers += fresh(ghRelease("v2.0.0-beta.2"))
+        assertFalse(full.check(force = true))
+        assertFalse(full.state.first().checking)
+        full.skip()
+        full.snooze()
+        full.setChannel(UpdateChannel.STABLE)
+        assertEquals("v2.0.0-beta.2", full.state.first().newest?.tag, "nothing was kept: still offered on beta")
+        assertTrue(work.calls.none { it == "cancelQuietDownload" })
     }
 }

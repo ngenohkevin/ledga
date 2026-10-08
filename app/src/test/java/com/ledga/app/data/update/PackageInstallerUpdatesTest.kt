@@ -52,4 +52,13 @@ class PackageInstallerUpdatesTest {
         val requested = context.packageManager.getPackageInfo(context.packageName, PackageManager.GET_PERMISSIONS).requestedPermissions.orEmpty()
         assertTrue("android.permission.UPDATE_PACKAGES_WITHOUT_USER_ACTION" in requested)
     }
+
+    @Test
+    fun `any error while writing the session abandons it and says the install didn't start (R155)`() {
+        shadowOf(context.packageManager).setCanRequestPackageInstalls(true)
+        val failing = PackageInstallerUpdates(context, events) { throw IllegalStateException("too many sessions") }
+        assertEquals(InstallStart.FAILED, failing.install(apk))
+        assertTrue(context.packageManager.packageInstaller.allSessions.isEmpty())
+        assertEquals(UpdateMessages.INSTALL_NOT_STARTED, events.failure.value)
+    }
 }
