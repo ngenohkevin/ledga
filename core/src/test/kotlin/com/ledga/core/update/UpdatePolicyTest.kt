@@ -101,4 +101,11 @@ class UpdatePolicyTest {
         assertTrue(UpdatePolicy.held(v("2.0.1"), skipped = null, snoozedUntil = now.plusSeconds(1), now = now))
         assertFalse(UpdatePolicy.held(v("2.0.1"), skipped = v("2.0.0"), snoozedUntil = now, now = now))
     }
+
+    @Test
+    fun `a snooze set while the clock ran ahead has ended (R152)`() {
+        val now = Instant.parse("2026-10-07T06:00:00Z")
+        assertTrue(UpdatePolicy.held(v("2.0.1"), skipped = null, snoozedUntil = now.plus(Duration.ofDays(3)), now = now))
+        assertFalse(UpdatePolicy.held(v("2.0.1"), skipped = null, snoozedUntil = now.plus(Duration.ofDays(368)), now = now))
+    }
 }

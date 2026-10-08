@@ -74,7 +74,10 @@ object UpdatePolicy {
         return !held(version, skipped, snoozedUntil, now)
     }
 
-    /** R135 (final review I1): [version] is skipped, or everything is snoozed until later. */
+    /**
+     * R135 (final review I1): [version] is skipped, or everything is snoozed until later. A snooze ending more than
+     * [SNOOZE] from now was set while the clock ran ahead, so it has ended (R152).
+     */
     fun held(version: AppVersion, skipped: AppVersion?, snoozedUntil: Instant?, now: Instant): Boolean =
-        version == skipped || (snoozedUntil != null && now.isBefore(snoozedUntil))
+        version == skipped || (snoozedUntil != null && now.isBefore(snoozedUntil) && !snoozedUntil.isAfter(now.plus(SNOOZE)))
 }

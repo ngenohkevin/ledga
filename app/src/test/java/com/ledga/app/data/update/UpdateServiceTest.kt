@@ -250,4 +250,32 @@ class UpdateServiceTest {
         s.skip()
         assertTrue("cancelQuietDownload" in work.calls)
     }
+
+    @Test
+    fun `a release whose download was refused isn't fetched quietly again, though a person may still try (R153)`() = runTest {
+        val s = service()
+        store.refuse(v("2.0.0-beta.2"))
+        http.answers += fresh(ghRelease("v2.0.0-beta.2"))
+        http.answers += fresh(ghRelease("v2.0.0-beta.3"), ghRelease("v2.0.0-beta.2"))
+        s.check()
+        assertTrue(work.calls.none { it.startsWith("download") }, "refused: no quiet download")
+        assertTrue(s.state.first().refused)
+        s.download()
+        assertEquals("download 2.0.0-beta.2 user", work.calls.last())
+        clock.instant = clock.instant.plus(Duration.ofHours(7))
+        s.check()
+        assertEquals("download 2.0.0-beta.3 quiet", work.calls.last())
+    }
+
+    @Test
+    fun `the APK just installed is deleted at the next check, due or not (R154)`() = runTest {
+        val s = service(installed = "2.0.0-beta.2")
+        files.dir()
+        files.apk(v("2.0.0-beta.2")).writeText("the installed one")
+        files.partial(v("2.0.0-beta.1")).writeText("an older stray")
+        files.apk(v("2.0.0-beta.3")).writeText("a newer one")
+        store.saveReleases(ghList(ghRelease("v2.0.0-beta.3")), "https://example.test/releases", null, clock.instant)
+        assertFalse(s.check(), "checked just now: not due")
+        assertEquals(listOf("ledga-2.0.0-beta.3.apk"), files.dir().list()!!.toList())
+    }
 }

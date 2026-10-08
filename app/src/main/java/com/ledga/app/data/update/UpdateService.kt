@@ -42,6 +42,8 @@ data class UpdateState(
     val installFailure: String? = null,
     /** False in Ledga dev without its local source: Version history only (R140). */
     val offersUpdates: Boolean = true,
+    /** R153: [newest]'s download was refused for good, so it isn't fetched quietly again. */
+    val refused: Boolean = false,
 )
 
 /**
@@ -90,11 +92,14 @@ class UpdateService(
             ready = version != null && files.ready(version) != null,
             installFailure = failure,
             offersUpdates = endpoint.offersUpdates,
+            refused = version != null && version == p.refused,
         )
     }
 
     /** Spec §13.4, R134: at most every 6 hours unless [force] (Check now), or at once from another source. False when it didn't run. */
     suspend fun check(force: Boolean = false): Boolean {
+        // R154: the APK just installed, and anything older, goes at the next check, due or not.
+        withContext(io) { files.dropThrough(installed) }
         val ran = lock.withLock {
             val p = store.current()
             val endpoint = endpoints.current()
@@ -167,7 +172,7 @@ class UpdateService(
      * After a check or a change of choice:
      * - downloads of anything but the newest offer are deleted (R139), and stopped while running;
      * - the "ready" notice goes when nothing ready is offered;
-     * - an offered release that isn't here yet is fetched quietly (R136).
+     * - an offered release that isn't here yet is fetched quietly (R136), unless its download was refused (R153).
      */
     private suspend fun afterChange() {
         val s = state.first()
@@ -176,7 +181,7 @@ class UpdateService(
         if (running != null && running.version != newest?.version?.toString()) work.cancelDownload()
         withContext(io) { files.keepOnly(newest?.version) }
         if (!s.offered || !s.ready) notices.clearReady()
-        if (newest != null && s.offered && !s.ready && running == null) work.download(newest, user = false)
+        if (newest != null && s.offered && !s.ready && !s.refused && running == null) work.download(newest, user = false)
     }
 
     private fun parse(json: String?): List<Release> = json?.let { runCatching { GitHubJson.releases(it) }.getOrNull() }.orEmpty()

@@ -67,7 +67,7 @@ class DownloadWorker @AssistedInject constructor(
         part.delete()
         return try {
             val manifest = GitHubJson.manifest(http.text(manifestUrl))
-            ManifestCheck.check(manifest, version, apkName, Build.VERSION.SDK_INT)?.let { return failure(version, UpdateMessages.of(it)) }
+            ManifestCheck.check(manifest, version, apkName, Build.VERSION.SDK_INT)?.let { return refused(version, UpdateMessages.of(it)) }
             var shown = Int.MIN_VALUE
             http.download(apkUrl, part) { done, total ->
                 val percent = if (total > 0) (done * 100 / total).toInt() else -1
@@ -77,10 +77,10 @@ class DownloadWorker @AssistedInject constructor(
                     if (user) notices.progress(version.toString(), percent.takeIf { it >= 0 })
                 }
             }
-            if (Sha256.of(part) != manifest.sha256) return failure(version, UpdateMessages.MISMATCH, part)
+            if (Sha256.of(part) != manifest.sha256) return refused(version, UpdateMessages.MISMATCH, part)
             val info = inspector.inspect(part)
             if (info == null || info.packageName != applicationContext.packageName || info.versionCode != manifest.versionCode.toLong()) {
-                return failure(version, UpdateMessages.NOT_THIS_APP, part)
+                return refused(version, UpdateMessages.NOT_THIS_APP, part)
             }
             if (!part.renameTo(files.apk(version))) throw IOException("couldn't keep the download")
             // Kept either way; announced only when the person asked for it or it is still offered (final review I1).
@@ -90,7 +90,7 @@ class DownloadWorker @AssistedInject constructor(
             part.delete()
             throw e
         } catch (e: IllegalArgumentException) {
-            failure(version, UpdateMessages.MISMATCH, part) // the manifest wasn't a manifest
+            refused(version, UpdateMessages.MISMATCH, part) // the manifest wasn't a manifest
         } catch (e: IOException) {
             part.delete()
             if (!user && runAttemptCount < QUIET_RETRIES) Result.retry() else failure(version, UpdateMessages.NETWORK)
@@ -102,6 +102,12 @@ class DownloadWorker @AssistedInject constructor(
     private suspend fun held(version: AppVersion): Boolean {
         val p = store.current()
         return UpdatePolicy.held(version, p.skipped, p.snoozedUntil, clock.instant())
+    }
+
+    /** R153: this release can't be installed as published; remembered, so a quiet download doesn't fetch it again. */
+    private suspend fun refused(version: AppVersion, message: String, part: File? = null): Result {
+        store.refuse(version)
+        return failure(version, message, part)
     }
 
     private fun failure(version: AppVersion?, message: String, part: File? = null): Result {

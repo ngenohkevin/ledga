@@ -20,4 +20,12 @@ class UpdateFiles(private val dir: File) {
         val kept = keep?.let { setOf(apk(it).name, partial(it).name) }.orEmpty()
         dir.listFiles()?.filter { it.name !in kept }?.forEach { it.delete() }
     }
+
+    /** R154: downloads of the installed version or an older one are of no use, the one just installed among them. */
+    fun dropThrough(installed: AppVersion) {
+        dir.listFiles()?.filter { f -> versionOf(f.name)?.let { it <= installed } == true }?.forEach { it.delete() }
+    }
+
+    private fun versionOf(name: String): AppVersion? =
+        if (name.startsWith("ledga-")) AppVersion.parse(name.removePrefix("ledga-").removeSuffix(".part").removeSuffix(".apk")) else null
 }

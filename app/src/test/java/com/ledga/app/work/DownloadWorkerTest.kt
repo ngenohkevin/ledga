@@ -171,4 +171,15 @@ class DownloadWorkerTest {
         assertTrue(http.downloads.isEmpty())
         assertIs<ListenableWorker.Result.Success>(run(user = true, attempt = 1))
     }
+
+    @Test
+    fun `a download refused for good is remembered, a lost connection isn't (R153)`() = runTest {
+        http.failDownloads = true
+        assertEquals(UpdateMessages.NETWORK, failedWith(run(user = true)))
+        assertNull(store.current().refused)
+        http.failDownloads = false
+        http.files["https://example.test/apk"] = apkBytes.copyOf().also { it[0] = (it[0] + 1).toByte() }
+        assertEquals(UpdateMessages.MISMATCH, failedWith(run(user = false)))
+        assertEquals(version, store.current().refused)
+    }
 }

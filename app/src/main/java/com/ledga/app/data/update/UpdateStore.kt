@@ -31,6 +31,8 @@ data class UpdatePrefs(
     val snoozedUntil: Instant? = null,
     /** The versionName whose What's new has been seen (R141). */
     val seenVersion: String? = null,
+    /** R153: a version whose download was refused for good; it is never fetched quietly again. */
+    val refused: AppVersion? = null,
 )
 
 /** R133: the update service's own DataStore file, apart from v1's settings; per-phone, never backed up. */
@@ -69,6 +71,8 @@ class UpdateStore(private val store: DataStore<Preferences>) {
 
     suspend fun setSeen(versionName: String) = edit { it[SEEN] = versionName }
 
+    suspend fun refuse(version: AppVersion) = edit { it[REFUSED] = version.toString() }
+
     private suspend fun edit(block: (MutablePreferences) -> Unit) {
         store.edit { block(it) }
     }
@@ -85,6 +89,7 @@ class UpdateStore(private val store: DataStore<Preferences>) {
         private val SKIPPED = stringPreferencesKey("skipped")
         private val SNOOZED = longPreferencesKey("snoozed_until")
         private val SEEN = stringPreferencesKey("seen_version")
+        private val REFUSED = stringPreferencesKey("refused_version")
 
         fun read(p: Preferences): UpdatePrefs = UpdatePrefs(
             releasesJson = p[RELEASES],
@@ -96,6 +101,7 @@ class UpdateStore(private val store: DataStore<Preferences>) {
             skipped = p[SKIPPED]?.let(AppVersion::parse),
             snoozedUntil = p[SNOOZED]?.let(Instant::ofEpochMilli),
             seenVersion = p[SEEN],
+            refused = p[REFUSED]?.let(AppVersion::parse),
         )
     }
 }
