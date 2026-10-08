@@ -146,8 +146,12 @@ androidComponents {
 // R146: the release workflow passes -Pledga.releaseFiles=required, so ReleaseManifestFileTest fails rather than skips
 // when the release files are missing. A system property is a task input, so changing it reruns the test (an environment
 // variable isn't one, and a cached up-to-date run would ignore it).
+// R160: -Pledga.v1Export=<v1's export> runs the opt-in upgrade rehearsal; empty skips it.
+// R163 (final review M12): the release files the read-back test reads are an input too, so new ones rerun it.
 tasks.withType<Test>().configureEach {
     systemProperty("ledga.releaseFiles", providers.gradleProperty("ledga.releaseFiles").getOrElse("optional"))
+    systemProperty("ledga.v1Export", providers.gradleProperty("ledga.v1Export").getOrElse(""))
+    inputs.files(layout.buildDirectory.dir("ledga-release")).withPropertyName("ledgaReleaseFiles").withPathSensitivity(PathSensitivity.RELATIVE)
 }
 
 // R146: what the release workflow and scripts/update-test-server.sh read (`./gradlew -q :app:ledgaVersion`).
