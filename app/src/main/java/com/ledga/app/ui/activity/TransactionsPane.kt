@@ -18,10 +18,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -180,19 +183,48 @@ private fun TransactionList(
                 onAction = actions.onClearFilters,
             )
         }
-        else -> LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = Spacing.xxl)) {
-            if (header != null) {
-                item(key = "controls", contentType = "controls") { Column(Modifier.padding(bottom = Spacing.s)) { header() } }
-            }
-            items(count = items.itemCount, key = items.itemKey { it.key }, contentType = items.itemContentType { it::class.simpleName }) { i ->
-                Box(Modifier.padding(horizontal = Spacing.screen)) {
-                    when (val item = items[i]) {
-                        is ActivityItem.Day -> DayStart(item, ui)
-                        is ActivityItem.Tx -> TxListRow(item.row, dividerAbove = i > 0 && items.peek(i - 1) is ActivityItem.Tx, ui, actions)
-                        ActivityItem.End -> CardCap()
-                        null -> SkeletonRow()
+        else -> {
+            // A new filter or search starts at the top of its results (owner call 2026-10-08); an edit keeps the place.
+            val list = rememberSaveable(ui.filter, ui.query, saver = LazyListState.Saver) { LazyListState() }
+            KeepPlace(list, items, lead = if (header != null) 1 else 0)
+            LazyColumn(Modifier.fillMaxSize(), state = list, contentPadding = PaddingValues(bottom = Spacing.xxl)) {
+                if (header != null) {
+                    item(key = "controls", contentType = "controls") { Column(Modifier.padding(bottom = Spacing.s)) { header() } }
+                }
+                items(count = items.itemCount, key = items.itemKey { it.key }, contentType = items.itemContentType { it::class.simpleName }) { i ->
+                    Box(Modifier.padding(horizontal = Spacing.screen)) {
+                        when (val item = items[i]) {
+                            is ActivityItem.Day -> DayStart(item, ui)
+                            is ActivityItem.Tx -> TxListRow(item.row, dividerAbove = i > 0 && items.peek(i - 1) is ActivityItem.Tx, ui, actions)
+                            ActivityItem.End -> CardCap()
+                            null -> SkeletonRow()
+                        }
                     }
                 }
+            }
+        }
+    }
+}
+
+/**
+ * Keeps what is on screen in place when the list reloads (owner report 2026-10-08: after setting a category deep in the
+ * list, it was no longer where he left it). A reload, after any edit, brings back the rows around the screen but not
+ * the day headers above them, so every index moves; Compose looks for the top item's key only near its old index and,
+ * deep in a long history, misses it. This finds the first item on screen in the new list and asks for it at the same
+ * place. [lead] counts the items before the payments (the controls in a short pane). Not while a scroll runs: the
+ * request would stop a fling, and the small moves paging makes as the list scrolls Compose follows by itself.
+ */
+@Composable
+private fun KeepPlace(list: LazyListState, items: LazyPagingItems<ActivityItem>, lead: Int) {
+    val now = items.itemSnapshotList
+    Snapshot.withoutReadObservation {
+        if (!list.isScrollInProgress) {
+            for (seen in list.layoutInfo.visibleItemsInfo) {
+                val at = now.items.indexOfFirst { it.key == seen.key }
+                if (at < 0) continue
+                val index = lead + now.placeholdersBefore + at
+                if (index != seen.index) list.requestScrollToItem(index, -seen.offset)
+                break
             }
         }
     }

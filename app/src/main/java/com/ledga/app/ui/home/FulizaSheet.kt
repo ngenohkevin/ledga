@@ -21,7 +21,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.paging.LoadState
 import androidx.paging.Pager
-import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import androidx.paging.compose.LazyPagingItems
@@ -42,6 +41,7 @@ import com.ledga.app.ui.design.components.EmptyState
 import com.ledga.app.ui.design.components.LedgaModalSheet
 import com.ledga.app.ui.design.components.RowDivider
 import com.ledga.app.ui.design.components.SectionHeader
+import com.ledga.app.ui.design.components.SkeletonRow
 import com.ledga.app.ui.design.components.StatTile
 import com.ledga.app.ui.design.components.WellSize
 import com.ledga.app.ui.design.format.AmountFormat
@@ -88,7 +88,7 @@ class FulizaSheetViewModel @Inject constructor(
     /** Every payment Fuliza touched on the chosen line: Transactions' own Fuliza filter (R38), newest first. */
     @OptIn(ExperimentalCoroutinesApi::class)
     val items: Flow<PagingData<TxRow>> = line.choice.map { it.lineId }.distinctUntilChanged().flatMapLatest { id ->
-        Pager(PagingConfig(pageSize = ActivityViewModel.PAGE, enablePlaceholders = false)) {
+        Pager(ActivityViewModel.PAGING) {
             ledger.transactions(TransactionFilter(flow = FlowFilter.FULIZA, lineId = id))
         }.flow
     }.cachedIn(viewModelScope)
@@ -128,10 +128,14 @@ fun FulizaSheetContent(ui: FulizaSheetUi, items: LazyPagingItems<TxRow>, onOpenT
             item(key = "empty") { EmptyState("fluent_credit_card", "No Fuliza yet", "Payments Fuliza helps with, and their repayments, show up here.") }
         }
         items(count = items.itemCount, key = items.itemKey { it.code }) { i ->
-            val row = items[i] ?: return@items
+            if (i > 0) RowDivider()
+            val row = items[i]
+            if (row == null) {
+                SkeletonRow()
+                return@items
+            }
             val category = ui.categories[row.categoryKey]
             val day = DateLabels.nairobiDate(row.occurredAt)
-            if (i > 0) RowDivider()
             val drawn = row.fulizaDrawnCents?.takeIf { it > 0 }
             TransactionRow(
                 leading = TxText.leading(row, category?.icon3d ?: "fluent_package"),

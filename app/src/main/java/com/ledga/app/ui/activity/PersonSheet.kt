@@ -22,7 +22,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.paging.Pager
-import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import androidx.paging.compose.LazyPagingItems
@@ -40,6 +39,7 @@ import com.ledga.app.ui.design.components.Leading
 import com.ledga.app.ui.design.components.LedgaModalSheet
 import com.ledga.app.ui.design.components.RowDivider
 import com.ledga.app.ui.design.components.SectionHeader
+import com.ledga.app.ui.design.components.SkeletonRow
 import com.ledga.app.ui.design.components.StatTile
 import com.ledga.app.ui.design.components.WellSize
 import com.ledga.app.ui.design.format.AmountFormat
@@ -102,7 +102,7 @@ class PersonSheetViewModel @Inject constructor(
     @OptIn(ExperimentalCoroutinesApi::class)
     val items: Flow<PagingData<TxRow>> =
         combine(person.filterNotNull().map { it.key }.distinctUntilChanged(), lineId) { key, id -> key to id }.flatMapLatest { (key, id) ->
-            Pager(PagingConfig(pageSize = ActivityViewModel.PAGE, enablePlaceholders = false)) {
+            Pager(ActivityViewModel.PAGING) {
                 ledger.transactions(TransactionFilter(counterpartyKey = key, lineId = id))
             }.flow
         }.cachedIn(viewModelScope)
@@ -133,10 +133,14 @@ fun PersonSheetContent(ui: PersonSheetUi, items: LazyPagingItems<TxRow>, onOpenT
             }
         }
         items(count = items.itemCount, key = items.itemKey { it.code }) { i ->
-            val row = items[i] ?: return@items
+            if (i > 0) RowDivider()
+            val row = items[i]
+            if (row == null) {
+                SkeletonRow()
+                return@items
+            }
             val category = ui.categories[row.categoryKey]
             val day = DateLabels.nairobiDate(row.occurredAt)
-            if (i > 0) RowDivider()
             TransactionRow(
                 leading = Leading.Icon(category?.icon3d ?: "fluent_package"),
                 title = TxText.subtitle(row, category?.name ?: "Other"),

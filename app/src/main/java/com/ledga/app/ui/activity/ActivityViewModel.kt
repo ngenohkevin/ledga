@@ -91,7 +91,7 @@ class ActivityViewModel @Inject constructor(
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val items: Flow<PagingData<ActivityItem>> = settled
-        .flatMapLatest { l -> Pager(PagingConfig(pageSize = PAGE, enablePlaceholders = false)) { ledger.transactions(l.filter, l.today) }.flow }
+        .flatMapLatest { l -> Pager(PAGING) { ledger.transactions(l.filter, l.today) }.flow }
         .map { it.toActivityItems() }
         .cachedIn(viewModelScope)
 
@@ -167,5 +167,13 @@ class ActivityViewModel @Inject constructor(
     companion object {
         const val PAGE = 50
         const val QUERY_SETTLE_MS = 250L
+
+        /**
+         * Every payments list's paging: Transactions, the person sheet, the Fuliza sheet. Placeholders stay on. Each edit
+         * reloads the list from the position paging reports, and without placeholders that position counts only the
+         * rows loaded since the last reload, so the second edit deep in a list reloaded it near the top (owner report,
+         * 2026-10-08).
+         */
+        val PAGING = PagingConfig(pageSize = PAGE, enablePlaceholders = true)
     }
 }
