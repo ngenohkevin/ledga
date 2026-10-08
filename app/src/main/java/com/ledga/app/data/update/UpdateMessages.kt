@@ -1,8 +1,9 @@
 package com.ledga.app.data.update
 
+import android.content.pm.PackageInstaller
 import com.ledga.core.update.ManifestProblem
 
-/** What Ledga says when an update can't be downloaded (R136, R138). Task 6 adds the install messages. */
+/** What Ledga says when an update can't be downloaded or installed (R136, R138). */
 object UpdateMessages {
     const val NETWORK = "The download stopped. Check your connection and try again."
     const val MISMATCH = "The download didn't match the release, so it was deleted. Try again."
@@ -30,5 +31,18 @@ object UpdateMessages {
         35 -> "15"
         36 -> "16"
         else -> "(API $api)"
+    }
+
+    const val INSTALL_NOT_STARTED = "Ledga couldn't hand the update to Android. Try again."
+
+    /** Android's answer to an install session that didn't succeed (R138). */
+    fun install(status: Int): String = when (status) {
+        PackageInstaller.STATUS_FAILURE_BLOCKED -> "Android blocked the update."
+        PackageInstaller.STATUS_FAILURE_CONFLICT ->
+            "Android refused the update because it doesn't match the Ledga on this phone. You can download it from its release page instead."
+        PackageInstaller.STATUS_FAILURE_INCOMPATIBLE -> "This update doesn't work on this phone."
+        PackageInstaller.STATUS_FAILURE_INVALID -> "The update file was damaged, so it was deleted. Download it again."
+        PackageInstaller.STATUS_FAILURE_STORAGE -> "There isn't enough space on this phone to install the update."
+        else -> "The update didn't install. Try again."
     }
 }

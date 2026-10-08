@@ -63,5 +63,10 @@
             </intent-filter>
         </receiver>
 
+        <!-- R138: Android's answer to an update's install session; only the session's PendingIntent reaches it. -->
+        <receiver
+            android:name=".receiver.InstallStatusReceiver"
+            android:exported="false" />
+
     </application>
 </manifest>

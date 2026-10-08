@@ -9,8 +9,11 @@ import com.ledga.app.BuildConfig
 import com.ledga.app.data.update.AndroidApkInspector
 import com.ledga.app.data.update.AndroidUpdateNotices
 import com.ledga.app.data.update.ApkInspector
+import com.ledga.app.data.update.InstallEvents
+import com.ledga.app.data.update.PackageInstallerUpdates
 import com.ledga.app.data.update.UpdateFiles
 import com.ledga.app.data.update.UpdateHttp
+import com.ledga.app.data.update.UpdateInstaller
 import com.ledga.app.data.update.UpdateNotices
 import com.ledga.app.data.update.UpdateStore
 import com.ledga.app.data.update.UrlUpdateHttp
@@ -59,4 +62,8 @@ object UpdateModule {
     @Provides
     @Singleton
     fun updateNotices(@ApplicationContext context: Context): UpdateNotices = AndroidUpdateNotices(context)
+
+    @Provides
+    @Singleton
+    fun updateInstaller(@ApplicationContext context: Context, events: InstallEvents): UpdateInstaller = PackageInstallerUpdates(context, events)
 }
