@@ -54,6 +54,14 @@ abstract class BundleReleaseNotes : DefaultTask() {
     }
 }
 
+// R162: the release key's password is never in this file. CI passes it in the environment; a local build reads the
+// gitignored keystore/keystore.properties. Without either, the release build stops at Gradle's signing check.
+val keystoreSecrets = Properties().apply {
+    providers.fileContents(rootProject.layout.projectDirectory.file("keystore/keystore.properties")).asText.orNull?.let { load(it.reader()) }
+}
+
+fun keystoreSecret(env: String, key: String): String? = providers.environmentVariable(env).orNull ?: keystoreSecrets.getProperty(key)
+
 android {
     namespace = "com.ledga.app"
     compileSdk = 36
@@ -63,9 +71,9 @@ android {
             val keystoreFile = rootProject.file("keystore/ledga-release.jks")
             if (keystoreFile.exists()) {
                 storeFile = keystoreFile
-                storePassword = System.getenv("KEYSTORE_PASSWORD") ?: "ledga2026"
-                keyAlias = System.getenv("KEY_ALIAS") ?: "ledga"
-                keyPassword = System.getenv("KEY_PASSWORD") ?: "ledga2026"
+                storePassword = keystoreSecret("KEYSTORE_PASSWORD", "storePassword")
+                keyAlias = keystoreSecret("KEY_ALIAS", "keyAlias") ?: "ledga"
+                keyPassword = keystoreSecret("KEY_PASSWORD", "keyPassword")
             }
         }
     }
