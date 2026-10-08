@@ -5,8 +5,15 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStoreFile
+import com.ledga.app.BuildConfig
+import com.ledga.app.data.update.AndroidApkInspector
+import com.ledga.app.data.update.AndroidUpdateNotices
+import com.ledga.app.data.update.ApkInspector
 import com.ledga.app.data.update.UpdateFiles
+import com.ledga.app.data.update.UpdateHttp
+import com.ledga.app.data.update.UpdateNotices
 import com.ledga.app.data.update.UpdateStore
+import com.ledga.app.data.update.UrlUpdateHttp
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -40,4 +47,16 @@ object UpdateModule {
     @Provides
     @Singleton
     fun updateFiles(@ApplicationContext context: Context): UpdateFiles = UpdateFiles(File(context.noBackupFilesDir, "updates"))
+
+    /** Spec §13.4: GitHub asks every caller to name itself. */
+    @Provides
+    @Singleton
+    fun updateHttp(): UpdateHttp = UrlUpdateHttp("Ledga/${BuildConfig.VERSION_NAME} (+https://github.com/ngenohkevin/ledga)")
+
+    @Provides
+    fun apkInspector(@ApplicationContext context: Context): ApkInspector = AndroidApkInspector(context.packageManager)
+
+    @Provides
+    @Singleton
+    fun updateNotices(@ApplicationContext context: Context): UpdateNotices = AndroidUpdateNotices(context)
 }
