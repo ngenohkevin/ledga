@@ -211,22 +211,22 @@
   into sections of plain-text items; GitHub's "Full Changelog" line is dropped (v1.x releases then have no notes).
 - **State** lives in its own DataStore file, `ledga_updates` (`UpdateStore`, R133): the last release list and its ETag
   and address, the check time and failure, the channel (null until chosen: a beta build follows betas, R145), the
-  skipped version, the snooze, and the version whose What's new was seen. Per-phone: not in Auto Backup or the snapshot.
+  skipped version, the snooze, the version whose What's new was seen, and a version whose download was refused for good (R153). Per-phone: not in Auto Backup or the snapshot.
 - **Checks** (`UpdateService.check`, R134): only once onboarded; at start (`ledga-update-check`, KEEP) when 6 hours have
   passed, daily (`ledga-update-daily`, any network), on opening Updates or Version history, and Check now (always).
   One request: `GET …/releases?per_page=30` with `If-None-Match` (sent only to the address it came from). A 304 moves
   the check time; offline, rate-limited, or an answer that isn't a release list or lists no Ledga release (`[]`) keeps the cached list and records why.
 - **Offer** (`UpdatePolicy`): the newest non-draft release on the channel above the installed version that has an APK
   and `ledga-release.json`. Skip and Later (3 days) hide it from Home's banner, the quiet download and the "ready"
-  notice; Updates always shows it (R135). Ledga dev never offers one unless adb set its local source (R140).
+  notice; Updates always shows it (R135). A snooze ending more than 3 days away was set while the clock ran ahead and has ended (R152). Ledga dev never offers one unless adb set its local source (R140).
 - **Download** (`DownloadWorker`, unique `ledga-update-download`, R136): quiet ones wait for an unmetered network, are
   retried twice, and say only when ready; a person's runs on any network with a progress notification. The manifest
   must describe the release (`ManifestCheck`), the APK must match its SHA-256 and be this app's package at the
   manifest's versionCode; only then is `ledga-<version>.apk.part` renamed to `ledga-<version>.apk` in
-  `noBackupFilesDir/updates/` (R139). Each check deletes every file but the newest offer's.
+  `noBackupFilesDir/updates/` (R139). Every check, due or not, first deletes the files of the installed version and older ones (R154); a check that runs then deletes every file but the newest release's, skipped or not. A release refused for good (its checksum, another app, a manifest that doesn't fit) is remembered and never fetched quietly again; a person's Download still tries it (R153).
 - **Install** (`PackageInstallerUpdates`, R138): a `PackageInstaller` session for this package (Android 12+:
   `USER_ACTION_NOT_REQUIRED` requested); `InstallStatusReceiver` shows Android's confirm screen when asked and turns
-  any failure into words (`UpdateMessages.install`), deleting a damaged file. "Install unknown apps" is checked first.
+  any failure into words (`UpdateMessages.install`), deleting a damaged file. "Install unknown apps" is checked first. Any error while writing the session, Android's included, abandons it and says the install didn't start; on a full disk, a check, Skip, Later, the channel switch and What's new's "seen" keep nothing rather than crash (R155).
 - **Notifications** (R144): the `updates` channel (low importance): "Downloading Ledga X" with a bar, "Update ready to
   install". Not in Alerts; a tap opens You → Updates (`UpdateIntents`, `OpenDestination.Updates`).
 - **What's new** (`WhatsNew`, R141): this build's notes, once, on Home, for an onboarded person; onboarding files them
@@ -235,8 +235,30 @@
   v2/main, and called by `release.yml`). `release.yml` (tags `v*`): tag = `v` + `VERSION_NAME`, notes present, signed
   `assembleRelease`, `scripts/release_files.py` → `ledga-<version>.apk` + `ledga-release.json`, read back by
   `ReleaseManifestFileTest` (`-Pledga.releaseFiles=required`, a test system property: an env var isn't a task input), then published (betas as pre-releases; only stable is
-  Latest). First real run: Phase 7.
+  Latest). First real run: Phase 7. Actions are pinned to commit SHAs, no checkout keeps the token, and only the release job may write (R163). The release key's password comes from `KEYSTORE_PASSWORD`/`KEY_PASSWORD` or the gitignored `keystore/keystore.properties`, with no default (R162).
 - **Ledga dev's update test** (owner call A): `scripts/update-test-server.sh <version>` + the adb broadcast in its header.
+
+## Upgrade from v1 and the first beta (Phase 7a)
+
+- **The pre-v6 copy during betas (R159).** While the installed build is a beta (`2.0.0-beta.N`, and Ledga dev),
+  Startup keeps `files/pre-v6/` after the migration's work is done, so a wrong import can be redone in a later beta.
+  The first full release deletes it on its first start once nothing is owed. The `migratedFromV1` marker survives
+  restores, so a kept copy never routes to recovery.
+- **v1's leftovers (R158).** `V1Leftovers` also deletes `cache/updates/` (APKs v1's updater downloaded); the
+  FileProvider no longer has an `updates` path.
+- **Imported rules keep v1's order (R156).** v1 tried name rules before paybill rules, each lowest id first; v2 tries
+  USER rules newest first. `LegacyImporter` spaces the imported rules' `createdAt` 1 ms apart in v1's order, so when
+  two match, v2 picks the one v1 picked. A v1 rule that v1's own built-in rules hid now applies: v2's USER rules
+  always come before SYSTEM ones.
+- **The SMS watermark never passes now (R157).** A message dated in the future (a phone clock set wrong) moves it only
+  as far as now. A mark already ahead of now is ignored: that catch-up reads the whole inbox and puts the mark right.
+- **The upgrade rehearsal (R160).** `V1UpgradeRehearsalTest` runs v1.6's own Export (`-Pledga.v1Export=<zip>`)
+  through `MIGRATION_5_6`, `LegacyImporter` and a rebuild, and compares it with v1 payment by payment
+  (`testing/UpgradeComparison`): categories as v1 filed them, and spending per month by v1.6's own rule. It prints
+  counts, percentages and month labels; the Ksh table goes to `<export>.rehearsal.txt` beside the export. The export
+  has no rules, custom category names, notes, car tags or lines, and no inbox is rescanned, so the phone's own upgrade
+  is the final proof. Skipped without the property (and in CI). `LegacyMigrationAuditTest` reads the same format
+  through `testing/V1Export`.
 
 ## Phase 5 acceptance step (from the 2026-10-05 Phase 1 review)
 

@@ -1,115 +1,60 @@
 # Ledga
 
-M-Pesa spending tracker for Android. Automatically reads M-Pesa SMS confirmations to track your spending — zero manual entry.
+An M-Pesa spending tracker for Android. Ledga reads your M-Pesa messages and shows where your money goes, with nothing
+to type in.
 
-## Download
+## Install
 
-Download the latest APK from [Releases](https://github.com/ngenohkevin/ledga/releases/latest).
+1. On your phone, download `ledga-<version>.apk` from [Releases](https://github.com/ngenohkevin/ledga/releases/latest).
+2. Open it. Android asks once to let your browser or Files app install apps: allow it.
+3. Google Play Protect may say **"App scan recommended"**, because Ledga doesn't come from the Play Store. Choose
+   **Scan app**: Play Protect checks it, then the install goes ahead.
 
-Install directly on your Android phone (no Play Store needed). The app checks for updates automatically.
+After that Ledga updates itself. You → Updates shows new versions; Android may ask once more before the first update
+Ledga installs.
 
-## Features
+**Coming from Ledga 1.x?** Install over it. Your history comes with you: the categories you chose, your rules, notes and
+lines. Ledga then reads your inbox again to fill in payments 1.x missed.
 
-### Automatic SMS Tracking
-- Reads M-Pesa SMS in real-time via BroadcastReceiver
-- Supports **17 transaction types**: Send Money, Buy Goods, Pay Bill, Withdraw (Agent/ATM), Deposit, Received, Airtime (Self/Other), M-Pesa Global, Fuliza (Borrow/Repayment/Reversal), M-Shwari, KCB M-Pesa, Reversal
-- Import existing SMS history on first launch
-- Stores raw SMS for future parser improvements
+**Betas:** turn on You → Updates → Beta updates to get new versions before everyone else.
 
-### Smart Categorization
-- 13 default categories: Groceries, Transport, Bills, Airtime, Food, Send Money, Received, Withdrawal, Deposit, Shopping, International, Savings & Loans, Other
-- Auto-categorizes by merchant name and paybill/till number
-- Pre-loaded rules for common merchants (Naivas, KPLC, Uber, etc.)
-- Tap any transaction to re-categorize
+## What it does
 
-### Home Dashboard
-- Current M-Pesa balance (from last transaction)
-- Monthly spending total with fees breakdown
-- Animated donut chart by category
-- Period selector: Today / This Week / Month
-- Recent transactions feed
-
-### Transactions
-- Grouped by day with search and filters
-- Filter by type: All, Sent, Received, Bills, Goods, Withdraw
-- Transaction detail bottom sheet with full info
-- One-tap re-categorization
-
-### Trends & Analytics
-- Daily spending bar chart (Vico)
-- Category breakdown with color indicators
-- Top 5 merchants by spending
-- Transaction fees summary
-- Period selector: 7D / 30D / 90D / 1Y
-
-### Budget Tracking
-- Set overall monthly budget
-- Progress bars with color coding (green/warning/red)
-- Per-category budget support
-
-### Notifications
-- Daily spending summary (default 8 PM)
-- Weekly summary (Sunday evening)
-- Budget warning at 80% and exceeded at 100%
-- Large transaction alerts (configurable threshold)
-- All toggleable in settings
-
-### Backup & Export
-- **Google Drive**: Auto-backup to app data folder, restore on fresh install
-- **Manual Export**: ZIP file with `transactions.csv` (Excel-friendly) + `data.json` (full restore)
-- **Manual Import**: Restore from exported ZIP
-- Share exports via WhatsApp, email, Bluetooth
-
-### Self-Update
-- Checks GitHub Releases on launch (max once per day)
-- Download and install updates directly from the app
-
-### Customization
-- Theme: System / Light / Dark
-- Font size: System Default / Small / Medium / Large / Extra Large
-- M-Pesa green primary color with Material 3
-
-## Tech Stack
-
-| Component | Technology |
-|-----------|------------|
-| Language | Kotlin |
-| UI | Jetpack Compose + Material 3 |
-| Database | Room (SQLite) |
-| DI | Hilt |
-| Settings | Jetpack DataStore |
-| Charts | Vico |
-| Background | WorkManager + BroadcastReceiver |
-| Backup | Google Drive API |
-| Navigation | Navigation Compose (type-safe routes) |
-| Build | Gradle (Kotlin DSL) |
-
-## Requirements
-
-- Android 8.0+ (API 26)
-- SMS permission (to read M-Pesa messages)
-- Notification permission (Android 13+, for summaries and alerts)
+- **Home:** your M-Pesa balance on each line, what you owe on Fuliza, and what you've spent this week, month or year.
+- **Activity:** every payment, with search and filters; where your money went, who you pay and who pays you.
+- **Categories:** any icon and colour, your own rules, and month-by-month totals for the ones you track.
+- **Notifications:** large payments, Fuliza and its due dates, and a daily or weekly summary.
+- **Export & restore:** a full backup file, a spreadsheet, and Android's own backup of your history.
+- **History check:** shows whether each line's balances add up, so a missing message stands out.
+- Light and dark, at the text size you choose.
 
 ## Privacy
 
-All data stays on your device. No server, no accounts, no analytics, no tracking. Google Drive backup uses the app-specific folder — invisible to other apps and only accessible by Ledga.
+Everything stays on your phone: no server, no account, no analytics. Ledga reads only the messages M-Pesa and Fuliza
+send, and the only thing it fetches from the internet is its own updates, from this repository's releases. An export
+holds your M-Pesa messages, so keep it somewhere safe.
+
+## Requirements
+
+- Android 8.0 or newer
+- Permission to read SMS, for the M-Pesa messages
+- Notifications (Android 13 and newer), for alerts and summaries
 
 ## Building
 
 ```bash
-# Debug
-./gradlew assembleDebug
-
-# Release (requires keystore)
-./gradlew assembleRelease
-
-# Tests
-./gradlew testDebugUnitTest
+./gradlew :app:assembleDebug                                                  # "Ledga dev" (com.ledga.app.dev), beside the real app
+./gradlew :core:test :app:testDebugUnitTest -Proborazzi.test.verify=true      # every test, with the screenshots compared
+./gradlew :app:assembleRelease                                                # needs the release key (below)
 ```
+
+A release build signs with `keystore/ledga-release.jks`. Its password comes from the `KEYSTORE_PASSWORD` and
+`KEY_PASSWORD` environment variables, or from `keystore/keystore.properties` (`storePassword=…`, `keyPassword=…`,
+`keyAlias=…`). Neither is in the repository; without them the release build stops.
 
 ## Release
 
-Ledga's version lives in `version.properties` (spec §13.1). To release:
+Ledga's version lives in `version.properties`. To release:
 
 1. Set `VERSION_NAME` (`2.0.1`, or `2.0.1-beta.2` for a beta) and write `release-notes/<VERSION_NAME>.md`, with
    `## What's new` and `## Fixes` sections. Commit both.
@@ -126,6 +71,18 @@ the release's text. Betas are pre-releases, so only phones on the beta channel s
 which v1 phones also update to.
 
 To try the in-app update on a phone before releasing, see `scripts/update-test-server.sh` (Ledga dev only).
+
+## Tech stack
+
+| Part | Technology |
+|------|------------|
+| Language | Kotlin |
+| UI | Jetpack Compose, Material 3, Navigation Compose |
+| Data | Room (SQLite), DataStore |
+| DI | Hilt |
+| Background | WorkManager, a BroadcastReceiver for incoming SMS |
+| Tests | JUnit, Robolectric, Roborazzi screenshots |
+| Build | Gradle (Kotlin DSL), GitHub Actions |
 
 ## License
 
