@@ -89,7 +89,7 @@ class LineMergesTest {
         db.overridesDao().upsert(OverrideRow("TJK4AB12KB", null, null, lineId = two, ownAccount = null, hidden = false, updatedAt = Instant.parse("2026-09-03T00:00:00Z")))
         settings.setSelectedLine(two)
         merges.merge(two, three)
-        assertEquals(listOf("Line 1", "Line 3"), db.linesDao().all().map { it.displayName })
+        assertEquals(listOf("Line 1", "Line 2"), db.linesDao().all().map { it.displayName })
         assertEquals(three, db.transactionsDao().get("TJK4AB12KC")!!.lineId)
         assertEquals(three, db.overridesDao().get("TJK4AB12KB")!!.lineId)
         assertEquals(three, settings.current().selectedLineId)
@@ -132,6 +132,21 @@ class LineMergesTest {
         sms(three, 2, received("TJK4AB12KE", "1,200.00", "26/9/26 at 6:00 PM"), "2026-09-26T15:00:00Z")
         merges.merge(two, three)
         assertEquals(three, LinesRepository(db.linesDao(), sims).lineFor(3))
-        assertEquals(listOf("Line 3"), db.linesDao().all().map { it.displayName })
+        assertEquals(listOf("Line 2"), db.linesDao().all().map { it.displayName })
+    }
+
+    @Test
+    fun `the line kept takes the older line's name while its own is still an automatic one (owner, 2026-10-08)`() = runTest {
+        val (_, two, three) = splitNumber()
+        merges.merge(two, three)
+        assertEquals(listOf("Line 1", "Line 2"), db.linesDao().all().map { it.displayName })
+    }
+
+    @Test
+    fun `a name the person chose is kept`() = runTest {
+        val (_, two, three) = splitNumber()
+        db.linesDao().rename(three, "My eSIM")
+        merges.merge(two, three)
+        assertEquals(listOf("Line 1", "My eSIM"), db.linesDao().all().map { it.displayName })
     }
 }

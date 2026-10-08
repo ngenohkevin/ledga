@@ -272,7 +272,7 @@
   two lines when one's last payment comes before the other's first, the other has no payment before it, the other's
   first payment continues the last balance exactly, and (when Android shows the SIMs) the old SIM isn't in the phone
   and the new one is. Home shows it once; Merge moves the old line's messages and the person's placements to the line
-  in use (which keeps its name, colour and SIM, and becomes primary if the old one was), moves the chosen line, deletes
+  in use (which keeps its colour and SIM, takes the old line's name while its own is still an automatic "Line N" — owner, 2026-10-08 — and becomes primary if the old one was), moves the chosen line, deletes
   the old line and re-derives the moved payments. "Not the same" is remembered per pair on this phone
   (`Settings.lineMergesDismissed`, not in backups).
 

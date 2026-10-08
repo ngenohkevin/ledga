@@ -325,7 +325,7 @@ class HomeViewModelTest {
         assertEquals("Line 2 and Line 3 look like the same number", shown.text)
         vm.mergeLines().join()
         assertNull(vm.ui.first { it.lineMerge == null }.lineMerge)
-        assertEquals(listOf("Line 3"), db.linesDao().all().map { it.displayName })
+        assertEquals(listOf("Line 2"), db.linesDao().all().map { it.displayName }, "the line kept takes the name the number had")
     }
 
     @Test

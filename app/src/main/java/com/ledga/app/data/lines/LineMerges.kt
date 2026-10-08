@@ -75,6 +75,10 @@ class LineMerges(
             lines.moveSms(from, into)
             lines.moveOverrides(from, into)
             if (old?.isPrimary == true) lines.setPrimary(into)
+            // Owner (2026-10-08): the line kept carries on the old one, so while its own name is still an automatic
+            // "Line N" it takes the name the person has known the number by.
+            val kept = lines.get(into)
+            if (old != null && kept != null && AUTO_NAME.matches(kept.displayName)) lines.rename(into, old.displayName)
             lines.delete(from)
             // Final review I2: re-derived inside the same transaction, so a merge cut short changes nothing.
             rederive(moved)
@@ -86,6 +90,9 @@ class LineMerges(
     suspend fun dismiss(from: Long, into: Long) = settings.dismissLineMerge(key(from, into))
 
     companion object {
+        /** The name `LinesRepository` gives a line it can't name from the SIM. */
+        private val AUTO_NAME = Regex("""Line \d+""")
+
         fun key(from: Long, into: Long) = "$from>$into"
     }
 }
