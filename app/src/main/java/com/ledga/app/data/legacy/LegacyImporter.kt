@@ -143,13 +143,14 @@ class LegacyImporter(
         val inV1Order = legacyRules.filter { Triple(it.categoryId, it.matchType, it.matchValue.uppercase()) !in defaults }
             .sortedWith(compareBy({ V1_RULE_PASS[it.matchType] ?: V1_RULE_PASS.size }, { it.id }))
         inV1Order.forEachIndexed { rank, r ->
-            val field = when (r.matchType) {
-                "RECIPIENT_NAME" -> RuleField.NAME_CONTAINS
-                "PAYBILL" -> RuleField.ACCOUNT_EQUALS
-                "PHONE" -> RuleField.PHONE_EQUALS
-                else -> null
+            val raw = r.matchValue.trim()
+            // R173: a name rule in v1's paybill form ("<NAME> for account …") becomes the rule v2's reading matches.
+            val (field, pattern) = when (r.matchType) {
+                "RECIPIENT_NAME" -> V1RulePattern.translate(raw) ?: (RuleField.NAME_CONTAINS to raw)
+                "PAYBILL" -> RuleField.ACCOUNT_EQUALS to raw
+                "PHONE" -> RuleField.PHONE_EQUALS to raw
+                else -> null to raw
             }
-            val pattern = r.matchValue.trim()
             if (field == null || pattern.isEmpty() || r.categoryId == LegacyAutoCategorizer.BILLS) { skipped++; return@forEachIndexed }
             val (categoryKey, own) = targets.resolve(LegacyCategoryMap.map(r.categoryId), r.categoryId)
             db.rulesDao().insert(
@@ -186,6 +187,13 @@ class LegacyImporter(
                     categoryKey = key
                     own = isOwn
                 }
+            // R174: what v1 counted as a move between the person's own accounts stays one where v2's rules no longer
+            // match it (v1 matched part of a word, or read the payee differently): spending must match v1's.
+            if (own == null && t.categoryId?.let(LegacyCategoryMap::map) == LegacyMapping.OwnAccount &&
+                !engine.isOwnAccount(parsedByCode[t.code]?.counterparty)
+            ) {
+                own = true
+            }
             val car = t.carTag?.let(LegacyCategoryMap::carTag)
             if (car != null) categoryKey = car
             val note = t.note?.trim()?.takeIf { it.isNotEmpty() }

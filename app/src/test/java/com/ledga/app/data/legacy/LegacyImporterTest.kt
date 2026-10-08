@@ -193,4 +193,39 @@ class LegacyImporterTest {
         assertEquals(Categories.FOOD, db.tx("TJK4AB12GG").categoryKey, "the rule v1 filed it by, not the newest")
         assertEquals(3, db.rulesDao().all().count { it.origin == RuleOrigin.USER })
     }
+
+    @Test
+    fun `a v1 transfer rule in v1's paybill form still marks those payments as own-account (R173)`() = runTest {
+        val sacco = Sms.paybill("TJK4AB12GH", "SAMPLE SACCO", "7788", "2,500.00", "15/9/26 at 9:00 AM")
+        SchemaFixture.create(context, "paybillrule.db", 5).use { helper ->
+            LegacyDbWriter(helper.writableDatabase, 5).apply {
+                defaultCategories(); defaultRules()
+                rule(100, 14, "RECIPIENT_NAME", "SAMPLE SACCO for account") // v1's reading of the payee
+                tx(1, "TJK4AB12GH", "SEND", "OUTFLOW", sacco, at, 14, recipientName = "SAMPLE SACCO for account")
+            }
+        }
+        val db = LedgaDatabase.builder(context, "paybillrule.db").build().also { db = it }
+        LegacyImporter(db).run()
+        Deriver(db).rebuildAll()
+        assertEquals(FlowKind.OWN_OUT, db.tx("TJK4AB12GH").flow, "a transfer, not spending")
+        val rule = db.rulesDao().all().single { it.origin == RuleOrigin.USER }
+        assertEquals(RuleField.NAME_CONTAINS to "SAMPLE SACCO", rule.field to rule.pattern)
+    }
+
+    @Test
+    fun `a payment v1 filed under My Accounts stays own-account even where v2's rules don't match it (R174)`() = runTest {
+        val bank = Sms.receive("TJK4AB12GJ", "SAMPLE BANK LIMITED", "2,500.00", "16/9/26 at 9:00 AM")
+        SchemaFixture.create(context, "safeguard.db", 5).use { helper ->
+            LegacyDbWriter(helper.writableDatabase, 5).apply {
+                defaultCategories(); defaultRules()
+                rule(100, 14, "RECIPIENT_NAME", "SAMPLE BAN") // v1 matched part of a word; v2 matches whole words
+                tx(1, "TJK4AB12GJ", "RECEIVED", "INFLOW", bank, at, 14, recipientName = "SAMPLE BANK LIMITED")
+            }
+        }
+        val db = LedgaDatabase.builder(context, "safeguard.db").build().also { db = it }
+        val report = LegacyImporter(db).run()
+        Deriver(db).rebuildAll()
+        assertEquals(FlowKind.OWN_IN, db.tx("TJK4AB12GJ").flow)
+        assertEquals(1, report.ownAccountOverrides)
+    }
 }
