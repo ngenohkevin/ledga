@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -46,12 +47,14 @@ import com.ledga.app.ui.app.showsRationale
 import com.ledga.app.ui.design.components.Banner
 import com.ledga.app.ui.design.components.BannerTone
 import com.ledga.app.ui.design.components.EmptyState
+import com.ledga.app.ui.design.components.LedgaModalSheet
 import com.ledga.app.ui.design.components.Skeleton
 import com.ledga.app.ui.design.icons.Ph
 import com.ledga.app.ui.design.tokens.Radii
 import com.ledga.app.ui.design.tokens.Spacing
 import com.ledga.app.ui.tx.CategoryPickerHost
 import com.ledga.app.ui.tx.TransactionSheetHost
+import com.ledga.app.ui.update.WhatsNewContent
 import com.ledga.core.time.PeriodType
 import kotlinx.coroutines.launch
 
@@ -75,6 +78,10 @@ data class HomeActions(
     val onPickCategory: (String) -> Unit = {},
     val onAllRecent: () -> Unit = {},
     val onAlerts: () -> Unit = {},
+    val onUpdate: () -> Unit = {},
+    val onInstall: () -> Unit = {},
+    val onUpdateLater: () -> Unit = {},
+    val onOpenUpdates: () -> Unit = {},
 )
 
 /**
@@ -115,9 +122,23 @@ fun HomeContent(ui: HomeUi, actions: HomeActions, modifier: Modifier = Modifier)
     }
 }
 
-/** Spec §10.4 item 6, above the balance card. The update banners arrive in Phase 6. */
+/** Spec §10.4 item 6, above the balance card. The update banner comes first (R148). */
 @Composable
 private fun HomeBanners(ui: HomeUi, actions: HomeActions) {
+    when (val u = ui.update) {
+        is HomeUpdate.Available -> Banner(
+            "Ledga ${u.version} is available", BannerTone.Info, icon = Ph.DownloadSimple,
+            actionLabel = "Update", onAction = actions.onUpdate, secondaryLabel = "Later", onSecondary = actions.onUpdateLater,
+            onClick = actions.onOpenUpdates,
+        )
+        is HomeUpdate.Downloading -> Banner("Downloading Ledga ${u.version}$ELLIPSIS", BannerTone.Progress, progress = u.fraction, onClick = actions.onOpenUpdates)
+        is HomeUpdate.Ready -> Banner(
+            "Ledga ${u.version} is ready to install", BannerTone.Info, icon = Ph.DownloadSimple,
+            actionLabel = "Install", onAction = actions.onInstall, secondaryLabel = "Later", onSecondary = actions.onUpdateLater,
+            onClick = actions.onOpenUpdates,
+        )
+        null -> Unit
+    }
     ui.history?.let { Banner("Updating your history…", BannerTone.Progress, progress = it.fraction) }
     if (ui.legacyImportFailed) Banner(LEGACY_IMPORT_FAILED_TEXT, BannerTone.Warning)
     if (ui.hasHistory && !ui.smsGranted) Banner("Ledga can't read new M-Pesa messages", BannerTone.Warning, actionLabel = "Allow", onAction = actions.onAllowSms)
@@ -162,9 +183,11 @@ data class HomeNav(
     val openCategory: (String) -> Unit = {},
     val openYou: () -> Unit = {},
     val openAlerts: () -> Unit = {},
+    val openUpdates: () -> Unit = {},
 )
 
 /** Home's tab (route): the ViewModel, the permissions (4a M3), the sheets, and Undo after Hide. */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeRoute(nav: HomeNav, vm: HomeViewModel = hiltViewModel()) {
     val ui by vm.ui.collectAsStateWithLifecycle()
@@ -220,6 +243,10 @@ fun HomeRoute(nav: HomeNav, vm: HomeViewModel = hiltViewModel()) {
             nav.openActivity()
         },
         onAlerts = nav.openAlerts,
+        onUpdate = { vm.downloadUpdate() },
+        onInstall = { vm.installUpdate(nav.openUpdates) },
+        onUpdateLater = { vm.updateLater() },
+        onOpenUpdates = nav.openUpdates,
     )
     Box(Modifier.fillMaxSize()) {
         HomeContent(ui, actions)
@@ -240,5 +267,13 @@ fun HomeRoute(nav: HomeNav, vm: HomeViewModel = hiltViewModel()) {
         onViewCategory = nav.openCategory,
     )
     CategoryPickerHost(sheets.picker, onDismiss = { sheets = sheets.copy(picker = null) })
+    val notes by vm.whatsNew.collectAsStateWithLifecycle()
+    val pending = notes
+    if (pending != null && sheets == HomeSheets()) {
+        LedgaModalSheet(onDismiss = { vm.whatsNewSeen() }, title = "What's new in Ledga ${vm.whatsNewVersion}") {
+            WhatsNewContent(pending, onDone = { vm.whatsNewSeen() })
+        }
+    }
 }
 
+private val ELLIPSIS = Char(0x2026)

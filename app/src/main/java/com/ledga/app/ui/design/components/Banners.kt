@@ -36,7 +36,8 @@ private data class BannerStyle(val container: Color, val content: Color, val ico
 /**
  * A full-width banner. Progress banners show [progress] when it is known, an indeterminate bar otherwise, and no
  * bar when motion is reduced (the text says what is happening). An optional [secondaryLabel] (e.g. "Not now", R59)
- * sits before the main action.
+ * sits before the main action. An optional [onClick] makes the whole banner a button (R148: the update banner opens
+ * Updates); its actions stay their own.
  */
 @Composable
 fun Banner(
@@ -49,6 +50,7 @@ fun Banner(
     progress: Float? = null,
     secondaryLabel: String? = null,
     onSecondary: (() -> Unit)? = null,
+    onClick: (() -> Unit)? = null,
 ) {
     val c = LedgaTheme.colors
     val style = when (tone) {
@@ -84,6 +86,7 @@ fun Banner(
         if (actionLabel != null && onAction != null) BannerAction(actionLabel, onAction, style.action)
     }
     val shape = Modifier.fillMaxWidth().clip(RoundedCornerShape(Radii.stat)).background(style.container)
+        .then(if (onClick != null) Modifier.clickable(role = Role.Button, onClick = onClick) else Modifier)
     if (twoActions) {
         // Two actions beside the text would squeeze it until words break (R59): they get a row of their own.
         Column(modifier.then(shape).padding(start = 12.dp, end = 4.dp, top = 6.dp, bottom = 2.dp)) {

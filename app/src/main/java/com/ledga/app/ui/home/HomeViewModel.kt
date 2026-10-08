@@ -15,6 +15,9 @@ import com.ledga.app.data.room.TxRow
 import com.ledga.app.data.settings.SettingsStore
 import com.ledga.app.data.trackers.TrackerSummary
 import com.ledga.app.data.trackers.Trackers
+import com.ledga.app.data.update.InstallStart
+import com.ledga.app.data.update.UpdateService
+import com.ledga.app.data.update.WhatsNew
 import com.ledga.app.startup.SmsAccess
 import com.ledga.app.time.LiveClock
 import com.ledga.app.ui.activity.ActivityLink
@@ -26,25 +29,26 @@ import com.ledga.app.work.HistoryProgress
 import com.ledga.core.time.InstantRange
 import com.ledga.core.time.PeriodType
 import com.ledga.core.time.Periods
+import com.ledga.core.update.NotesSection
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.time.Instant
+import java.time.LocalDate
+import javax.inject.Inject
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.merge
-import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.merge
+import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import java.time.Instant
-import java.time.LocalDate
-import javax.inject.Inject
 
 /** One line's balance under the All lines total: "Personal ··11 · Ksh 3,175.57 · 7:42 PM". */
 data class BalanceLine(val label: String, val cents: Long, val at: Instant)
@@ -81,6 +85,8 @@ data class HomeUi(
     val notificationsToSettings: Boolean = false,
     /** R71: alerts not yet read (the bell's badge). */
     val unreadAlerts: Int = 0,
+    /** R148: the update banner; null when there is none to show. */
+    val update: HomeUpdate? = null,
 )
 
 /** Home (spec §10.4): each card reads the ledger on the chosen line (R47) and moves on with the clock (spec §7.6). */
@@ -98,6 +104,8 @@ class HomeViewModel @Inject constructor(
     private val edits: TransactionEdits,
     private val links: ActivityLinks,
     private val home: HomeLinks,
+    private val updates: UpdateService,
+    private val notes: WhatsNew,
 ) : ViewModel() {
 
     private val period = MutableStateFlow(PeriodType.MONTH)
@@ -134,7 +142,13 @@ class HomeViewModel @Inject constructor(
         val notifyEnabled: Boolean,
     )
 
-    private data class Background(val history: HistoryProgress?, val legacyImportFailed: Boolean, val hasHistory: Boolean, val unreadAlerts: Int)
+    private data class Background(
+        val history: HistoryProgress?,
+        val legacyImportFailed: Boolean,
+        val hasHistory: Boolean,
+        val unreadAlerts: Int,
+        val update: HomeUpdate?,
+    )
 
     /** Re-read whenever the day, the line or the segment changes: the running period's start comes from the clock then. */
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -158,8 +172,8 @@ class HomeViewModel @Inject constructor(
         content,
         combine(smsGranted, smsBlocked, notifyAsk, notifyBlocked, notifyEnabled) { a, b, c, d, e -> Access(a, b, c, d, e) },
         settings.settings,
-        combine(work.history, work.legacyImportFailed, db.transactionsDao().observeSpan(), db.alertsDao().observeUnread()) { h, failed, span, unread ->
-            Background(h, failed, span.count > 0, unread)
+        combine(work.history, work.legacyImportFailed, db.transactionsDao().observeSpan(), db.alertsDao().observeUnread(), updates.state) { h, failed, span, unread, u ->
+            Background(h, failed, span.count > 0, unread, HomeUpdate.of(u))
         },
         merge(hours, resumedAt),
     ) { c, a, s, bg, at ->
@@ -185,8 +199,27 @@ class HomeViewModel @Inject constructor(
             notificationsNudge = !a.notifyEnabled && s.onboarded && !s.notificationNudgeDismissed,
             notificationsToSettings = !a.notifyEnabled && (a.notifyBlocked || !a.notifyAsk),
             unreadAlerts = bg.unreadAlerts,
+            update = bg.update,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeUi())
+
+    /** R141: this build's notes until seen. */
+    val whatsNew: StateFlow<List<NotesSection>?> = notes.pending.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    val whatsNewVersion: String = notes.version
+
+    fun whatsNewSeen(): Job = viewModelScope.launch { notes.seen() }
+
+    /** R148: the banner's Update: a person's download, on any network (R136). */
+    fun downloadUpdate(): Job = viewModelScope.launch { updates.download() }
+
+    /** R148: the banner's Install; [needsPermission] opens Updates, which explains Android's switch (R138). */
+    fun installUpdate(needsPermission: () -> Unit): Job = viewModelScope.launch {
+        if (updates.install() == InstallStart.NEEDS_PERMISSION) needsPermission()
+    }
+
+    /** Spec §13.4: Later hides the banner for three days. */
+    fun updateLater(): Job = viewModelScope.launch { updates.snooze() }
 
     /** R100: a Fuliza reminder's tap asks for the Fuliza sheet; `HomeRoute` takes it while Home is shown. */
     val fulizaAsked: StateFlow<FulizaRequest?> = home.fulizaAsked

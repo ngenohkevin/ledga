@@ -125,4 +125,9 @@ class HomeScreensTest {
 
     @Test
     fun landscape() = snapScreenLandscape("home") { ShellFrame(Tab.HOME, onSelect = {}) { HomeContent(home, HomeActions()) } }
+
+    @Test
+    fun updateAvailable() = snapScreen("home_update") {
+        ShellFrame(Tab.HOME, onSelect = {}) { HomeContent(home.copy(update = HomeUpdate.Available("2.0.0-beta.2")), HomeActions()) }
+    }
 }

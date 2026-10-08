@@ -6,24 +6,37 @@ import com.ledga.app.data.derive.TransactionFilter
 import com.ledga.app.data.edit.TransactionEdits
 import com.ledga.app.data.ingest.RawSms
 import com.ledga.app.data.ingest.SmsIngestor
+import com.ledga.app.data.room.AlertRow
 import com.ledga.app.data.room.SmsSource
 import com.ledga.app.data.settings.SettingsStore
 import com.ledga.app.data.trackers.Trackers
+import com.ledga.app.data.update.ReleasesResponse
+import com.ledga.app.data.update.UpdateStore
+import com.ledga.app.data.update.WhatsNew
 import com.ledga.app.testing.FakeBackgroundWork
 import com.ledga.app.testing.FakePrefsStore
+import com.ledga.app.testing.FakeUpdateHttp
+import com.ledga.app.testing.FakeUpdateWork
 import com.ledga.app.testing.MainDispatcherRule
 import com.ledga.app.testing.MutableClock
+import com.ledga.app.testing.OFF_IN_SETTINGS
 import com.ledga.app.testing.Sms
 import com.ledga.app.testing.TestDb
 import com.ledga.app.testing.TestViewModels
+import com.ledga.app.testing.ghList
+import com.ledga.app.testing.ghRelease
 import com.ledga.app.testing.selectedLine
+import com.ledga.app.testing.testUpdateService
 import com.ledga.app.testing.twoLines
 import com.ledga.app.testing.txRow
 import com.ledga.app.time.LiveClock
 import com.ledga.app.ui.activity.ActivityLink
 import com.ledga.app.ui.activity.ActivityLinks
+import com.ledga.app.ui.onboarding.NotificationAccess
 import com.ledga.core.model.Categories
 import com.ledga.core.time.PeriodType
+import com.ledga.core.update.AppVersion
+import com.ledga.core.update.NotesSection
 import java.time.Instant
 import java.time.LocalDate
 import kotlin.test.assertEquals
@@ -39,9 +52,6 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
-import com.ledga.app.data.room.AlertRow
-import com.ledga.app.testing.OFF_IN_SETTINGS
-import com.ledga.app.ui.onboarding.NotificationAccess
 
 /** Spec §10.4 Home: every card from the ledger, on the chosen line, live (R47, R57–R61). Synthetic SMS and rows. */
 @RunWith(RobolectricTestRunner::class)
@@ -59,11 +69,16 @@ class HomeViewModelTest {
     private var notifyAsk = false
     private var notifyAccess: NotificationAccess = NotificationAccess { notifyAsk }
     private val vms = TestViewModels()
+    private val updateHttp = FakeUpdateHttp()
+    private val updateWork = FakeUpdateWork()
+    private val updateStore = UpdateStore(FakePrefsStore())
+    private val updates by lazy { testUpdateService(http = updateHttp, work = updateWork, clock = clock, store = updateStore) }
+    private val whatsNew = WhatsNew(updateStore, { listOf(NotesSection("What's new", listOf("A new Home"))) }, AppVersion.parse("2.0.0-beta.1")!!)
 
     private fun vm(live: LiveClock = LiveClock(clock) { awaitCancellation() }) = vms.track(
         HomeViewModel(
             LedgerQueries(db), db, Trackers(db, LedgerQueries(db)), selectedLine(db, prefs), live, work,
-            { granted }, notifyAccess, settings, TransactionEdits(db, deriver, clock), links, homeLinks,
+            { granted }, notifyAccess, settings, TransactionEdits(db, deriver, clock), links, homeLinks, updates, whatsNew,
         ),
     )
 
@@ -267,5 +282,26 @@ class HomeViewModelTest {
         homeLinks.openFuliza(2)
         vm.fulizaShown(FulizaRequest(2))
         assertNull(vm.ui.first { it.loaded }.line.lineId, "All lines stays All lines")
+    }
+
+    @Test
+    fun `an offered update shows on Home, Update asks for a person's download, and Later hides it (R148)`() = runTest {
+        updateHttp.answers += ReleasesResponse.Fresh(ghList(ghRelease("v2.0.0-beta.2")), null)
+        updates.check()
+        val vm = vm()
+        assertEquals(HomeUpdate.Available("2.0.0-beta.2"), vm.ui.first { it.update != null }.update)
+        vm.downloadUpdate().join()
+        assertEquals("download 2.0.0-beta.2 user", updateWork.calls.last())
+        vm.updateLater().join()
+        assertNull(vm.ui.first { it.loaded && it.update == null }.update)
+    }
+
+    @Test
+    fun `What's new waits on Home until it is seen (R141)`() = runTest {
+        val vm = vm()
+        assertEquals(listOf(NotesSection("What's new", listOf("A new Home"))), vm.whatsNew.first { it != null })
+        assertEquals("2.0.0-beta.1", vm.whatsNewVersion)
+        vm.whatsNewSeen().join()
+        assertNull(vm.whatsNew.first { it == null })
     }
 }

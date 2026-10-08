@@ -121,6 +121,7 @@ fun LedgaNavHost(
                         openCategory = { openCategory(it) },
                         openYou = { nav.openTab(Tab.YOU) },
                         openAlerts = { nav.navigate(AlertsRoute()) { launchSingleTop = true } },
+                        openUpdates = { push(UpdatesRoute) },
                     ),
                 )
             }
