@@ -33,7 +33,7 @@ fun interface SmsAccess {
  * on a v1 file, and queues the history work owed:
  * - after the migration: the import → full rescan → rebuild chain (and v1's leftovers are cleared, R31);
  * - after a parser or derivation version change: a rebuild;
- * - otherwise: deletes the pre-v6 copy once the migration's work is done (only with proof the migration happened here),
+ * - otherwise: deletes the pre-v6 copy once the migration's work is done (only with proof the migration happened here; a beta keeps it, R159),
  *   and catches up on missed SMS (or runs the migration's full rescan if it never completed);
  * - once onboarded: keeps the 6-hourly check and the notification schedule queued (KEEP, R107, R108), and the daily
  *   update check, with a check soon (R134); before onboarding nothing touches the network.
@@ -50,6 +50,8 @@ class Startup(
     private val sms: SmsAccess,
     private val updates: UpdateWork,
     private val leftovers: () -> Unit = {},
+    /** R159: while the installed build is a beta, the pre-v6 copy stays, so a wrong import can be redone. */
+    private val keepPreV6Copy: Boolean = false,
 ) {
     suspend fun run(): StartupState = try {
         db.openHelper.writableDatabase
@@ -78,8 +80,8 @@ class Startup(
             }
             chainRunning -> Unit // its own rescan and rebuild are coming
             deriver.needsRebuild() -> work.rebuild()
-            // Migrated, imported and rebuilt: the safety copy has done its job (spec §8 step 1).
-            snapshot.exists() -> snapshot.delete()
+            // Migrated, imported and rebuilt: the safety copy has done its job (spec §8 step 1), unless a beta keeps it (R159).
+            snapshot.exists() && !keepPreV6Copy -> snapshot.delete()
         }
         val s = runCatching { settings.current() }.getOrDefault(Settings())
         if (s.onboarded) {

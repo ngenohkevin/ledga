@@ -45,6 +45,7 @@ import com.ledga.app.startup.V1Leftovers
 import com.ledga.app.work.BackgroundWork
 import com.ledga.app.work.UpdateWork
 import com.ledga.app.work.WorkManagerBackgroundWork
+import com.ledga.core.update.AppVersion
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -204,5 +205,9 @@ object DataModule {
         sms: SmsAccess,
         updates: UpdateWork,
         wm: WorkManager,
-    ): Startup = Startup(db, snapshot, importer, deriver, lines, settings, work, sms, updates, V1Leftovers(context, wm))
+    ): Startup = Startup(
+        db, snapshot, importer, deriver, lines, settings, work, sms, updates, V1Leftovers(context, wm),
+        // R159: a beta keeps the pre-v6 copy; the first full release deletes it.
+        keepPreV6Copy = AppVersion.ofBuild(BuildConfig.VERSION_NAME)?.isBeta == true,
+    )
 }

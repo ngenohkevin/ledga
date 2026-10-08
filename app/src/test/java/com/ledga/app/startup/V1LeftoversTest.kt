@@ -14,6 +14,7 @@ import com.ledga.app.work.RebuildWorker
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import java.io.File
 import java.util.concurrent.TimeUnit
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -36,5 +37,13 @@ class V1LeftoversTest {
 
         V1Leftovers.JOBS.forEach { assertEquals(WorkInfo.State.CANCELLED, wm.getWorkInfosForUniqueWork(it).get().single().state, it) }
         assertFalse(context.getSharedPreferences("update_prefs", Context.MODE_PRIVATE).contains("last_check"))
+    }
+
+    @Test
+    fun `the APKs v1's updater downloaded are deleted (R158)`() {
+        WorkManagerTestInitHelper.initializeTestWorkManager(context, Configuration.Builder().setExecutor(SynchronousExecutor()).build())
+        val apk = File(context.cacheDir, "updates/ledga-v1.6.0.apk").apply { parentFile!!.mkdirs(); writeText("a v1 download") }
+        V1Leftovers(context, WorkManager.getInstance(context)).invoke()
+        assertFalse(apk.parentFile!!.exists())
     }
 }

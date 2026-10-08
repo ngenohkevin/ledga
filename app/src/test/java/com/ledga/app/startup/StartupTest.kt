@@ -34,7 +34,7 @@ class StartupTest {
     private var smsGranted = false
     private var leftoversCleared = 0
 
-    private fun startup(db: LedgaDatabase, snapshot: PreV6Snapshot = PreV6Snapshot(context)) = Startup(
+    private fun startup(db: LedgaDatabase, snapshot: PreV6Snapshot = PreV6Snapshot(context), keepCopy: Boolean = false) = Startup(
         db = db,
         snapshot = snapshot,
         importer = LegacyImporter(db),
@@ -45,6 +45,7 @@ class StartupTest {
         sms = { smsGranted },
         updates = updates,
         leftovers = { leftoversCleared++ },
+        keepPreV6Copy = keepCopy,
     )
 
     /** What MIGRATION_5_6 leaves behind until LegacyImporter has run. */
@@ -184,5 +185,18 @@ class StartupTest {
     fun `before onboarding nothing touches the network (R134)`() = runTest {
         startup(TestDb.inMemory()).run()
         assertEquals(emptyList(), updates.calls)
+    }
+
+    @Test
+    fun `a beta keeps the pre-v6 copy after the migration's work is done, and a full release deletes it (R159)`() = runTest {
+        val snapshot = PreV6Snapshot(context)
+        snapshot.file().apply { parentFile!!.mkdirs(); writeText("copy") }
+        val db = TestDb.inMemory()
+        db.metaDao().put(MetaRow(MetaKeys.MIGRATED_FROM_V1, "1"))
+        assertEquals(StartupState.Ready(onboarded = false), startup(db, snapshot, keepCopy = true).run(), "never recovery")
+        assertEquals(StartupState.Ready(onboarded = false), startup(db, snapshot, keepCopy = true).run(), "again")
+        assertTrue(snapshot.exists())
+        startup(db, snapshot).run()
+        assertFalse(snapshot.exists())
     }
 }
