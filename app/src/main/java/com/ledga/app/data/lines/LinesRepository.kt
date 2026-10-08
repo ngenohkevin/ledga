@@ -46,7 +46,7 @@ class LinesRepository(
             LineRow(
                 subscriptionId = sub,
                 phoneNumber = number,
-                displayName = sim?.displayName ?: "Line ${all.size + 1}",
+                displayName = sim?.displayName ?: autoName(all),
                 color = COLORS[all.size % COLORS.size],
                 isPrimary = all.isEmpty(),
                 createdAt = clock.instant(),
@@ -80,6 +80,18 @@ class LinesRepository(
     }
 
     companion object {
+        /** The name a line gets when the SIM can't name it. */
+        val AUTO_NAME = Regex("""Line (\d+)""")
+
+        /**
+         * "Line N", one above the highest automatic number in use (final review M5): a merge can leave Line 1 + Line 3,
+         * and counting the lines would name the next one Line 3 again.
+         */
+        fun autoName(all: List<LineRow>): String {
+            val highest = all.mapNotNull { AUTO_NAME.matchEntire(it.displayName)?.groupValues?.get(1)?.toIntOrNull() }.maxOrNull() ?: 0
+            return "Line ${maxOf(highest, all.size) + 1}"
+        }
+
         /** New lines' colours, in order: the chart colours of palette C's first four hues. */
         val COLORS = listOf("#0E9F6E", "#1E7FD8", "#8A4FC7", "#E0457B")
 

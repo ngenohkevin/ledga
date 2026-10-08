@@ -63,7 +63,10 @@ class LineMerges(
         return null
     }
 
-    /** R178: [from]'s messages and the person's placements move to [into], which keeps its name, colour and SIM. */
+    /**
+     * R178: [from]'s messages and the person's placements move to [into], which keeps its colour and SIM, and its name
+     * unless that is still an automatic "Line N": then it takes [from]'s (owner, 2026-10-08).
+     */
     suspend fun merge(from: Long, into: Long) {
         val lines = db.linesDao()
         db.withTransaction {
@@ -78,7 +81,7 @@ class LineMerges(
             // Owner (2026-10-08): the line kept carries on the old one, so while its own name is still an automatic
             // "Line N" it takes the name the person has known the number by.
             val kept = lines.get(into)
-            if (old != null && kept != null && AUTO_NAME.matches(kept.displayName)) lines.rename(into, old.displayName)
+            if (old != null && kept != null && LinesRepository.AUTO_NAME.matches(kept.displayName)) lines.rename(into, old.displayName)
             lines.delete(from)
             // Final review I2: re-derived inside the same transaction, so a merge cut short changes nothing.
             rederive(moved)
@@ -90,9 +93,6 @@ class LineMerges(
     suspend fun dismiss(from: Long, into: Long) = settings.dismissLineMerge(key(from, into))
 
     companion object {
-        /** The name `LinesRepository` gives a line it can't name from the SIM. */
-        private val AUTO_NAME = Regex("""Line \d+""")
-
         fun key(from: Long, into: Long) = "$from>$into"
     }
 }

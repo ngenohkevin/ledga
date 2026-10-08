@@ -41,6 +41,19 @@ class LinesRepositoryTest {
     }
 
     @Test
+    fun `an automatic name is one above the highest in use, so a merge never leaves two lines sharing one (final review M5)`() = runTest {
+        repo.lineFor(3)
+        repo.lineFor(4)
+        repo.lineFor(5)
+        // Merging Line 3 into Line 2 leaves the kept line named "Line 3" (LineMerges), so Line 1 + Line 3 remain.
+        val lines = db.linesDao().all()
+        db.linesDao().delete(lines.single { it.displayName == "Line 3" }.id)
+        db.linesDao().rename(lines.single { it.displayName == "Line 2" }.id, "Line 3")
+        repo.lineFor(6)
+        assertEquals(listOf("Line 1", "Line 3", "Line 4"), db.linesDao().all().map { it.displayName })
+    }
+
+    @Test
     fun `the same subscription is always the same line, and no subscription is no line`() = runTest {
         assertEquals(repo.lineFor(3), repo.lineFor(3))
         assertEquals(1, db.linesDao().all().size)

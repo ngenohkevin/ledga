@@ -274,7 +274,8 @@
   and the new one is. Home shows it once; Merge moves the old line's messages and the person's placements to the line
   in use (which keeps its colour and SIM, takes the old line's name while its own is still an automatic "Line N" — owner, 2026-10-08 — and becomes primary if the old one was), moves the chosen line, deletes
   the old line and re-derives the moved payments. "Not the same" is remembered per pair on this phone
-  (`Settings.lineMergesDismissed`, not in backups).
+  (`Settings.lineMergesDismissed`, not in backups). A line the SIM can't name is "Line N", one above the highest
+  automatic number in use (`LinesRepository.autoName`), because a merge can leave a gap such as Line 1 + Line 3.
 
 ## Phase 5 acceptance step (from the 2026-10-05 Phase 1 review)
 
