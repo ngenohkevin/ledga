@@ -220,7 +220,8 @@ Everything lives in `com.ledga.app.ui.design`. Until Phase 4 uses it, R8 strips 
 - **Version history** (R142): one card per release ("2.0.0-beta.2", "4 Oct 2026 · Beta", an `Installed` chip, a caret);
   a tap opens its notes (`stateDescription` says shown/hidden). Empty: `EmptyState` with Try again.
 - **Home** (R148): the update banner comes first: Available (Info, Later + Update), Downloading (Progress), Ready (Info,
-  Later + Install). A tap on the banner opens Updates (`Banner(onClick = …)`); its actions stay their own.
+  Later + Install), Failed (Danger: why Android refused the install or the person's download stopped, Later + Open
+  Updates; final review I4). A tap on the banner opens Updates (`Banner(onClick = …)`); its actions stay their own.
 - **What's new** (R141): a modal sheet titled "What's new in Ledga <version>", `NotesList` + "Got it"; dismissing it
   counts as seen. It never opens over another Home sheet.
 - `NotesList` renders sections as a bold title and `•` items in `ink2`; no notes read "No notes were written for this

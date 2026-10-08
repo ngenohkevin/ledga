@@ -137,6 +137,12 @@ private fun HomeBanners(ui: HomeUi, actions: HomeActions) {
             actionLabel = "Install", onAction = actions.onInstall, secondaryLabel = "Later", onSecondary = actions.onUpdateLater,
             onClick = actions.onOpenUpdates,
         )
+        // Final review I4: why it didn't work, with Updates (Try again, the release page) one tap away.
+        is HomeUpdate.Failed -> Banner(
+            u.message, BannerTone.Danger,
+            actionLabel = "Open Updates", onAction = actions.onOpenUpdates, secondaryLabel = "Later", onSecondary = actions.onUpdateLater,
+            onClick = actions.onOpenUpdates,
+        )
         null -> Unit
     }
     ui.history?.let { Banner("Updating your history…", BannerTone.Progress, progress = it.fraction) }

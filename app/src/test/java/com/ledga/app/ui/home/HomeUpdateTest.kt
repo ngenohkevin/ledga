@@ -36,4 +36,14 @@ class HomeUpdateTest {
         assertNull(HomeUpdate.of(base.copy(offered = false, ready = true)))
         assertNull(HomeUpdate.of(base.copy(newest = null, offered = false)))
     }
+
+    @Test
+    fun `a refused install, or a person's stopped download, says why on Home (final review I4)`() {
+        val space = "There isn't enough space on this phone to install the update."
+        assertEquals(HomeUpdate.Failed("2.0.0-beta.2", space), HomeUpdate.of(base.copy(ready = true, installFailure = space)))
+        val stopped = DownloadProgress.Failed("2.0.0-beta.2", "The download stopped. Check your connection and try again.", user = true)
+        assertEquals(HomeUpdate.Failed("2.0.0-beta.2", stopped.message), HomeUpdate.of(base.copy(download = stopped)))
+        assertEquals(HomeUpdate.Available("2.0.0-beta.2"), HomeUpdate.of(base.copy(download = stopped.copy(user = false))))
+        assertNull(HomeUpdate.of(base.copy(offered = false, installFailure = space)))
+    }
 }

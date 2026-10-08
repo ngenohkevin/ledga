@@ -130,4 +130,11 @@ class HomeScreensTest {
     fun updateAvailable() = snapScreen("home_update") {
         ShellFrame(Tab.HOME, onSelect = {}) { HomeContent(home.copy(update = HomeUpdate.Available("2.0.0-beta.2")), HomeActions()) }
     }
+
+    @Test
+    fun updateFailed() = snapScreen("home_update_failed") {
+        ShellFrame(Tab.HOME, onSelect = {}) {
+            HomeContent(home.copy(update = HomeUpdate.Failed("2.0.0-beta.2", "There isn't enough space on this phone to install the update.")), HomeActions())
+        }
+    }
 }
