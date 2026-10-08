@@ -26,6 +26,7 @@ import com.ledga.app.data.legacy.LegacyImporter
 import com.ledga.app.data.legacy.PreV6Snapshot
 import com.ledga.app.data.lines.AndroidSimDirectory
 import com.ledga.app.data.lines.LinePlacements
+import com.ledga.app.data.lines.LineMerges
 import com.ledga.app.data.lines.LinesRepository
 import com.ledga.app.data.lines.SelectedLine
 import com.ledga.app.data.lines.SimDirectory
@@ -114,6 +115,11 @@ object DataModule {
     @Provides
     @Singleton
     fun inbox(resolver: ContentResolver): InboxSource = MpesaInbox(resolver)
+
+    @Provides
+    @Singleton
+    fun lineMerges(db: LedgaDatabase, sims: SimDirectory, settings: SettingsStore, deriver: Deriver): LineMerges =
+        LineMerges(db, sims, settings, deriver)
 
     @Provides
     @Singleton

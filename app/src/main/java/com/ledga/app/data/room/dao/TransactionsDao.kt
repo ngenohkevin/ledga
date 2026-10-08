@@ -144,4 +144,13 @@ interface TransactionsDao {
             "OR kind IN ('FULIZA_REPAY_AUTO', 'FULIZA_REPAY_MANUAL') ORDER BY occurredAt, code",
     )
     suspend fun fulizaReadings(): List<FulizaReading>
+
+    @Query("SELECT * FROM transactions WHERE lineId = :lineId AND balanceCents IS NOT NULL ORDER BY occurredAt, code LIMIT 1")
+    suspend fun firstWithBalance(lineId: Long): TxRow?
+
+    @Query("SELECT * FROM transactions WHERE lineId = :lineId AND balanceCents IS NOT NULL ORDER BY occurredAt DESC, code DESC LIMIT 1")
+    suspend fun lastWithBalance(lineId: Long): TxRow?
+
+    @Query("SELECT COUNT(*) FROM transactions WHERE lineId = :lineId AND occurredAt <= :at")
+    suspend fun countOnLineThrough(lineId: Long, at: Instant): Int
 }

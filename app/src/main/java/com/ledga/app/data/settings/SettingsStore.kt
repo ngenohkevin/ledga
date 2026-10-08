@@ -63,6 +63,11 @@ class SettingsStore @Inject constructor(private val store: DataStore<Preferences
     /** R157: puts right a mark that a message dated in the future pushed past now (the only time it moves back). */
     suspend fun replaceWatermark(millis: Long) = edit { it[SettingsKeys.SMS_WATERMARK] = millis }
 
+    /** R179: "Not the same" for a pair of lines, on this phone only (never in a backup). */
+    suspend fun dismissLineMerge(key: String) = edit {
+        it[SettingsKeys.LINE_MERGES_DISMISSED] = (it[SettingsKeys.LINE_MERGES_DISMISSED] ?: emptySet()) + key
+    }
+
     suspend fun setFullRescanOwed(owed: Boolean) = edit { it[SettingsKeys.FULL_RESCAN_OWED] = owed }
 
     /** R59: Home's notifications banner is gone for good. */
@@ -96,6 +101,7 @@ class SettingsStore @Inject constructor(private val store: DataStore<Preferences
                 smsWatermarkMillis = p[SettingsKeys.SMS_WATERMARK] ?: d.smsWatermarkMillis,
                 fullRescanOwed = p[SettingsKeys.FULL_RESCAN_OWED] ?: d.fullRescanOwed,
                 notificationNudgeDismissed = p[SettingsKeys.NOTIFICATION_NUDGE_DISMISSED] ?: d.notificationNudgeDismissed,
+                lineMergesDismissed = p[SettingsKeys.LINE_MERGES_DISMISSED] ?: d.lineMergesDismissed,
             )
         }
     }

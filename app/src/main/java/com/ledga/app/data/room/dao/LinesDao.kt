@@ -35,4 +35,23 @@ interface LinesDao {
 
     @Query("UPDATE lines SET displayName = :name WHERE id = :id")
     suspend fun rename(id: Long, name: String)
+
+    @Query("SELECT * FROM lines WHERE id = :id")
+    suspend fun get(id: Long): LineRow?
+
+    /** Every code on line [id]: its messages' and the person's own placements (R178). */
+    @Query("SELECT code FROM sms WHERE lineId = :id AND code IS NOT NULL UNION SELECT code FROM overrides WHERE lineId = :id")
+    suspend fun codesOnLine(id: Long): List<String>
+
+    @Query("UPDATE sms SET lineId = :into WHERE lineId = :from")
+    suspend fun moveSms(from: Long, into: Long): Int
+
+    @Query("UPDATE overrides SET lineId = :into WHERE lineId = :from")
+    suspend fun moveOverrides(from: Long, into: Long): Int
+
+    @Query("UPDATE lines SET isPrimary = CASE WHEN id = :id THEN 1 ELSE 0 END")
+    suspend fun setPrimary(id: Long)
+
+    @Query("DELETE FROM lines WHERE id = :id")
+    suspend fun delete(id: Long)
 }

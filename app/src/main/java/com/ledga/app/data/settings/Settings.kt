@@ -36,4 +36,6 @@ data class Settings(
     val fullRescanOwed: Boolean = false,
     /** R59: the person said "Not now" to Home's notifications banner; You → Notifications (4d) keeps the explanation. */
     val notificationNudgeDismissed: Boolean = false,
+    /** R179: pairs of lines the person said aren't one number ("from>into"); this phone only, never in a backup. */
+    val lineMergesDismissed: Set<String> = emptySet(),
 )

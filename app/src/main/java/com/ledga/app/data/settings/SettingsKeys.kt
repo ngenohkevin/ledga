@@ -4,6 +4,7 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
 
 /** v2's DataStore keys. None reuses a v1 name, so a half-migrated file can never be misread. */
 internal object SettingsKeys {
@@ -21,4 +22,5 @@ internal object SettingsKeys {
     val SMS_WATERMARK = longPreferencesKey("sms_watermark")
     val FULL_RESCAN_OWED = booleanPreferencesKey("full_rescan_owed")
     val NOTIFICATION_NUDGE_DISMISSED = booleanPreferencesKey("notification_nudge_dismissed")
+    val LINE_MERGES_DISMISSED = stringSetPreferencesKey("line_merges_dismissed")
 }
