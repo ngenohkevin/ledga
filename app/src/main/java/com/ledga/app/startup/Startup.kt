@@ -13,6 +13,7 @@ import com.ledga.app.data.settings.SettingsStore
 import com.ledga.app.work.BackgroundWork
 import com.ledga.app.work.UpdateWork
 import java.io.File
+import kotlinx.coroutines.CancellationException
 
 sealed interface StartupState {
     /** The database is opening (and migrating). The splash screen stays up. */
@@ -87,9 +88,16 @@ class Startup(
         // R175: once, after the import chain, v1's paybill-form name rules become the rules v2's reading matches. A
         // failure leaves the flag unset (the next start tries again) and never routes to recovery.
         if (!legacyPending && !chainRunning && meta.get(MetaKeys.MIGRATED_FROM_V1) != null && meta.get(MetaKeys.V1_RULES_REPAIRED) == null) {
-            runCatching {
-                if (V1RuleRepair(db).run() > 0) deriver.reclassifyAll()
+            try {
+                V1RuleRepair(db).run()
+                // Final review I1: re-filed whenever the flag is unset, so a start cut short after the rewrite (which a
+                // retry finds nothing left to rewrite) still re-files the payments.
+                deriver.reclassifyAll()
                 meta.put(MetaRow(MetaKeys.V1_RULES_REPAIRED, "1"))
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                // the next start tries again
             }
         }
         val s = runCatching { settings.current() }.getOrDefault(Settings())

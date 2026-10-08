@@ -34,6 +34,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import com.ledga.app.data.legacy.V1RuleRepair
 
 @RunWith(RobolectricTestRunner::class)
 class StartupTest {
@@ -237,5 +238,16 @@ class StartupTest {
         withV1PaybillRule(db)
         startup(db).run()
         assertEquals("SAMPLE SACCO for account", db.rulesDao().all().single { it.origin == RuleOrigin.USER }.pattern)
+    }
+
+    @Test
+    fun `a repair that stopped before re-filing is finished at the next start (final review I1)`() = runTest {
+        val db = TestDb.inMemory()
+        db.metaDao().put(MetaRow(MetaKeys.MIGRATED_FROM_V1, "1"))
+        withV1PaybillRule(db)
+        V1RuleRepair(db).run() // the rule was rewritten, then the start was cut short before re-filing
+        assertEquals(FlowKind.SPEND, db.transactionsDao().get("TJK4AB12GK")!!.flow)
+        startup(db).run()
+        assertEquals(FlowKind.OWN_OUT, db.transactionsDao().get("TJK4AB12GK")!!.flow)
     }
 }
