@@ -82,6 +82,8 @@ data class HomeActions(
     val onInstall: () -> Unit = {},
     val onUpdateLater: () -> Unit = {},
     val onOpenUpdates: () -> Unit = {},
+    val onMergeLines: () -> Unit = {},
+    val onNotSameLines: () -> Unit = {},
 )
 
 /**
@@ -144,6 +146,10 @@ private fun HomeBanners(ui: HomeUi, actions: HomeActions) {
             onClick = actions.onOpenUpdates,
         )
         null -> Unit
+    }
+    // R177: one number on two lines; nothing moves without a tap.
+    ui.lineMerge?.let {
+        Banner(it.text, BannerTone.Info, actionLabel = "Merge", onAction = actions.onMergeLines, secondaryLabel = "Not the same", onSecondary = actions.onNotSameLines)
     }
     ui.history?.let { Banner("Updating your history…", BannerTone.Progress, progress = it.fraction) }
     if (ui.legacyImportFailed) Banner(LEGACY_IMPORT_FAILED_TEXT, BannerTone.Warning)
@@ -233,6 +239,8 @@ fun HomeRoute(nav: HomeNav, vm: HomeViewModel = hiltViewModel()) {
             }
         },
         onNotNow = vm::dismissNotifications,
+        onMergeLines = { vm.mergeLines() },
+        onNotSameLines = { vm.notSameLines() },
         onLine = vm::selectLine,
         onFuliza = { sheets = sheets.copy(fuliza = true) },
         onPeriod = vm::setPeriod,

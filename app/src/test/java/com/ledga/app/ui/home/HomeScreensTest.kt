@@ -137,4 +137,9 @@ class HomeScreensTest {
             HomeContent(home.copy(update = HomeUpdate.Failed("2.0.0-beta.2", "There isn't enough space on this phone to install the update.")), HomeActions())
         }
     }
+
+    @Test
+    fun lineMerge() = snapScreen("home_line_merge") {
+        ShellFrame(Tab.HOME, onSelect = {}) { HomeContent(home.copy(lineMerge = LineMergeUi(2, 3, "Line 2 and Line 3 look like the same number")), HomeActions()) }
+    }
 }

@@ -49,11 +49,21 @@ import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import com.ledga.app.data.lines.LineMergeSuggestion
+import com.ledga.app.data.lines.LineMerges
 
 /** One line's balance under the All lines total: "Personal ··11 · Ksh 3,175.57 · 7:42 PM". */
 data class BalanceLine(val label: String, val cents: Long, val at: Instant)
 
 /** Everything Home shows (spec §10.4). */
+/** R177: Home's merge suggestion for two lines that look like one number. */
+data class LineMergeUi(val fromId: Long, val intoId: Long, val text: String) {
+    companion object {
+        fun of(s: LineMergeSuggestion): LineMergeUi =
+            LineMergeUi(s.from.id, s.into.id, "${TxText.lineLabel(s.from)} and ${TxText.lineLabel(s.into)} look like the same number")
+    }
+}
+
 data class HomeUi(
     val loaded: Boolean = false,
     val greeting: String = "",
@@ -87,6 +97,8 @@ data class HomeUi(
     val unreadAlerts: Int = 0,
     /** R148: the update banner; null when there is none to show. */
     val update: HomeUpdate? = null,
+    /** R177: two lines that look like one number (a new phone, an eSIM); null when there's nothing to suggest. */
+    val lineMerge: LineMergeUi? = null,
 )
 
 /** Home (spec §10.4): each card reads the ledger on the chosen line (R47) and moves on with the clock (spec §7.6). */
@@ -106,6 +118,7 @@ class HomeViewModel @Inject constructor(
     private val home: HomeLinks,
     private val updates: UpdateService,
     private val notes: WhatsNew,
+    private val merges: LineMerges,
 ) : ViewModel() {
 
     private val period = MutableStateFlow(PeriodType.MONTH)
@@ -148,6 +161,7 @@ class HomeViewModel @Inject constructor(
         val hasHistory: Boolean,
         val unreadAlerts: Int,
         val update: HomeUpdate?,
+        val lineMerge: LineMergeUi?,
     )
 
     /** Re-read whenever the day, the line or the segment changes: the running period's start comes from the clock then. */
@@ -172,8 +186,11 @@ class HomeViewModel @Inject constructor(
         content,
         combine(smsGranted, smsBlocked, notifyAsk, notifyBlocked, notifyEnabled) { a, b, c, d, e -> Access(a, b, c, d, e) },
         settings.settings,
-        combine(work.history, work.legacyImportFailed, db.transactionsDao().observeSpan(), db.alertsDao().observeUnread(), updates.state) { h, failed, span, unread, u ->
-            Background(h, failed, span.count > 0, unread, HomeUpdate.of(u))
+        combine(
+            work.history, work.legacyImportFailed, db.transactionsDao().observeSpan(), db.alertsDao().observeUnread(),
+            combine(updates.state, merges.suggestion) { u, m -> u to m },
+        ) { h, failed, span, unread, (u, m) ->
+            Background(h, failed, span.count > 0, unread, HomeUpdate.of(u), m?.let(LineMergeUi::of))
         },
         merge(hours, resumedAt),
     ) { c, a, s, bg, at ->
@@ -200,8 +217,15 @@ class HomeViewModel @Inject constructor(
             notificationsToSettings = !a.notifyEnabled && (a.notifyBlocked || !a.notifyAsk),
             unreadAlerts = bg.unreadAlerts,
             update = bg.update,
+            lineMerge = bg.lineMerge,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeUi())
+
+    /** R178: the person said the two lines are one number. */
+    fun mergeLines(): Job = viewModelScope.launch { ui.value.lineMerge?.let { merges.merge(it.fromId, it.intoId) } }
+
+    /** R179: they aren't; this pair isn't suggested again. */
+    fun notSameLines(): Job = viewModelScope.launch { ui.value.lineMerge?.let { merges.dismiss(it.fromId, it.intoId) } }
 
     /** R141: this build's notes until seen. */
     val whatsNew: StateFlow<List<NotesSection>?> = notes.pending.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)

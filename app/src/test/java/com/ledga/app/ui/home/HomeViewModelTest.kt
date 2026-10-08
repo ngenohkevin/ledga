@@ -52,6 +52,9 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import com.ledga.app.data.room.LineRow
+import com.ledga.app.data.lines.LineMerges
+import com.ledga.app.testing.FakeSims
 
 /** Spec §10.4 Home: every card from the ledger, on the chosen line, live (R47, R57–R61). Synthetic SMS and rows. */
 @RunWith(RobolectricTestRunner::class)
@@ -73,12 +76,13 @@ class HomeViewModelTest {
     private val updateWork = FakeUpdateWork()
     private val updateStore = UpdateStore(FakePrefsStore())
     private val updates by lazy { testUpdateService(http = updateHttp, work = updateWork, clock = clock, store = updateStore) }
+    private val merges = LineMerges(db, FakeSims(), settings, deriver)
     private val whatsNew = WhatsNew(updateStore, { listOf(NotesSection("What's new", listOf("A new Home"))) }, AppVersion.parse("2.0.0-beta.1")!!)
 
     private fun vm(live: LiveClock = LiveClock(clock) { awaitCancellation() }) = vms.track(
         HomeViewModel(
             LedgerQueries(db), db, Trackers(db, LedgerQueries(db)), selectedLine(db, prefs), live, work,
-            { granted }, notifyAccess, settings, TransactionEdits(db, deriver, clock), links, homeLinks, updates, whatsNew,
+            { granted }, notifyAccess, settings, TransactionEdits(db, deriver, clock), links, homeLinks, updates, whatsNew, merges,
         ),
     )
 
@@ -303,5 +307,23 @@ class HomeViewModelTest {
         assertEquals("2.0.0-beta.1", vm.whatsNewVersion)
         vm.whatsNewSeen().join()
         assertNull(vm.whatsNew.first { it == null })
+    }
+
+    @Test
+    fun `Home suggests merging a line that carries on another's balance, and Merge or Not the same answers it (R177)`() = runTest {
+        val two = db.linesDao().insert(LineRow(subscriptionId = 3, phoneNumber = null, displayName = "Line 2", color = "#00A86B", isPrimary = false, createdAt = clock.instant()))
+        val three = db.linesDao().insert(LineRow(subscriptionId = 2, phoneNumber = null, displayName = "Line 3", color = "#00A86B", isPrimary = false, createdAt = clock.instant()))
+        SmsIngestor(db, deriver).ingestAll(
+            listOf(
+                RawSms("MPESA", "TJK4AB12KC Confirmed. Ksh500.00 sent to SAMPLE PERSON 0700000001 on 6/9/26 at 9:00 AM. New M-PESA balance is Ksh1,000.00. Transaction cost, Ksh7.00.", clock.instant(), 3, two, SmsSource.INBOX),
+                RawSms("MPESA", "TJK4AB12KE Confirmed.You have received Ksh200.00 from SAMPLE CLIENT 0700000002 on 26/9/26 at 6:00 PM New M-PESA balance is Ksh1,200.00.", clock.instant(), 2, three, SmsSource.INBOX),
+            ),
+        )
+        val vm = vm()
+        val shown = vm.ui.first { it.lineMerge != null }.lineMerge!!
+        assertEquals("Line 2 and Line 3 look like the same number", shown.text)
+        vm.mergeLines().join()
+        assertNull(vm.ui.first { it.lineMerge == null }.lineMerge)
+        assertEquals(listOf("Line 3"), db.linesDao().all().map { it.displayName })
     }
 }
