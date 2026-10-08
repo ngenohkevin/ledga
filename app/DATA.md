@@ -215,7 +215,7 @@
 - **Checks** (`UpdateService.check`, R134): only once onboarded; at start (`ledga-update-check`, KEEP) when 6 hours have
   passed, daily (`ledga-update-daily`, any network), on opening Updates or Version history, and Check now (always).
   One request: `GET …/releases?per_page=30` with `If-None-Match` (sent only to the address it came from). A 304 moves
-  the check time; offline, rate-limited or an answer that isn't a release list keeps the cached list and records why.
+  the check time; offline, rate-limited, or an answer that isn't a release list or lists no Ledga release (`[]`) keeps the cached list and records why.
 - **Offer** (`UpdatePolicy`): the newest non-draft release on the channel above the installed version that has an APK
   and `ledga-release.json`. Skip and Later (3 days) hide it from Home's banner, the quiet download and the "ready"
   notice; Updates always shows it (R135). Ledga dev never offers one unless adb set its local source (R140).

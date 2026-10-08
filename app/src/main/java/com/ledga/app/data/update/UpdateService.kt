@@ -104,8 +104,10 @@ class UpdateService(
             checking.value = true
             try {
                 when (val answer = http.releases(endpoint.releasesUrl, p.etag.takeIf { sameSource })) {
+                    // Review Focus 1 (final review I3): a list with no Ledga release ("[]", or an error page's
+                    // JSON) is no answer; the cached list stays.
                     is ReleasesResponse.Fresh ->
-                        if (runCatching { GitHubJson.releases(answer.body) }.isSuccess) {
+                        if (runCatching { GitHubJson.releases(answer.body) }.getOrNull()?.any { it.version != null } == true) {
                             store.saveReleases(answer.body, endpoint.releasesUrl, answer.etag, now)
                         } else {
                             store.checkFailed(CheckFailure.SERVER)

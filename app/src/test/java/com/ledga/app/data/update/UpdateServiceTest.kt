@@ -223,4 +223,17 @@ class UpdateServiceTest {
         assertEquals(InstallStart.NEEDS_PERMISSION, s.install())
         assertFalse(s.canInstall())
     }
+
+    @Test
+    fun `an answer that lists no Ledga release keeps the cached list (Review Focus 1, final review I3)`() = runTest {
+        val s = service()
+        http.answers += fresh(ghRelease("v2.0.0-beta.2"))
+        http.answers += ReleasesResponse.Fresh("[]", "\"e2\"")
+        s.check()
+        s.check(force = true)
+        val state = s.state.first()
+        assertEquals(CheckFailure.SERVER, state.failure)
+        assertEquals("v2.0.0-beta.2", state.newest?.tag)
+        assertEquals(listOf("v2.0.0-beta.2"), state.history.map { it.tag })
+    }
 }
