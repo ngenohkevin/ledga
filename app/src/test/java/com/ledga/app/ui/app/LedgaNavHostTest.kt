@@ -80,6 +80,7 @@ class LedgaNavHostTest {
             Button(onClick = nav.openLicences) { Text("You licences") }
             Button(onClick = nav.openBackup) { Text("You backup") }
             Button(onClick = nav.openUpdates) { Text("You updates") }
+            Button(onClick = nav.openVersionHistory) { Text("You version history") }
         }
 
         @Composable override fun Lines(onBack: () -> Unit, onUnassigned: () -> Unit) = Column {
@@ -92,6 +93,8 @@ class LedgaNavHostTest {
         @Composable override fun Backup(onBack: () -> Unit) = Text("Backup screen")
 
         @Composable override fun Updates(onBack: () -> Unit) = Text("Updates screen")
+
+        @Composable override fun VersionHistory(onBack: () -> Unit) = Text("Version history screen")
 
 
         @Composable override fun Category(onBack: () -> Unit, onSeeAll: () -> Unit) = Column {
@@ -246,6 +249,7 @@ class LedgaNavHostTest {
             "You lines" to "Lines screen", "You notifications" to "Notifications screen",
             "You appearance" to "Appearance screen", "You unreadable" to "Unreadable screen", "You history" to "History check screen",
             "You licences" to "Licences screen", "You updates" to "Updates screen",
+            "You version history" to "Version history screen",
         ).forEach { (row, screen) ->
             tap(row)
             compose.onNodeWithText(screen).assertIsDisplayed()

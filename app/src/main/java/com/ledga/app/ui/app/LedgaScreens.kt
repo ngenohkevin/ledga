@@ -11,6 +11,7 @@ import com.ledga.app.ui.home.HomeRoute as HomeScreenRoute
 import com.ledga.app.ui.lines.UnassignedScreen
 import com.ledga.app.ui.onboarding.OnboardingRoute as OnboardingScreenRoute
 import com.ledga.app.ui.update.UpdatesScreen
+import com.ledga.app.ui.update.VersionHistoryScreen
 import com.ledga.app.ui.you.AppearanceScreen
 import com.ledga.app.ui.you.HistoryCheckScreen
 import com.ledga.app.ui.you.LicenceScreen
@@ -41,6 +42,8 @@ interface LedgaScreens {
     @Composable fun Backup(onBack: () -> Unit)
 
     @Composable fun Updates(onBack: () -> Unit)
+
+    @Composable fun VersionHistory(onBack: () -> Unit)
 
     @Composable fun Categories(onOpen: (String) -> Unit)
 
@@ -78,6 +81,8 @@ object AppScreens : LedgaScreens {
     @Composable override fun Backup(onBack: () -> Unit) = BackupScreen(onBack = onBack)
 
     @Composable override fun Updates(onBack: () -> Unit) = UpdatesScreen(onBack = onBack)
+
+    @Composable override fun VersionHistory(onBack: () -> Unit) = VersionHistoryScreen(onBack = onBack)
 
     @Composable override fun Categories(onOpen: (String) -> Unit) = CategoriesTab(onOpen = onOpen)
 

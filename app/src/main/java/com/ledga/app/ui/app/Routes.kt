@@ -44,5 +44,8 @@ import kotlinx.serialization.Serializable
 /** You → About → Updates (spec §13.4). */
 @Serializable data object UpdatesRoute
 
+/** You → About → Version history (R142). */
+@Serializable data object VersionHistoryRoute
+
 /** One licence's text; [asset] is its path under `assets/`. */
 @Serializable data class LicenceRoute(val asset: String)

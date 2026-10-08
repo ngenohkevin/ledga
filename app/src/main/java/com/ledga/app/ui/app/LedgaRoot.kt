@@ -145,6 +145,7 @@ fun LedgaNavHost(
                         openLicences = { push(LicencesRoute) },
                         openBackup = { push(BackupRoute) },
                         openUpdates = { push(UpdatesRoute) },
+                        openVersionHistory = { push(VersionHistoryRoute) },
                     ),
                 )
             }
@@ -152,6 +153,7 @@ fun LedgaNavHost(
             composable<UnassignedRoute> { screens.Unassigned(onBack = back) }
             composable<BackupRoute> { screens.Backup(onBack = back) }
             composable<UpdatesRoute> { screens.Updates(onBack = back) }
+            composable<VersionHistoryRoute> { screens.VersionHistory(onBack = back) }
             composable<CategoryRoute> {
                 screens.Category(
                     onBack = back,
