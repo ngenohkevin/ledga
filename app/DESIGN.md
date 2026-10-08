@@ -222,6 +222,8 @@ Everything lives in `com.ledga.app.ui.design`. Until Phase 4 uses it, R8 strips 
 - **Home** (R148): the update banner comes first: Available (Info, Later + Update), Downloading (Progress), Ready (Info,
   Later + Install), Failed (Danger: why Android refused the install or the person's download stopped, Later + Open
   Updates; final review I4). A tap on the banner opens Updates (`Banner(onClick = …)`); its actions stay their own.
+- **Home, one number on two lines** (Phase 7b-1, R177): right under the update banner, Info, "Line 2 and Line 3 look
+  like the same number" with Not the same + Merge (goldens `home_line_merge_*`). Nothing moves without a tap.
 - **What's new** (R141): a modal sheet titled "What's new in Ledga <version>", `NotesList` + "Got it"; dismissing it
   counts as seen. It never opens over another Home sheet.
 - `NotesList` renders sections as a bold title and `•` items in `ink2`; no notes read "No notes were written for this

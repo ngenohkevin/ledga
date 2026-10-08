@@ -260,6 +260,22 @@
   is the final proof. Skipped without the property (and in CI). `LegacyMigrationAuditTest` reads the same format
   through `testing/V1Export`.
 
+- **v1's paybill-form rules (Phase 7b-1, R173–R175).** v1 read a paybill's payee as "<NAME> for account[ <ACCOUNT>]"
+  and rules made from those payments kept that text; v2 reads the name and the account apart, so the rule never
+  matched (on the owner's phone, 153 transfers counted as spending). `V1RulePattern` turns such a pattern into "name
+  has NAME", or NAME + that account (`NAME_AND_ACCOUNT`); the importer uses it, and also marks as own-account any
+  payment v1 filed under My Accounts that v2's rules wouldn't (R174: spending matches v1's). A phone that imported
+  before this fix gets the same rewrite once at start, after the import chain (`V1RuleRepair`, meta `v1RulesRepaired`;
+  only USER name rules, only on a phone migrated from v1), then every payment is re-filed (`reclassifyAll`).
+- **One number on two lines (Phase 7b-1, R176–R179).** A SIM moved to a new phone, or turned into an eSIM, gets a new
+  subscription id that nothing links to the old one when Android won't give Ledga the number. `LineMerges` suggests
+  two lines when one's last payment comes before the other's first, the other has no payment before it, the other's
+  first payment continues the last balance exactly, and (when Android shows the SIMs) the old SIM isn't in the phone
+  and the new one is. Home shows it once; Merge moves the old line's messages and the person's placements to the line
+  in use (which keeps its name, colour and SIM, and becomes primary if the old one was), moves the chosen line, deletes
+  the old line and re-derives the moved payments. "Not the same" is remembered per pair on this phone
+  (`Settings.lineMergesDismissed`, not in backups).
+
 ## Phase 5 acceptance step (from the 2026-10-05 Phase 1 review)
 
 The v1 export can't prove inbox-wide coverage: v1 never stored the messages its parser rejected. So after the first full inbox rescan **on the owner's phone**, record:
