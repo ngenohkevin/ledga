@@ -119,7 +119,7 @@ Everything lives in `com.ledga.app.ui.design`. Until Phase 4 uses it, R8 strips 
   on the back stack. `LedgaNavHostTest` covers every route with stand-ins. `DetailFrame` paints no background: the
   app's `ShellFrame` does, so a pushed screen's golden wraps its content in `ShellFrame(null, onSelect = {})`.
 - **You (4d).** `YouContent` is a card per group (`GroupLabel` + `LedgaCard` of `ListRow`s): Money, App, Data, About.
-  5b added Export & restore and Android backup under Data (R125); Phase 6 adds Updates and Version history under About
+  5b added Export & restore and Android backup under Data (R125); Phase 6 added Updates and Version history under About (R149)
   (R66): add a row, not a section. Rescan's row shows its progress, and a result only for a rescan started there (R77).
 - **Alerts (4d, R71).** Home's bell sits beside search; its badge is `onPrimary` on `primary`, "9+" above nine, and
   TalkBack hears "Alerts, N unread" (the badge's own text is cleared from semantics). M3's `IconButton` clips what it
@@ -206,6 +206,25 @@ Everything lives in `com.ledga.app.ui.design`. Until Phase 4 uses it, R8 strips 
   inbox import; naming two or more lines sits under "Your history is ready". Start fresh keeps the backup as the earlier
   one.
 - **Shared:** `LineQuestionsContent` is the one "Which SIM was <line>?" UI (Export & restore and onboarding).
+
+## Updates, Version history, What's new (Phase 6)
+
+- **You → About** (R149): Updates (`fluent_inbox_tray`, `BETA` badge on the beta channel, subtitle from
+  `UpdateText.youLine`), Version history (`fluent_bar_chart`, "What changed in every release"), Open-source licences,
+  Version. Both new screens are pushed screens (`DetailFrame`, no bottom bar).
+- **Updates**: a status card (Up to date · Available with size, Download and Skip this version · Downloading with a
+  bar · Ready with Install · a person's failed download with Try again), then "Release notes" (`NotesList`, whose sections carry their own "What's new" / "Fixes"), "Open its
+  release page", and Channel's Beta updates switch (R145's wording). Banners above: Ledga dev (Info), an install
+  failure (Danger), "Allow" when installing apps is off (Warning). The check's time or failure and Check now close the
+  card.
+- **Version history** (R142): one card per release ("2.0.0-beta.2", "4 Oct 2026 · Beta", an `Installed` chip, a caret);
+  a tap opens its notes (`stateDescription` says shown/hidden). Empty: `EmptyState` with Try again.
+- **Home** (R148): the update banner comes first: Available (Info, Later + Update), Downloading (Progress), Ready (Info,
+  Later + Install). A tap on the banner opens Updates (`Banner(onClick = …)`); its actions stay their own.
+- **What's new** (R141): a modal sheet titled "What's new in Ledga <version>", `NotesList` + "Got it"; dismissing it
+  counts as seen. It never opens over another Home sheet.
+- `NotesList` renders sections as a bold title and `•` items in `ink2`; no notes read "No notes were written for this
+  version."
 
 ## Screenshot tests
 

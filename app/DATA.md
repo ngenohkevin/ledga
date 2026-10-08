@@ -200,6 +200,44 @@
   and returns them for Undo (`unplace`, which drops override rows left empty). A date range is whole Nairobi days, both
   ends. Lines reconciliation itself is 4a's (`LinesRepository.syncActive`, at start and in the 6-hourly check).
 
+## Updates and releases (Phase 6)
+
+- **Version.** `version.properties` → `VERSION_NAME`; `app/build.gradle.kts` computes `versionCode` (spec §13.1) and
+  refuses a name that isn't `X.Y.Z` or `X.Y.Z-beta.N`. `-Pledga.versionName=…` builds another version (the S26 update
+  test only). `./gradlew -q :app:ledgaVersion` prints `VERSION_NAME`, `VERSION_CODE`, `MIN_SDK`. `AppVersion` (`:core`)
+  reads the same names; `AppVersion.ofBuild` drops Ledga dev's `-dev`.
+- **Notes.** `release-notes/<VERSION_NAME>.md` (`## What's new` / `## Fixes`) is the GitHub release's text and, copied by
+  `bundle<Variant>ReleaseNotes`, the APK's `assets/release-notes/current.md` (What's new). `ReleaseNotes.parse` turns it
+  into sections of plain-text items; GitHub's "Full Changelog" line is dropped (v1.x releases then have no notes).
+- **State** lives in its own DataStore file, `ledga_updates` (`UpdateStore`, R133): the last release list and its ETag
+  and address, the check time and failure, the channel (null until chosen: a beta build follows betas, R145), the
+  skipped version, the snooze, and the version whose What's new was seen. Per-phone: not in Auto Backup or the snapshot.
+- **Checks** (`UpdateService.check`, R134): only once onboarded; at start (`ledga-update-check`, KEEP) when 6 hours have
+  passed, daily (`ledga-update-daily`, any network), on opening Updates or Version history, and Check now (always).
+  One request: `GET …/releases?per_page=30` with `If-None-Match` (sent only to the address it came from). A 304 moves
+  the check time; offline, rate-limited or an answer that isn't a release list keeps the cached list and records why.
+- **Offer** (`UpdatePolicy`): the newest non-draft release on the channel above the installed version that has an APK
+  and `ledga-release.json`. Skip and Later (3 days) hide it from Home's banner, the quiet download and the "ready"
+  notice; Updates always shows it (R135). Ledga dev never offers one unless adb set its local source (R140).
+- **Download** (`DownloadWorker`, unique `ledga-update-download`, R136): quiet ones wait for an unmetered network, are
+  retried twice, and say only when ready; a person's runs on any network with a progress notification. The manifest
+  must describe the release (`ManifestCheck`), the APK must match its SHA-256 and be this app's package at the
+  manifest's versionCode; only then is `ledga-<version>.apk.part` renamed to `ledga-<version>.apk` in
+  `noBackupFilesDir/updates/` (R139). Each check deletes every file but the newest offer's.
+- **Install** (`PackageInstallerUpdates`, R138): a `PackageInstaller` session for this package (Android 12+:
+  `USER_ACTION_NOT_REQUIRED` requested); `InstallStatusReceiver` shows Android's confirm screen when asked and turns
+  any failure into words (`UpdateMessages.install`), deleting a damaged file. "Install unknown apps" is checked first.
+- **Notifications** (R144): the `updates` channel (low importance): "Downloading Ledga X" with a bar, "Update ready to
+  install". Not in Alerts; a tap opens You → Updates (`UpdateIntents`, `OpenDestination.Updates`).
+- **What's new** (`WhatsNew`, R141): this build's notes, once, on Home, for an onboarded person; onboarding files them
+  as seen without showing them.
+- **CI** (R146): `ci.yml` runs `:core:test :app:testDebugUnitTest -Proborazzi.test.verify=true` on macOS (pushes to
+  v2/main, and called by `release.yml`). `release.yml` (tags `v*`): tag = `v` + `VERSION_NAME`, notes present, signed
+  `assembleRelease`, `scripts/release_files.py` → `ledga-<version>.apk` + `ledga-release.json`, read back by
+  `ReleaseManifestFileTest` (`-Pledga.releaseFiles=required`, a test system property: an env var isn't a task input), then published (betas as pre-releases; only stable is
+  Latest). First real run: Phase 7.
+- **Ledga dev's update test** (owner call A): `scripts/update-test-server.sh <version>` + the adb broadcast in its header.
+
 ## Phase 5 acceptance step (from the 2026-10-05 Phase 1 review)
 
 The v1 export can't prove inbox-wide coverage: v1 never stored the messages its parser rejected. So after the first full inbox rescan **on the owner's phone**, record:
