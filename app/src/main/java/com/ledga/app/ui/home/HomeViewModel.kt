@@ -55,7 +55,6 @@ import com.ledga.app.data.lines.LineMerges
 /** One line's balance under the All lines total: "Personal ··11 · Ksh 3,175.57 · 7:42 PM". */
 data class BalanceLine(val label: String, val cents: Long, val at: Instant)
 
-/** Everything Home shows (spec §10.4). */
 /** R177: Home's merge suggestion for two lines that look like one number. */
 data class LineMergeUi(val fromId: Long, val intoId: Long, val text: String) {
     companion object {
@@ -64,6 +63,7 @@ data class LineMergeUi(val fromId: Long, val intoId: Long, val text: String) {
     }
 }
 
+/** Everything Home shows (spec §10.4). */
 data class HomeUi(
     val loaded: Boolean = false,
     val greeting: String = "",
@@ -217,7 +217,8 @@ class HomeViewModel @Inject constructor(
             notificationsToSettings = !a.notifyEnabled && (a.notifyBlocked || !a.notifyAsk),
             unreadAlerts = bg.unreadAlerts,
             update = bg.update,
-            lineMerge = bg.lineMerge,
+            // Final review M3: not while the import chain or a rebuild is still writing the history.
+            lineMerge = bg.lineMerge?.takeIf { bg.history == null },
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeUi())
 

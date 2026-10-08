@@ -55,6 +55,7 @@ import org.robolectric.RobolectricTestRunner
 import com.ledga.app.data.room.LineRow
 import com.ledga.app.data.lines.LineMerges
 import com.ledga.app.testing.FakeSims
+import com.ledga.app.work.HistoryProgress
 
 /** Spec §10.4 Home: every card from the ledger, on the chosen line, live (R47, R57–R61). Synthetic SMS and rows. */
 @RunWith(RobolectricTestRunner::class)
@@ -325,5 +326,22 @@ class HomeViewModelTest {
         vm.mergeLines().join()
         assertNull(vm.ui.first { it.lineMerge == null }.lineMerge)
         assertEquals(listOf("Line 3"), db.linesDao().all().map { it.displayName })
+    }
+
+    @Test
+    fun `the merge suggestion waits until history has finished updating (final review M3)`() = runTest {
+        val two = db.linesDao().insert(LineRow(subscriptionId = 3, phoneNumber = null, displayName = "Line 2", color = "#00A86B", isPrimary = false, createdAt = clock.instant()))
+        val three = db.linesDao().insert(LineRow(subscriptionId = 2, phoneNumber = null, displayName = "Line 3", color = "#00A86B", isPrimary = false, createdAt = clock.instant()))
+        SmsIngestor(db, deriver).ingestAll(
+            listOf(
+                RawSms("MPESA", "TJK4AB12KC Confirmed. Ksh500.00 sent to SAMPLE PERSON 0700000001 on 6/9/26 at 9:00 AM. New M-PESA balance is Ksh1,000.00. Transaction cost, Ksh7.00.", clock.instant(), 3, two, SmsSource.INBOX),
+                RawSms("MPESA", "TJK4AB12KE Confirmed.You have received Ksh200.00 from SAMPLE CLIENT 0700000002 on 26/9/26 at 6:00 PM New M-PESA balance is Ksh1,200.00.", clock.instant(), 2, three, SmsSource.INBOX),
+            ),
+        )
+        work.history.value = HistoryProgress(1, 3)
+        val vm = vm()
+        assertNull(vm.ui.first { it.loaded && it.history != null }.lineMerge, "not while the import chain runs")
+        work.history.value = null
+        assertEquals("Line 2 and Line 3 look like the same number", vm.ui.first { it.lineMerge != null }.lineMerge!!.text)
     }
 }
