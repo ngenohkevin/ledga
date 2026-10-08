@@ -7,6 +7,7 @@ import com.ledga.app.data.lines.Sim
 import com.ledga.app.data.settings.SettingsStore
 import com.ledga.app.testing.FakePrefsStore
 import com.ledga.app.testing.FakeSims
+import com.ledga.app.testing.MutableClock
 import com.ledga.app.testing.Sms
 import com.ledga.app.testing.TestDb
 import kotlinx.coroutines.test.runTest
@@ -28,6 +29,8 @@ class InboxScannerTest {
     private val sinces = mutableListOf<Long>()
     private val source = InboxSource { since -> sinces += since; inbox.filter { it.receivedAt.toEpochMilli() > since } }
     private val scanner = InboxScanner(source, lines, SmsIngestor(db, Deriver(db)), settings)
+    private val clock = MutableClock(Instant.parse("2026-10-07T06:00:00Z"))
+    private val clocked by lazy { InboxScanner(source, lines, SmsIngestor(db, Deriver(db)), settings, clock) }
 
     private fun sms(body: String, iso: String, sub: Int? = 1) = InboxSms("MPESA", body, Instant.parse(iso), sub)
 
@@ -102,5 +105,22 @@ class InboxScannerTest {
         val only = db.linesDao().all().single()
         assertEquals(7, only.subscriptionId)
         assertEquals(only.id, db.transactionsDao().get("TJK4AB12FA")?.lineId)
+    }
+
+    @Test
+    fun `a message dated in the future moves the watermark only as far as now (R157)`() = runTest {
+        inbox = listOf(sms(Sms.SEND, "2026-10-30T06:00:00Z"))
+        clocked.scan(ScanMode.CATCH_UP)
+        assertEquals(clock.instant.toEpochMilli(), settings.current().smsWatermarkMillis)
+    }
+
+    @Test
+    fun `a watermark already in the future is put right by reading the whole inbox (R157)`() = runTest {
+        settings.advanceWatermark(Instant.parse("2026-10-30T06:00:00Z").toEpochMilli())
+        inbox = listOf(sms(Sms.SEND, "2026-10-06T06:00:00Z"))
+        val r = clocked.scan(ScanMode.CATCH_UP)
+        assertEquals(0L, sinces.last())
+        assertEquals(1, r.inserted)
+        assertEquals(Instant.parse("2026-10-06T06:00:00Z").toEpochMilli(), settings.current().smsWatermarkMillis)
     }
 }

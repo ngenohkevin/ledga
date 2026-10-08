@@ -60,6 +60,9 @@ class SettingsStore @Inject constructor(private val store: DataStore<Preferences
         it[SettingsKeys.SMS_WATERMARK] = maxOf(it[SettingsKeys.SMS_WATERMARK] ?: 0L, millis)
     }
 
+    /** R157: puts right a mark that a message dated in the future pushed past now (the only time it moves back). */
+    suspend fun replaceWatermark(millis: Long) = edit { it[SettingsKeys.SMS_WATERMARK] = millis }
+
     suspend fun setFullRescanOwed(owed: Boolean) = edit { it[SettingsKeys.FULL_RESCAN_OWED] = owed }
 
     /** R59: Home's notifications banner is gone for good. */

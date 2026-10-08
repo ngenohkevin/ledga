@@ -116,8 +116,8 @@ object DataModule {
 
     @Provides
     @Singleton
-    fun scanner(inbox: InboxSource, lines: LinesRepository, ingestor: SmsIngestor, settings: SettingsStore): InboxScanner =
-        InboxScanner(inbox, lines, ingestor, settings)
+    fun scanner(inbox: InboxSource, lines: LinesRepository, ingestor: SmsIngestor, settings: SettingsStore, clock: Clock): InboxScanner =
+        InboxScanner(inbox, lines, ingestor, settings, clock)
 
     @Provides
     @Singleton
