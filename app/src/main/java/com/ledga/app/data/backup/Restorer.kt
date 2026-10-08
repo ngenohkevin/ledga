@@ -19,6 +19,7 @@ import com.ledga.app.data.room.toCore
 import com.ledga.app.data.settings.SettingsStore
 import com.ledga.app.data.settings.TextSize
 import com.ledga.app.ui.design.theme.Appearance
+import com.ledga.app.data.legacy.V1RulePattern
 import com.ledga.core.derive.LegacyAutoCategorizer
 import com.ledga.core.derive.LegacyMapping
 import com.ledga.core.derive.RuleAction
@@ -177,12 +178,14 @@ class Restorer(
     private suspend fun applyRules(rules: List<RuleEntry>, systemOff: List<RuleKey>) {
         val dao = db.rulesDao()
         for (r in rules) {
-            val field = RuleField.entries.firstOrNull { it.name == r.field } ?: continue
+            val stored = RuleField.entries.firstOrNull { it.name == r.field } ?: continue
             val action = RuleAction.entries.firstOrNull { it.name == r.action } ?: continue
+            // Final review I4: a backup made before beta.2 can hold v1's paybill-form rule (R173), which v2 never matches.
+            val (field, pattern) = (if (stored == RuleField.NAME_CONTAINS) V1RulePattern.translate(r.pattern) else null) ?: (stored to r.pattern)
             // R121: this phone's own rule for the same words wins.
-            if (dao.userLike(field.name, r.pattern, action.name).isNotEmpty()) continue
+            if (dao.userLike(field.name, pattern, action.name).isNotEmpty()) continue
             dao.insert(
-                RuleRow(field = field, pattern = r.pattern, action = action, categoryKey = r.categoryKey, origin = RuleOrigin.USER,
+                RuleRow(field = field, pattern = pattern, action = action, categoryKey = r.categoryKey, origin = RuleOrigin.USER,
                     priority = r.priority, createdAt = Instant.ofEpochMilli(r.createdAt), enabled = r.enabled),
             )
         }

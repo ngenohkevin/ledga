@@ -198,4 +198,14 @@ class RestorerTest {
         restorer.restore(backupFromAnotherPhone(), RestoreMode.MERGE, emptyMap(), applySettings = false)
         assertEquals(emptyList(), db.alertsDao().observeWithTx().first())
     }
+
+    @Test
+    fun `a backup holding a v1 paybill-form rule restores it as v2 reads the payee (final review I4)`() = runTest {
+        source.rulesDao().insert(
+            RuleRow(field = RuleField.NAME_CONTAINS, pattern = "SAMPLE SACCO for account", action = RuleAction.MARK_OWN_ACCOUNT, categoryKey = null,
+                origin = RuleOrigin.USER, priority = 0, createdAt = clock.instant()),
+        )
+        restorer.restore(backupFromAnotherPhone(), RestoreMode.MERGE, emptyMap(), applySettings = false)
+        assertEquals(setOf("CORNER SHOP", "SAMPLE SACCO"), db.rulesDao().all().filter { it.origin == RuleOrigin.USER }.map { it.pattern }.toSet())
+    }
 }
