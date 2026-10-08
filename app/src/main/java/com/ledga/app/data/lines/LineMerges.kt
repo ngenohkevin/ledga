@@ -26,6 +26,8 @@ class LineMerges(
     private val sims: SimDirectory,
     private val settings: SettingsStore,
     private val deriver: Deriver,
+    /** Re-derives the moved payments; a test makes it fail part-way (final review I2). */
+    private val rederive: suspend (Collection<String>) -> Unit = { deriver.rederive(it) },
 ) {
     /** The one merge to suggest now, re-read when lines, payments or the dismissed pairs change. */
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -46,6 +48,8 @@ class LineMerges(
             if (active.isNotEmpty() && from.subscriptionId in active) continue
             val last = tx.lastWithBalance(from.id) ?: continue
             val lastBalance = last.balanceCents ?: continue
+            // Final review I3: a line that ended at nothing "carries on" into any new number's first balance.
+            if (lastBalance == 0L) continue
             for (into in lines) {
                 if (into.id == from.id || key(from.id, into.id) in dismissed) continue
                 if (active.isNotEmpty() && into.subscriptionId !in active) continue
@@ -62,16 +66,20 @@ class LineMerges(
     /** R178: [from]'s messages and the person's placements move to [into], which keeps its name, colour and SIM. */
     suspend fun merge(from: Long, into: Long) {
         val lines = db.linesDao()
-        val codes = db.withTransaction {
+        db.withTransaction {
             val moved = lines.codesOnLine(from)
+            val old = lines.get(from)
+            // Final review I5: messages carried over from v1 have no SIM id; stamping the old line's lets that id find
+            // the line kept (lineOfPastMessages) instead of creating an empty line at the next rescan.
+            old?.subscriptionId?.let { lines.stampSubscription(from, it) }
             lines.moveSms(from, into)
             lines.moveOverrides(from, into)
-            if (lines.get(from)?.isPrimary == true) lines.setPrimary(into)
+            if (old?.isPrimary == true) lines.setPrimary(into)
             lines.delete(from)
-            moved
+            // Final review I2: re-derived inside the same transaction, so a merge cut short changes nothing.
+            rederive(moved)
         }
         if (settings.current().selectedLineId == from) settings.setSelectedLine(into)
-        deriver.rederive(codes)
     }
 
     /** R179: "Not the same": this pair isn't suggested again on this phone. */

@@ -43,6 +43,10 @@ interface LinesDao {
     @Query("SELECT code FROM sms WHERE lineId = :id AND code IS NOT NULL UNION SELECT code FROM overrides WHERE lineId = :id")
     suspend fun codesOnLine(id: Long): List<String>
 
+    /** Final review I5: a line's own SIM id on its messages that carry none (v1's, restored ones). */
+    @Query("UPDATE sms SET subscriptionId = :sub WHERE lineId = :lineId AND subscriptionId IS NULL")
+    suspend fun stampSubscription(lineId: Long, sub: Int): Int
+
     @Query("UPDATE sms SET lineId = :into WHERE lineId = :from")
     suspend fun moveSms(from: Long, into: Long): Int
 

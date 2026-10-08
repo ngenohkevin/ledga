@@ -17,6 +17,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import kotlin.test.assertFailsWith
 
 /** R176–R179: one number's history split across two lines (a new phone, an eSIM). Synthetic messages. */
 @RunWith(RobolectricTestRunner::class)
@@ -101,5 +102,36 @@ class LineMergesTest {
         merges.dismiss(two, three)
         assertNull(merges.find())
         assertNull(LineMerges(db, sims, settings, deriver).find(), "a new start doesn't ask again")
+    }
+
+    @Test
+    fun `a merge that fails part-way changes nothing (final review I2)`() = runTest {
+        val (_, two, three) = splitNumber()
+        val failing = LineMerges(db, sims, settings, deriver) { throw IllegalStateException("stopped") }
+        assertFailsWith<IllegalStateException> { failing.merge(two, three) }
+        assertEquals(listOf("Line 1", "Line 2", "Line 3"), db.linesDao().all().map { it.displayName })
+        assertEquals(two, db.transactionsDao().get("TJK4AB12KC")!!.lineId)
+    }
+
+    @Test
+    fun `a line that ended at nothing isn't taken for another number's start (final review I3)`() = runTest {
+        val two = line(3, "Line 2")
+        val three = line(2, "Line 3")
+        sms(two, 3, sent("TJK4AB12KC", "0.00", "6/9/26 at 9:00 AM"), "2026-09-06T06:00:00Z")
+        sms(three, 2, received("TJK4AB12KE", "200.00", "26/9/26 at 6:00 PM"), "2026-09-26T15:00:00Z")
+        assertNull(merges.find())
+    }
+
+    @Test
+    fun `after a merge the old SIM id still finds the line kept, for messages carried over from v1 too (final review I5)`() = runTest {
+        val two = line(3, "Line 2")
+        val three = line(2, "Line 3")
+        SmsIngestor(db, deriver).ingestAll(
+            listOf(RawSms("MPESA", sent("TJK4AB12KC", "1,000.00", "6/9/26 at 9:00 AM"), Instant.parse("2026-09-06T06:00:00Z"), null, two, SmsSource.INBOX)),
+        )
+        sms(three, 2, received("TJK4AB12KE", "1,200.00", "26/9/26 at 6:00 PM"), "2026-09-26T15:00:00Z")
+        merges.merge(two, three)
+        assertEquals(three, LinesRepository(db.linesDao(), sims).lineFor(3))
+        assertEquals(listOf("Line 3"), db.linesDao().all().map { it.displayName })
     }
 }
