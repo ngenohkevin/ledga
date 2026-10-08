@@ -109,14 +109,23 @@ All data stays on your device. No server, no accounts, no analytics, no tracking
 
 ## Release
 
-Tag a version to trigger the CI/CD pipeline:
+Ledga's version lives in `version.properties` (spec §13.1). To release:
+
+1. Set `VERSION_NAME` (`2.0.1`, or `2.0.1-beta.2` for a beta) and write `release-notes/<VERSION_NAME>.md`, with
+   `## What's new` and `## Fixes` sections. Commit both.
+2. Tag the commit `v<VERSION_NAME>` and push the tag:
 
 ```bash
-git tag v1.0.0
-git push origin v1.0.0
+git tag v2.0.1-beta.2
+git push origin v2.0.1-beta.2
 ```
 
-GitHub Actions builds the signed APK and creates a release automatically.
+The Release workflow runs every test on macOS, refuses a tag that doesn't match `version.properties` or has no notes,
+builds the signed APK, writes `ledga-release.json` (its SHA-256 and versionCode) and publishes both, with the notes as
+the release's text. Betas are pre-releases, so only phones on the beta channel see them; a full release becomes Latest,
+which v1 phones also update to.
+
+To try the in-app update on a phone before releasing, see `scripts/update-test-server.sh` (Ledga dev only).
 
 ## License
 

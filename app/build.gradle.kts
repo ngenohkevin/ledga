@@ -143,6 +143,13 @@ androidComponents {
     }
 }
 
+// R146: the release workflow passes -Pledga.releaseFiles=required, so ReleaseManifestFileTest fails rather than skips
+// when the release files are missing. A system property is a task input, so changing it reruns the test (an environment
+// variable isn't one, and a cached up-to-date run would ignore it).
+tasks.withType<Test>().configureEach {
+    systemProperty("ledga.releaseFiles", providers.gradleProperty("ledga.releaseFiles").getOrElse("optional"))
+}
+
 // R146: what the release workflow and scripts/update-test-server.sh read (`./gradlew -q :app:ledgaVersion`).
 tasks.register("ledgaVersion") {
     val name = ledgaVersionName
