@@ -5,24 +5,31 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStoreFile
+import androidx.work.WorkManager
 import com.ledga.app.BuildConfig
 import com.ledga.app.data.update.AndroidApkInspector
 import com.ledga.app.data.update.AndroidUpdateNotices
 import com.ledga.app.data.update.ApkInspector
 import com.ledga.app.data.update.InstallEvents
 import com.ledga.app.data.update.PackageInstallerUpdates
+import com.ledga.app.data.update.UpdateEndpoints
 import com.ledga.app.data.update.UpdateFiles
 import com.ledga.app.data.update.UpdateHttp
 import com.ledga.app.data.update.UpdateInstaller
 import com.ledga.app.data.update.UpdateNotices
+import com.ledga.app.data.update.UpdateService
 import com.ledga.app.data.update.UpdateStore
 import com.ledga.app.data.update.UrlUpdateHttp
+import com.ledga.app.work.UpdateWork
+import com.ledga.app.work.WorkManagerUpdateWork
+import com.ledga.core.update.AppVersion
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import java.io.File
+import java.time.Clock
 import javax.inject.Qualifier
 import javax.inject.Singleton
 
@@ -66,4 +73,25 @@ object UpdateModule {
     @Provides
     @Singleton
     fun updateInstaller(@ApplicationContext context: Context, events: InstallEvents): UpdateInstaller = PackageInstallerUpdates(context, events)
+
+    @Provides
+    @Singleton
+    fun updateWork(wm: WorkManager): UpdateWork = WorkManagerUpdateWork(wm)
+
+    /** The installed version comes from the build, which refuses a versionName that isn't one (R132). */
+    @Provides
+    @Singleton
+    fun updateService(
+        store: UpdateStore,
+        http: UpdateHttp,
+        endpoints: UpdateEndpoints,
+        files: UpdateFiles,
+        work: UpdateWork,
+        installer: UpdateInstaller,
+        notices: UpdateNotices,
+        events: InstallEvents,
+        clock: Clock,
+    ): UpdateService = UpdateService(
+        store, http, endpoints, files, work, installer, notices, events, checkNotNull(AppVersion.ofBuild(BuildConfig.VERSION_NAME)), clock,
+    )
 }

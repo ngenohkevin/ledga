@@ -1,12 +1,18 @@
 package com.ledga.app.testing
 
 import com.ledga.app.data.update.CheckFailure
+import com.ledga.app.data.update.InstallStart
 import com.ledga.app.data.update.ReleasesResponse
 import com.ledga.app.data.update.UpdateHttp
+import com.ledga.app.data.update.UpdateInstaller
 import com.ledga.app.data.update.UpdateNotices
+import com.ledga.app.work.DownloadProgress
+import com.ledga.app.work.UpdateWork
+import com.ledga.core.update.Release
 import java.io.File
 import java.io.IOException
 import java.security.MessageDigest
+import kotlinx.coroutines.flow.MutableStateFlow
 
 /** GitHub as a test sets it: queued answers to checks (the last repeats), manifests by URL, and APK bytes by URL. */
 class FakeUpdateHttp : UpdateHttp {
@@ -63,3 +69,49 @@ class FakeUpdateNotices : UpdateNotices {
 }
 
 fun sha256Hex(bytes: ByteArray): String = MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
+
+/** WorkManager as a test sets it: what was asked for, and the download's progress driven by hand. */
+class FakeUpdateWork : UpdateWork {
+    val calls = mutableListOf<String>()
+    override val download = MutableStateFlow<DownloadProgress>(DownloadProgress.Idle)
+
+    override fun checkSoon() {
+        calls += "checkSoon"
+    }
+
+    override fun keepChecking() {
+        calls += "keepChecking"
+    }
+
+    override suspend fun download(release: Release, user: Boolean) {
+        calls += "download ${release.version} ${if (user) "user" else "quiet"}"
+    }
+
+    override fun cancelDownload() {
+        calls += "cancelDownload"
+    }
+}
+
+/** Android's installer as a test sets it. */
+class FakeInstaller(var allowed: Boolean = true, var start: InstallStart = InstallStart.STARTED) : UpdateInstaller {
+    val installed = mutableListOf<File>()
+
+    override fun allowed(): Boolean = allowed
+
+    override fun install(apk: File): InstallStart {
+        if (!allowed) return InstallStart.NEEDS_PERMISSION
+        installed += apk
+        return start
+    }
+}
+
+/** One release in GitHub's shape: an APK, a manifest unless [withManifest] is false (a v1.x release), notes. Synthetic. */
+fun ghRelease(tag: String, prerelease: Boolean = "-beta." in tag, withManifest: Boolean = true): String {
+    val name = tag.removePrefix("v")
+    val manifest = if (withManifest) """,{"name":"ledga-release.json","browser_download_url":"https://example.test/$tag/m.json","size":200}""" else ""
+    return """{"tag_name":"$tag","draft":false,"prerelease":$prerelease,"published_at":"2026-10-01T06:00:00Z",""" +
+        """"html_url":"https://example.test/releases/$tag","body":"## What's new\n- Something new in $name",""" +
+        """"assets":[{"name":"ledga-$name.apk","browser_download_url":"https://example.test/$tag/a.apk","size":9000000}$manifest]}"""
+}
+
+fun ghList(vararg releases: String): String = releases.joinToString(",", "[", "]")
