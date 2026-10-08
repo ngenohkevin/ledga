@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -7,6 +9,49 @@ plugins {
     id("com.google.dagger.hilt.android")
     id("androidx.room")
     id("io.github.takahirom.roborazzi")
+}
+
+// Spec §13.1, R132: the version comes from version.properties. `-Pledga.versionName=…` builds another one (the S26
+// update test); the release workflow refuses a tag that doesn't match version.properties.
+val ledgaVersionName: String = providers.gradleProperty("ledga.versionName").orNull
+    ?: Properties().apply {
+        load(providers.fileContents(rootProject.layout.projectDirectory.file("version.properties")).asText.get().reader())
+    }.getProperty("VERSION_NAME")
+    ?: throw GradleException("version.properties has no VERSION_NAME")
+
+/** Spec §13.1: major·1,000,000 + minor·10,000 + patch·100 + stage (N for -beta.N, 99 for stable). Mirrors `AppVersion.code`. */
+fun versionCodeOf(name: String): Int {
+    val m = Regex("""(\d{1,4})\.(\d{1,2})\.(\d{1,2})(?:-beta\.(\d{1,2}))?""").matchEntire(name)
+        ?: throw GradleException("VERSION_NAME \"$name\" must be X.Y.Z or X.Y.Z-beta.N")
+    val (major, minor, patch) = (1..3).map { m.groupValues[it].toInt() }
+    val beta = m.groupValues[4].takeIf { it.isNotEmpty() }?.toInt()
+    if (major > 2_000) throw GradleException("VERSION_NAME \"$name\": the major version is too large for a versionCode")
+    if (beta != null && beta !in 1..98) throw GradleException("VERSION_NAME \"$name\": a beta number must be 1 to 98")
+    return major * 1_000_000 + minor * 10_000 + patch * 100 + (beta ?: 99)
+}
+
+val ledgaVersionCode = versionCodeOf(ledgaVersionName)
+
+/** Spec §13.2: copies `release-notes/<VERSION_NAME>.md` into the APK as `release-notes/current.md` (What's new, R141). */
+abstract class BundleReleaseNotes : DefaultTask() {
+    @get:InputFiles
+    @get:PathSensitive(PathSensitivity.NAME_ONLY)
+    abstract val notes: ConfigurableFileCollection
+
+    @get:Input
+    abstract val versionName: Property<String>
+
+    @get:OutputDirectory
+    abstract val outputDir: DirectoryProperty
+
+    @TaskAction
+    fun copy() {
+        val out = outputDir.get().asFile.resolve("release-notes")
+        out.deleteRecursively()
+        out.mkdirs()
+        // A build with no notes for its version has no What's new; the release workflow refuses to publish it.
+        notes.files.firstOrNull { it.name == "${versionName.get()}.md" }?.copyTo(out.resolve("current.md"))
+    }
 }
 
 android {
@@ -29,8 +74,8 @@ android {
         applicationId = "com.ledga.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 21
-        versionName = "1.6.0"
+        versionCode = ledgaVersionCode
+        versionName = ledgaVersionName
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -86,6 +131,28 @@ android {
 
 room {
     schemaDirectory("$projectDir/schemas")
+}
+
+androidComponents {
+    onVariants { variant ->
+        val bundle = tasks.register<BundleReleaseNotes>("bundle${variant.name.replaceFirstChar(Char::uppercase)}ReleaseNotes") {
+            notes.from(rootProject.fileTree("release-notes") { include("*.md") })
+            versionName.set(ledgaVersionName)
+        }
+        variant.sources.assets?.addGeneratedSourceDirectory(bundle, BundleReleaseNotes::outputDir)
+    }
+}
+
+// R146: what the release workflow and scripts/update-test-server.sh read (`./gradlew -q :app:ledgaVersion`).
+tasks.register("ledgaVersion") {
+    val name = ledgaVersionName
+    val code = ledgaVersionCode
+    val minSdk = android.defaultConfig.minSdk
+    doLast {
+        println("VERSION_NAME=$name")
+        println("VERSION_CODE=$code")
+        println("MIN_SDK=$minSdk")
+    }
 }
 
 dependencies {
