@@ -138,7 +138,11 @@ class LegacyImporter(
         val defaults = LegacyAutoCategorizer.DEFAULT_RULES.map { Triple(it.categoryId, it.matchType, it.matchValue.uppercase()) }.toSet()
         var imported = 0
         var skipped = 0
-        legacyRules.filter { Triple(it.categoryId, it.matchType, it.matchValue.uppercase()) !in defaults }.forEach { r ->
+        // R156: v1 tried its name rules before its paybill rules, each lowest id first; v2 tries USER rules newest first.
+        // Spaced 1 ms apart in v1's order, the rule v1 tried first is the newest, so two that match agree with v1.
+        val inV1Order = legacyRules.filter { Triple(it.categoryId, it.matchType, it.matchValue.uppercase()) !in defaults }
+            .sortedWith(compareBy({ V1_RULE_PASS[it.matchType] ?: V1_RULE_PASS.size }, { it.id }))
+        inV1Order.forEachIndexed { rank, r ->
             val field = when (r.matchType) {
                 "RECIPIENT_NAME" -> RuleField.NAME_CONTAINS
                 "PAYBILL" -> RuleField.ACCOUNT_EQUALS
@@ -146,14 +150,14 @@ class LegacyImporter(
                 else -> null
             }
             val pattern = r.matchValue.trim()
-            if (field == null || pattern.isEmpty() || r.categoryId == LegacyAutoCategorizer.BILLS) { skipped++; return@forEach }
+            if (field == null || pattern.isEmpty() || r.categoryId == LegacyAutoCategorizer.BILLS) { skipped++; return@forEachIndexed }
             val (categoryKey, own) = targets.resolve(LegacyCategoryMap.map(r.categoryId), r.categoryId)
             db.rulesDao().insert(
                 RuleRow(
                     field = field, pattern = pattern,
                     action = if (own == true) RuleAction.MARK_OWN_ACCOUNT else RuleAction.SET_CATEGORY,
                     categoryKey = if (own == true) null else categoryKey,
-                    origin = RuleOrigin.USER, priority = 0, createdAt = now,
+                    origin = RuleOrigin.USER, priority = 0, createdAt = now.minusMillis(rank.toLong()),
                 ),
             )
             imported++
@@ -195,3 +199,6 @@ class LegacyImporter(
         return OverrideCounts(category, ownAccount, notes, carTags)
     }
 }
+
+/** R156: the order v1's categoriser tried rule types in (`LegacyAutoCategorizer.categorize`); any other type after. */
+private val V1_RULE_PASS = mapOf("RECIPIENT_NAME" to 0, "PAYBILL" to 1)

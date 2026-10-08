@@ -174,4 +174,23 @@ class LegacyImporterTest {
         assertEquals(Categories.FOOD, db.tx("TJK4AB12FB").categoryKey)
         assertEquals(Categories.FOOD, db.overridesDao().get("TJK4AB12FB")!!.categoryKey)
     }
+
+    @Test
+    fun `imported v1 rules keep v1's order - names before paybills, the lowest id first (R156)`() = runTest {
+        val shop = Sms.paybill("TJK4AB12GG", "SAMPLE SHOP CENTRE", "7788", "2,500.00")
+        SchemaFixture.create(context, "order.db", 5).use { helper ->
+            LegacyDbWriter(helper.writableDatabase, 5).apply {
+                defaultCategories(); defaultRules()
+                rule(100, 2, "PAYBILL", "7788")                     // v1 tried paybill rules after every name rule
+                rule(101, 5, "RECIPIENT_NAME", "SAMPLE SHOP")       // v1's pick: the first name rule that matches
+                rule(102, 10, "RECIPIENT_NAME", "SAMPLE SHOP CENTRE")
+                tx(1, "TJK4AB12GG", "SEND", "OUTFLOW", shop, at, 5, recipientName = "SAMPLE SHOP CENTRE", accountNumber = "7788")
+            }
+        }
+        val db = LedgaDatabase.builder(context, "order.db").build().also { db = it }
+        LegacyImporter(db).run()
+        Deriver(db).rebuildAll()
+        assertEquals(Categories.FOOD, db.tx("TJK4AB12GG").categoryKey, "the rule v1 filed it by, not the newest")
+        assertEquals(3, db.rulesDao().all().count { it.origin == RuleOrigin.USER })
+    }
 }
