@@ -7,17 +7,27 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ledga.app.ui.app.SmsPermissions
+import com.ledga.app.ui.app.openAppSettings
+import com.ledga.app.ui.app.showsRationale
 
 /** Onboarding with its ViewModel and the two system permission dialogs. [onDone] leaves for Home. */
 @Composable
 fun OnboardingRoute(onDone: () -> Unit, vm: OnboardingViewModel = hiltViewModel()) {
     val state by vm.state.collectAsStateWithLifecycle()
     LaunchedEffect(state.finished) { if (state.finished) onDone() }
+    val context = LocalContext.current
     val sms = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
-        vm.onSmsResult(result[Manifest.permission.READ_SMS] == true)
+        vm.onSmsResult(result[Manifest.permission.READ_SMS] == true, context.showsRationale(Manifest.permission.READ_SMS))
+    }
+    // R193: back from App info, where a blocked SMS access may have been allowed.
+    LifecycleResumeEffect(Unit) {
+        vm.onResume()
+        onPauseOrDispose { }
     }
     val notify = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { vm.done() }
     val phone = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { vm.onPhoneResult() }
@@ -38,5 +48,6 @@ fun OnboardingRoute(onDone: () -> Unit, vm: OnboardingViewModel = hiltViewModel(
             onAnswer = vm::answer,
             onAllowPhone = { phone.launch(Manifest.permission.READ_PHONE_STATE) },
         ),
+        onOpenAppInfo = context::openAppSettings,
     )
 }

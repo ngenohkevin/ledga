@@ -8,6 +8,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
@@ -40,6 +41,23 @@ class OnboardingLayoutTest {
         compose.onNodeWithText(NAME_LABEL, useUnmergedTree = true).fetchSemanticsNode()
             .config[SemanticsActions.GetTextLayoutResult].action!!.invoke(layouts)
         assertEquals(1, layouts.single().lineCount, "a wrapped label runs into the outlined field's border")
+    }
+
+    @Test
+    fun `when Android blocks SMS, the SMS step shows the way past it, with Open App info and Not now (R193)`() {
+        var opened = 0
+        var skipped = 0
+        compose.setContent {
+            LedgaTheme {
+                OnboardingScreen(OnboardingState(Step.SMS, smsBlocked = true), {}, {}, {}, { skipped++ }, {}, { _, _ -> }, {}, onOpenAppInfo = { opened++ })
+            }
+        }
+        compose.onNodeWithText("Android blocked SMS access").assertExists()
+        compose.onNodeWithText("Allow restricted settings", substring = true).assertExists()
+        compose.onNodeWithText("Open App info").performClick()
+        compose.onNodeWithText("Not now").performClick()
+        assertEquals(1, opened)
+        assertEquals(1, skipped)
     }
 
     private companion object {

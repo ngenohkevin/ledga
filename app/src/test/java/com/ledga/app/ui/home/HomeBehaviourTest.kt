@@ -72,6 +72,16 @@ class HomeBehaviourTest {
     }
 
     @Test
+    fun `when Android blocks SMS, the empty Home shows the way past it and opens App info (R193)`() {
+        var opened = 0
+        show(HomeUi(loaded = true, greeting = "Good morning", smsGranted = false, smsToSettings = true, smsRestricted = true), HomeActions(onAllowSms = { opened++ }))
+        compose.onNodeWithText("Android blocked SMS access").assertIsDisplayed()
+        compose.onNodeWithText("Allow restricted settings", substring = true).assertExists()
+        compose.onNodeWithText("Open App info").performScrollTo().performClick()
+        assertEquals(1, opened)
+    }
+
+    @Test
     fun `Home warns when v1's notes and categories couldn't be moved`() {
         show(ui.copy(legacyImportFailed = true), HomeActions())
         compose.onNodeWithText(LEGACY_IMPORT_FAILED_TEXT).assertExists()

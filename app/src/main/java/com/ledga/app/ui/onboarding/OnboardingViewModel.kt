@@ -2,6 +2,7 @@ package com.ledga.app.ui.onboarding
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ledga.app.startup.SmsAccess
 import com.ledga.app.data.backup.BackupFileError
 import com.ledga.app.data.backup.BackupFiles
 import com.ledga.app.data.backup.LineQuestion
@@ -65,6 +66,8 @@ data class OnboardingState(
     /** The backup came back; the inbox import follows. */
     val restored: Boolean = false,
     val phoneAccess: Boolean = true,
+    /** R193: Android refused SMS as a restricted setting (an app installed from a file): the SMS step shows the way past it. */
+    val smsBlocked: Boolean = false,
 )
 
 /**
@@ -92,6 +95,7 @@ class OnboardingViewModel @Inject constructor(
     private val phone: PhoneAccess,
     private val updates: UpdateWork,
     private val whatsNew: WhatsNew,
+    private val sms: SmsAccess,
 ) : ViewModel() {
     private val _state = MutableStateFlow(OnboardingState(steps = steps(), phoneAccess = phone.granted()))
     val state: StateFlow<OnboardingState> = _state.asStateFlow()
@@ -141,9 +145,15 @@ class OnboardingViewModel @Inject constructor(
     }
 
     /** The SMS dialog's answer. A denial is "Not now": Home then explains how to allow it (spec §10.4). */
-    fun onSmsResult(granted: Boolean) {
+    /**
+     * Android's answer to the SMS request. [showRationale] false means Android won't ask again: on a file install on
+     * Android 15+ that is its block on SMS (R193), so the step stays and shows the way past it instead of moving on.
+     */
+    fun onSmsResult(granted: Boolean, showRationale: Boolean = true) {
         viewModelScope.launch {
+            if (!granted && !showRationale && sms.mayBeRestricted()) return@launch _state.update { it.copy(smsBlocked = true) }
             if (!granted) return@launch finish()
+            _state.update { it.copy(smsBlocked = false) }
             val found = withContext(Dispatchers.IO) { inbox.read(0) }
             val offer = withContext(Dispatchers.IO) { findOffer() }
             _state.update {
@@ -154,6 +164,11 @@ class OnboardingViewModel @Inject constructor(
             }
             go(Step.IMPORT)
         }
+    }
+
+    /** R193: back from App info; once SMS is allowed there, the step moves on as if Android had said yes. */
+    fun onResume() {
+        if (_state.value.smsBlocked && sms.granted()) onSmsResult(granted = true)
     }
 
     /** R126: a snapshot, on a phone with no messages yet; null when it can't be read. */

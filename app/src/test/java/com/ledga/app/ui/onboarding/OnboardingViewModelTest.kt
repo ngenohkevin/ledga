@@ -11,6 +11,7 @@ import com.ledga.app.data.ingest.RawSms
 import com.ledga.app.data.ingest.SmsIngestor
 import com.ledga.app.data.lines.LinesRepository
 import com.ledga.app.data.lines.PhoneAccess
+import com.ledga.app.startup.SmsAccess
 import com.ledga.app.data.lines.Sim
 import com.ledga.app.data.room.SmsSource
 import com.ledga.app.data.settings.SettingsStore
@@ -66,7 +67,14 @@ class OnboardingViewModelTest {
     private val snapshots by lazy { testSnapshots(db, tmp.root, settings) }
     private val restorer by lazy { Restorer(db, Deriver(db), settings, snapshots, sims, DeviceId { "this-phone" }, Clock.systemUTC()) }
 
-    private fun vm() = OnboardingViewModel(settings, { inbox }, work, lines, { askNotifications }, snapshots, restorer, db, PhoneAccess { true }, updates, whatsNew)
+    private var smsGranted = false
+    private var restricted = false
+    private val sms = object : SmsAccess {
+        override fun granted() = smsGranted
+        override fun mayBeRestricted() = restricted
+    }
+
+    private fun vm() = OnboardingViewModel(settings, { inbox }, work, lines, { askNotifications }, snapshots, restorer, db, PhoneAccess { true }, updates, whatsNew, sms)
 
     /** Android restored another phone's snapshot onto this one (two lines, one payment). */
     private suspend fun foundBackup() {
@@ -110,6 +118,34 @@ class OnboardingViewModelTest {
         vm.onSmsResult(granted = false)
         vm.state.first { it.finished }
         assertEquals(emptyList(), work.calls)
+    }
+
+    @Test
+    fun `when Android blocks SMS on a file install, the SMS step shows the way past it and goes on once allowed (R193)`() = runTest {
+        restricted = true
+        val vm = vm()
+        vm.next()
+        vm.state.first { it.step == Step.SMS }
+        vm.onSmsResult(granted = false, showRationale = false)
+        val blocked = vm.state.first { it.smsBlocked }
+        assertFalse(blocked.finished, "the steps show instead of skipping ahead")
+        assertEquals(Step.SMS, blocked.step)
+        vm.onResume() // back from App info, still blocked
+        assertTrue(vm.state.value.smsBlocked)
+        smsGranted = true
+        vm.onResume() // back from App info, allowed
+        vm.state.first { it.step == Step.IMPORT && !it.smsBlocked }
+    }
+
+    @Test
+    fun `a refusal that isn't Android's block still finishes onboarding (R193)`() = runTest {
+        val store = vm()
+        store.onSmsResult(granted = false, showRationale = false) // not installed from a file
+        store.state.first { it.finished }
+        restricted = true
+        val stillAsks = vm()
+        stillAsks.onSmsResult(granted = false, showRationale = true) // Android would ask again: a plain no
+        stillAsks.state.first { it.finished }
     }
 
     @Test

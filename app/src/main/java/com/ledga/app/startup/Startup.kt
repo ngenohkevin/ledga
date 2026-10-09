@@ -28,6 +28,12 @@ sealed interface StartupState {
 /** READ_SMS, checked fresh each time (the user can revoke it in Settings at any moment). */
 fun interface SmsAccess {
     fun granted(): Boolean
+
+    /**
+     * R193: Android 15+ blocks SMS access, as a "restricted setting", for an app installed from a file (a browser download,
+     * Files), until the person allows restricted settings in App info. True when that could be why SMS was refused.
+     */
+    fun mayBeRestricted(): Boolean = false
 }
 
 /**

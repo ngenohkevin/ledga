@@ -37,6 +37,8 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.ledga.app.ui.app.HeroIcon
+import com.ledga.app.ui.app.SmsBlockedSteps
+import com.ledga.app.ui.app.SmsBlockedText
 import com.ledga.app.ui.app.grouped
 import com.ledga.app.ui.backup.LineQuestionsContent
 import com.ledga.app.ui.design.components.Banner
@@ -78,10 +80,11 @@ fun OnboardingScreen(
     onLineName: (Long, String) -> Unit,
     onAllowNotifications: () -> Unit,
     restore: RestoreOfferActions = RestoreOfferActions(),
+    onOpenAppInfo: () -> Unit = {},
 ) {
     when (state.step) {
         Step.WELCOME -> WelcomeStep(state, onName, onNext)
-        Step.SMS -> SmsStep(state, onAllowSms, onSkip)
+        Step.SMS -> if (state.smsBlocked) SmsBlockedStep(state, onOpenAppInfo, onSkip) else SmsStep(state, onAllowSms, onSkip)
         Step.IMPORT -> ImportStep(state, onImport, onNext, onLineName, restore)
         Step.NOTIFICATIONS -> NotificationsStep(state, onAllowNotifications, onSkip)
     }
@@ -122,6 +125,21 @@ private fun SmsStep(state: OnboardingState, onAllowSms: () -> Unit, onSkip: () -
     Bullet("Nothing is ever sent to a server")
     Bullet("You can turn this off any time in Settings")
     TrustCard("Your data stays on this phone. If Android backup is on, a private copy is kept in your Google account so you can restore on a new phone.")
+}
+
+/** R193: Android refused SMS as a restricted setting (an app installed from a file); the way past it, then come back. */
+@Composable
+private fun SmsBlockedStep(state: OnboardingState, onOpenAppInfo: () -> Unit, onSkip: () -> Unit) = StepFrame(
+    state,
+    icon = "fluent_incoming_envelope",
+    title = SmsBlockedText.TITLE,
+    lead = SmsBlockedText.LEAD,
+    actions = {
+        Primary(SmsBlockedText.ACTION, onOpenAppInfo)
+        LinkButton("Not now", onSkip)
+    },
+) {
+    SmsBlockedSteps()
 }
 
 @Composable

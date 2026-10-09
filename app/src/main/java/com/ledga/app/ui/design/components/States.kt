@@ -31,7 +31,10 @@ import com.ledga.app.ui.design.theme.LedgaTheme
 import com.ledga.app.ui.design.tokens.Spacing
 import com.ledga.app.ui.design.type.LedgaType
 
-/** Every list and card has a designed empty state (spec §10.5): 3D icon, title, explanation, optional action. */
+/**
+ * Every list and card has a designed empty state (spec §10.5): 3D icon, title, explanation, optional action. [extra]
+ * sits between the explanation and the action (R193: the steps past Android's SMS block).
+ */
 @Composable
 fun EmptyState(
     iconKey: String,
@@ -40,6 +43,7 @@ fun EmptyState(
     modifier: Modifier = Modifier,
     actionLabel: String? = null,
     onAction: (() -> Unit)? = null,
+    extra: (@Composable () -> Unit)? = null,
 ) {
     val c = LedgaTheme.colors
     Column(
@@ -52,6 +56,7 @@ fun EmptyState(
         }
         Text(title, Modifier.padding(top = Spacing.xs), style = LedgaType.section, color = c.ink, textAlign = TextAlign.Center)
         Text(body, style = LedgaType.body, color = c.muted, textAlign = TextAlign.Center)
+        extra?.invoke()
         if (actionLabel != null && onAction != null) PrimaryPill(actionLabel, onAction, Modifier.padding(top = Spacing.s))
     }
 }

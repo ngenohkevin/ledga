@@ -87,6 +87,8 @@ data class HomeUi(
     val smsGranted: Boolean = true,
     /** Android won't show the SMS dialog again: the next "Allow" opens Settings (4a M3). */
     val smsToSettings: Boolean = false,
+    /** R193: that refusal is likely Android 15+'s block on a file install: Home shows the way past it. */
+    val smsRestricted: Boolean = false,
     val history: HistoryProgress? = null,
     val legacyImportFailed: Boolean = false,
     /** R59, R109: onboarded, Android won't let Ledga post (any version), and the person hasn't said "Not now". */
@@ -124,6 +126,9 @@ class HomeViewModel @Inject constructor(
     private val period = MutableStateFlow(PeriodType.MONTH)
     private val smsGranted = MutableStateFlow(sms.granted())
     private val smsBlocked = MutableStateFlow(false)
+
+    /** Where Ledga was installed from doesn't change while Home is open (R193). */
+    private val restrictedInstall = sms.mayBeRestricted()
     private val notifyAsk = MutableStateFlow(notifications.shouldAsk())
     private val notifyBlocked = MutableStateFlow(false)
     private val notifyEnabled = MutableStateFlow(notifications.enabled())
@@ -211,6 +216,7 @@ class HomeViewModel @Inject constructor(
             hasHistory = bg.hasHistory,
             smsGranted = a.smsGranted,
             smsToSettings = a.smsBlocked,
+            smsRestricted = a.smsBlocked && !a.smsGranted && restrictedInstall,
             history = bg.history,
             legacyImportFailed = bg.legacyImportFailed,
             notificationsNudge = !a.notifyEnabled && s.onboarded && !s.notificationNudgeDismissed,

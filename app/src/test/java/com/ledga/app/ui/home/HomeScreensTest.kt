@@ -124,6 +124,13 @@ class HomeScreensTest {
     }
 
     @Test
+    fun noSmsBlocked() = snapScreen("home_no_sms_blocked") {
+        ShellFrame(Tab.HOME, onSelect = {}) {
+            HomeContent(HomeUi(loaded = true, greeting = "Good morning", smsGranted = false, smsToSettings = true, smsRestricted = true), HomeActions())
+        }
+    }
+
+    @Test
     fun landscape() = snapScreenLandscape("home") { ShellFrame(Tab.HOME, onSelect = {}) { HomeContent(home, HomeActions()) } }
 
     @Test

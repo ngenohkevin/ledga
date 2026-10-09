@@ -9,6 +9,9 @@ to type in.
 2. Open it. Android asks once to let your browser or Files app install apps: allow it.
 3. Google Play Protect may say **"App scan recommended"**, because Ledga doesn't come from the Play Store. Choose
    **Scan app**: Play Protect checks it, then the install goes ahead.
+4. **Android 15 and later** block SMS access for apps installed from a file, so "Allow SMS access" may do nothing at
+   first. Ledga then shows the way past it: in App info, tap Permissions › SMS › Allow (Android says it's restricted),
+   then ⋮ › **Allow restricted settings**, then Permissions › SMS › Allow again.
 
 After that Ledga updates itself. You → Updates shows new versions; Android may ask once more before the first update
 Ledga installs.

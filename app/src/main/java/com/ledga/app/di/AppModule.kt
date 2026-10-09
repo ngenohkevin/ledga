@@ -3,6 +3,7 @@ package com.ledga.app.di
 import android.Manifest
 import android.content.ContentResolver
 import android.content.Context
+import android.content.pm.PackageInstaller
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.core.app.NotificationManagerCompat
@@ -54,8 +55,14 @@ object AppModule {
     fun workManager(@ApplicationContext context: Context): WorkManager = WorkManager.getInstance(context)
 
     @Provides
-    fun smsAccess(@ApplicationContext context: Context): SmsAccess = SmsAccess {
-        ContextCompat.checkSelfPermission(context, Manifest.permission.READ_SMS) == PackageManager.PERMISSION_GRANTED
+    fun smsAccess(@ApplicationContext context: Context): SmsAccess = object : SmsAccess {
+        override fun granted() = ContextCompat.checkSelfPermission(context, Manifest.permission.READ_SMS) == PackageManager.PERMISSION_GRANTED
+
+        override fun mayBeRestricted(): Boolean {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM) return false
+            val source = runCatching { context.packageManager.getInstallSourceInfo(context.packageName).packageSource }.getOrNull()
+            return source == PackageInstaller.PACKAGE_SOURCE_LOCAL_FILE || source == PackageInstaller.PACKAGE_SOURCE_DOWNLOADED_FILE
+        }
     }
 
     @Provides

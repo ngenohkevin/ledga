@@ -39,6 +39,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.ledga.app.ui.app.SmsBlockedSteps
+import com.ledga.app.ui.app.SmsBlockedText
 import com.ledga.app.ui.app.SmsPermissions
 import com.ledga.app.ui.app.TakeRequest
 import com.ledga.app.ui.app.openAppSettings
@@ -104,6 +106,14 @@ fun HomeContent(ui: HomeUi, actions: HomeActions, modifier: Modifier = Modifier)
             HomeBanners(ui, actions)
             when {
                 !ui.loaded -> HomeSkeleton()
+                // R193: Android 15+ blocked SMS for this file install; the way past it.
+                !ui.hasHistory && ui.smsRestricted -> EmptyState(
+                    "fluent_incoming_envelope",
+                    SmsBlockedText.TITLE,
+                    SmsBlockedText.LEAD,
+                    actionLabel = SmsBlockedText.ACTION,
+                    onAction = actions.onAllowSms,
+                ) { SmsBlockedSteps(Modifier.padding(vertical = Spacing.s)) }
                 !ui.hasHistory && !ui.smsGranted -> EmptyState(
                     "fluent_incoming_envelope",
                     "Ledga can't see your M-Pesa messages",

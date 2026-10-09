@@ -84,6 +84,9 @@ Everything lives in `com.ledga.app.ui.design`. Until Phase 4 uses it, R8 strips 
 - **Home (4c).** `HomeRoute` owns the permission requests (4a M3: the first tap asks Android; once Android won't ask
   again, the next tap opens Settings), the sheets (`HomeSheets`: payment, picker, Fuliza; Hide closes the Fuliza sheet
   too) and Undo. `HomeContent` is stateless.
+  - R193: on Android 15+, an app installed from a file has SMS blocked as a "restricted setting" (`SmsAccess.mayBeRestricted`).
+    When Android refuses for good there, Home's empty state and onboarding's SMS step show `SmsBlockedSteps` (owner-approved copy) with
+    "Open App info". Onboarding re-checks on resume and moves on once SMS is allowed. The README's install steps say the same.
   - Recent rows take `HomeText.rowTime` as their tail: the time today, then "Yesterday" or the date. No balance (R56).
   - The spending card's labels sit under `MiniBars` in its slots and fall back to short labels when the full ones don't
     fit. Its fees line and badge, and its two footer figures, are `FlowRow`s: side by side while they fit, else wrapped

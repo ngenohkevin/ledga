@@ -13,6 +13,7 @@ import com.ledga.app.data.trackers.Trackers
 import com.ledga.app.data.update.ReleasesResponse
 import com.ledga.app.data.update.UpdateStore
 import com.ledga.app.data.update.WhatsNew
+import com.ledga.app.startup.SmsAccess
 import com.ledga.app.testing.FakeBackgroundWork
 import com.ledga.app.testing.FakePrefsStore
 import com.ledga.app.testing.FakeUpdateHttp
@@ -70,6 +71,11 @@ class HomeViewModelTest {
     private val links = ActivityLinks()
     private val homeLinks = HomeLinks()
     private var granted = true
+    private var restricted = false
+    private val sms = object : SmsAccess {
+        override fun granted() = granted
+        override fun mayBeRestricted() = restricted
+    }
     private var notifyAsk = false
     private var notifyAccess: NotificationAccess = NotificationAccess { notifyAsk }
     private val vms = TestViewModels()
@@ -83,7 +89,7 @@ class HomeViewModelTest {
     private fun vm(live: LiveClock = LiveClock(clock) { awaitCancellation() }) = vms.track(
         HomeViewModel(
             LedgerQueries(db), db, Trackers(db, LedgerQueries(db)), selectedLine(db, prefs), live, work,
-            { granted }, notifyAccess, settings, TransactionEdits(db, deriver, clock), links, homeLinks, updates, whatsNew, merges,
+            sms, notifyAccess, settings, TransactionEdits(db, deriver, clock), links, homeLinks, updates, whatsNew, merges,
         ),
     )
 
@@ -213,6 +219,29 @@ class HomeViewModelTest {
         assertTrue(vm.ui.first { it.notificationsToSettings }.notificationsToSettings)
         vm.dismissNotifications()
         assertFalse(vm.ui.first { !it.notificationsNudge }.notificationsNudge)
+    }
+
+    @Test
+    fun `when Android blocks SMS on a file install, Home shows the way past it until allowed (R193)`() = runTest {
+        granted = false
+        restricted = true
+        val vm = vm()
+        assertFalse(vm.ui.first { it.loaded && !it.smsGranted }.smsRestricted, "not before Android has refused")
+        vm.onSmsDenied(showRationale = false)
+        assertTrue(vm.ui.first { it.smsRestricted }.smsToSettings)
+        granted = true
+        vm.refresh() // back from App info
+        assertFalse(vm.ui.first { it.smsGranted }.smsRestricted)
+    }
+
+    @Test
+    fun `a lasting refusal on a store install keeps the plain Settings path (R193)`() = runTest {
+        granted = false
+        val vm = vm()
+        vm.ui.first { it.loaded && !it.smsGranted }
+        vm.onSmsDenied(showRationale = false)
+        val ui = vm.ui.first { it.smsToSettings }
+        assertFalse(ui.smsRestricted)
     }
 
     @Test

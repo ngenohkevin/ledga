@@ -34,6 +34,9 @@ class OnboardingScreensTest {
     fun sms() = snapScreen("onboarding_sms", screen(OnboardingState(Step.SMS, all)))
 
     @Test
+    fun smsBlocked() = snapScreen("onboarding_sms_blocked", screen(OnboardingState(Step.SMS, all, smsBlocked = true)))
+
+    @Test
     fun importPreview() = snapScreen("onboarding_import", screen(OnboardingState(Step.IMPORT, all, preview = preview)))
 
     @Test
