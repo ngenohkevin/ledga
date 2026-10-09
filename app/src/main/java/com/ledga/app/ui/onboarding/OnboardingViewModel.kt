@@ -144,10 +144,10 @@ class OnboardingViewModel @Inject constructor(
         }
     }
 
-    /** The SMS dialog's answer. A denial is "Not now": Home then explains how to allow it (spec §10.4). */
     /**
-     * Android's answer to the SMS request. [showRationale] false means Android won't ask again: on a file install on
-     * Android 15+ that is its block on SMS (R193), so the step stays and shows the way past it instead of moving on.
+     * The SMS dialog's answer. A denial is "Not now": Home then explains how to allow it (spec §10.4). [showRationale]
+     * false means Android won't ask again: where Android 15+ may restrict SMS (R193), the step stays and shows the way
+     * past it instead of moving on.
      */
     fun onSmsResult(granted: Boolean, showRationale: Boolean = true) {
         viewModelScope.launch {

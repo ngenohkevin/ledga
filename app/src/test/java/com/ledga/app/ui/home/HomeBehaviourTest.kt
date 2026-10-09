@@ -76,7 +76,7 @@ class HomeBehaviourTest {
         var opened = 0
         show(HomeUi(loaded = true, greeting = "Good morning", smsGranted = false, smsToSettings = true, smsRestricted = true), HomeActions(onAllowSms = { opened++ }))
         compose.onNodeWithText("Android blocked SMS access").assertIsDisplayed()
-        compose.onNodeWithText("Allow restricted settings", substring = true).assertExists()
+        compose.onNodeWithContentDescription("tap the three-dot menu, then Allow restricted settings", substring = true).assertExists()
         compose.onNodeWithText("Open App info").performScrollTo().performClick()
         assertEquals(1, opened)
     }

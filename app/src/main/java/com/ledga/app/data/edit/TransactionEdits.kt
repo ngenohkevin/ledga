@@ -109,7 +109,10 @@ class TransactionEdits(private val db: LedgaDatabase, private val deriver: Deriv
         return moving
     }
 
-    /** Undo of [placeOnLines]: those payments leave their line again; override rows left saying nothing go. */
+    /**
+     * Undo of [placeOnLines] and [moveToLines]: those payments lose the line they were given and go back to the one their
+     * messages are on (none, for ones that weren't on a line); override rows left saying nothing go.
+     */
     suspend fun unplace(codes: List<String>) = serial {
         val now = clock.instant()
         codes.chunked(Deriver.CHUNK).forEach { chunk ->

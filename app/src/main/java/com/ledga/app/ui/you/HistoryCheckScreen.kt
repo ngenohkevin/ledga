@@ -209,9 +209,12 @@ fun HistoryCheckScreen(onBack: () -> Unit, onOpenCategory: (String) -> Unit, onU
                 onUnassigned = onUnassigned,
                 onMove = { m ->
                     vm.move(m) { moved ->
-                        scope.launch {
-                            val undo = snackbar.showSnackbar(HistoryText.moved(m), actionLabel = "Undo", duration = SnackbarDuration.Short)
-                            if (undo == SnackbarResult.ActionPerformed) vm.undoMove(moved)
+                        // The snackbar counts what moved, which a payment placed meanwhile can make fewer (final review M8).
+                        if (moved.isNotEmpty()) {
+                            scope.launch {
+                                val undo = snackbar.showSnackbar(HistoryText.moved(m.copy(codes = moved)), actionLabel = "Undo", duration = SnackbarDuration.Short)
+                                if (undo == SnackbarResult.ActionPerformed) vm.undoMove(moved)
+                            }
                         }
                     }
                 },

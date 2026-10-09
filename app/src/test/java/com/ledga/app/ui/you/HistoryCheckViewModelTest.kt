@@ -197,5 +197,18 @@ class HistoryCheckViewModelTest {
         TransactionEdits(db, Deriver(db, clock), clock).setLine("TJK4AB15AB", BUSINESS.id)
         assertEquals(emptyList(), vm().ui.first { it.loaded }.moves)
     }
+
+    @Test
+    fun `a second tap on Move while one runs does nothing (final review M8)`() = runTest {
+        misfiled()
+        val vm = vm()
+        val m = vm.ui.first { it.loaded }.moves.single()
+        val calls = mutableListOf<List<String>>()
+        vm.move(m) { calls += it }
+        vm.move(m) { calls += it }
+        vm.ui.first { it.loaded && it.moves.isEmpty() }
+        repeat(20) { kotlinx.coroutines.yield() }
+        assertEquals(listOf(listOf("TJK4AB15AB")), calls)
+    }
 }
 

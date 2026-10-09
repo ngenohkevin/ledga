@@ -60,8 +60,10 @@ object AppModule {
 
         override fun mayBeRestricted(): Boolean {
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM) return false
+            // Final review M5: anything but a store install counts. Ledga's own updates leave the source unspecified, and
+            // a wrong guess costs only words: the steps grant SMS whether or not Android restricted it.
             val source = runCatching { context.packageManager.getInstallSourceInfo(context.packageName).packageSource }.getOrNull()
-            return source == PackageInstaller.PACKAGE_SOURCE_LOCAL_FILE || source == PackageInstaller.PACKAGE_SOURCE_DOWNLOADED_FILE
+            return source != PackageInstaller.PACKAGE_SOURCE_STORE
         }
     }
 

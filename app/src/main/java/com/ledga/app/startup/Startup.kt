@@ -31,7 +31,8 @@ fun interface SmsAccess {
 
     /**
      * R193: Android 15+ blocks SMS access, as a "restricted setting", for an app installed from a file (a browser download,
-     * Files), until the person allows restricted settings in App info. True when that could be why SMS was refused.
+     * Files), until the person allows restricted settings in App info. True when that could be why SMS was refused:
+     * Android 15+ and not installed from a store.
      */
     fun mayBeRestricted(): Boolean = false
 }

@@ -110,8 +110,8 @@ class HistoryCheckViewModel @Inject constructor(
     fun check() {
         viewModelScope.launch {
             val txs = db.transactionsDao().all()
-            val derived = txs.map { it.toDerived() }
-            val report = withContext(Dispatchers.Default) { BalanceChain.check(derived) }
+            // Final review M7: the mapping is ~8.5k objects on a phone with years of history; not on the main thread.
+            val (derived, report) = withContext(Dispatchers.Default) { txs.map { it.toDerived() }.let { it to BalanceChain.check(it) } }
             val byCode = txs.associateBy { it.code }
             val lines = db.linesDao().all().associateBy { it.id }
             // With two or more lines, a payment not on a line could be either line's: its balance jumps between SIMs and
@@ -148,11 +148,19 @@ class HistoryCheckViewModel @Inject constructor(
 
     fun undoHide(code: String): Job = viewModelScope.launch { edits.setHidden(code, false) }
 
-    /** R194: puts [m]'s payments on their line, as the person's placement, and checks again; [onMoved] gets them for Undo. */
-    fun move(m: LineMoveUi, onMoved: (List<String>) -> Unit = {}): Job = viewModelScope.launch {
-        val moved = edits.moveToLines(m.codes.associateWith { m.lineId })
-        check()
-        onMoved(moved)
+    private var moving: Job? = null
+
+    /**
+     * R194: puts [m]'s payments on their line, as the person's placement, and checks again; [onMoved] gets the ones it
+     * moved, for Undo. A second tap while a move runs does nothing (final review M8).
+     */
+    fun move(m: LineMoveUi, onMoved: (List<String>) -> Unit = {}): Job? {
+        if (moving?.isActive == true) return null
+        return viewModelScope.launch {
+            val moved = edits.moveToLines(m.codes.associateWith { m.lineId })
+            check()
+            onMoved(moved)
+        }.also { moving = it }
     }
 
     /** Undo of [move]: those payments go back to the line their messages are on. */

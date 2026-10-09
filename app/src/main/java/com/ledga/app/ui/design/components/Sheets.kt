@@ -104,7 +104,7 @@ fun LedgaModalSheet(
  * closes it.
  */
 @OptIn(ExperimentalMaterial3Api::class)
-private class KeepOpenSheetStill(private val sheet: SheetState) : NestedScrollConnection {
+internal class KeepOpenSheetStill(private val sheet: SheetState) : NestedScrollConnection {
     override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity =
         if (available.y < 0f && sheet.currentValue == SheetValue.Expanded) Velocity(0f, available.y) else Velocity.Zero
 }

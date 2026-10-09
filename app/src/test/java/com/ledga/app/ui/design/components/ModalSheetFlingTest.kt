@@ -16,10 +16,12 @@ import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Velocity
 import com.ledga.app.ui.design.theme.Appearance
 import com.ledga.app.ui.design.theme.LedgaTheme
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import kotlinx.coroutines.runBlocking
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -88,10 +90,21 @@ class ModalSheetFlingTest {
     }
 
     @Test
-    fun `a flick down at the top of the content still closes the sheet`() {
+    fun `dragging down from the top of the content still closes the sheet`() {
         show(rows = 30)
         flick(40f)
         repeat(40) { compose.mainClock.advanceTimeByFrame() }
         assertEquals(SheetValue.Hidden, sheet.currentValue)
+    }
+
+    @Test
+    fun `an open sheet spends only an upward leftover flick, so a downward one still reaches it (final review M2)`() {
+        show(rows = 30)
+        assertEquals(SheetValue.Expanded, sheet.currentValue)
+        val keep = KeepOpenSheetStill(sheet)
+        runBlocking {
+            assertEquals(Velocity(0f, -2_000f), keep.onPostFling(Velocity.Zero, Velocity(0f, -2_000f)), "up: spent here")
+            assertEquals(Velocity.Zero, keep.onPostFling(Velocity.Zero, Velocity(0f, 2_000f)), "down: left for the sheet")
+        }
     }
 }

@@ -7,6 +7,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.text.TextLayoutResult
@@ -53,7 +54,7 @@ class OnboardingLayoutTest {
             }
         }
         compose.onNodeWithText("Android blocked SMS access").assertExists()
-        compose.onNodeWithText("Allow restricted settings", substring = true).assertExists()
+        compose.onNodeWithContentDescription("tap the three-dot menu, then Allow restricted settings", substring = true).assertExists()
         compose.onNodeWithText("Open App info").performClick()
         compose.onNodeWithText("Not now").performClick()
         assertEquals(1, opened)
