@@ -38,7 +38,7 @@ Everything lives in `com.ledga.app.ui.design`. Until Phase 4 uses it, R8 strips 
   - Period labels fall back to first letters when full labels don't fit, which only reads well for month names. Pass short labels for anything else.
 - Motion: respect `LedgaTheme.reducedMotion`. `AnimatedAmount`, `Skeleton` and progress `Banner` already do.
 - Touch targets are at least 48 dp. The one exception is `RuleChip`'s ×, a 22 dp visual button whose hit area Compose widens to 48 dp. An icon is decorative (`null`) only when text beside it names it.
-- Sheets use `LedgaModalSheet`. Its content doesn't scroll by itself: wrap long content in `verticalScroll` so actions stay reachable at large font scales. A lazy list inside a sheet scrolls itself; never wrap it in `verticalScroll`. Bottom navigation is `LedgaBottomBar`, which pads for the navigation bar; edge-to-edge for the rest of the screen is Phase 4's job.
+- Sheets use `LedgaModalSheet`. Its content doesn't scroll by itself: wrap long content in `verticalScroll` so actions stay reachable at large font scales. A lazy list inside a sheet scrolls itself; never wrap it in `verticalScroll`. An upward flick the content has left over never reaches an open sheet (`KeepOpenSheetStill`): M3 settled with it and its spring bounced the sheet past the top and back (owner report 2026-10-09, `ModalSheetFlingTest`). Bottom navigation is `LedgaBottomBar`, which pads for the navigation bar; edge-to-edge for the rest of the screen is Phase 4's job.
 
 ## Screens (Phase 4)
 
