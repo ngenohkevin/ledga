@@ -135,7 +135,8 @@ fun PersonSheetContent(ui: PersonSheetUi, items: LazyPagingItems<TxRow>, onOpenT
         items(count = items.itemCount, key = items.itemKey { it.code }) { i ->
             if (i > 0) RowDivider()
             val row = items[i]
-            if (row == null) {
+            // D3: just after the sheet opens for someone else, the list still holds the previous person's payments.
+            if (row == null || row.counterpartyKey != p.key) {
                 SkeletonRow()
                 return@items
             }

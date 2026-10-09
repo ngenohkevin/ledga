@@ -11,6 +11,7 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.longClick
@@ -166,4 +167,20 @@ class ActivityBehaviourTest {
         }
         compose.onNodeWithText("On Business ··87").assertIsDisplayed()
     }
+
+    @Test
+    fun `the person sheet never shows the previous person's payments while the new ones load (D3)`() {
+        val john = PersonRowUi(key = "JOHN EXAMPLE|0722000999", name = "John Example", phone = "0722 000 999", count = 1, totalCents = 50_000, lastAt = created)
+        // The list still holds Jane's payments for a moment after the sheet opens for John.
+        val jane = txRow(code = "TJK4AB12KA", kind = com.ledga.core.model.TxKind.SEND, name = "JANE TESTER", phone = "0712345111", account = null)
+        compose.setContent {
+            LedgaTheme(Appearance.LIGHT, reducedMotion = true) {
+                val items = remember { flowOf(PagingData.from(listOf(jane), complete)) }.collectAsLazyPagingItems()
+                PersonSheetContent(PersonSheetUi(john, PersonSummary(50_000, 1, 0, 0), categories, today), items, onOpenTx = {})
+            }
+        }
+        compose.onNodeWithText("John Example").assertIsDisplayed()
+        assertEquals(0, compose.onAllNodes(hasContentDescription("Jane Tester", substring = true, ignoreCase = true)).fetchSemanticsNodes().size)
+    }
 }
+
