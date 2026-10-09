@@ -42,5 +42,12 @@ class HistoryCheckScreensTest {
     fun breaks() = snapScreen("history_check_breaks") { ShellFrame(null, onSelect = {}) { HistoryCheckContent(breaks, HistoryCheckActions()) } }
 
     @Test
+    fun misfiled() = snapScreen("history_check_misfiled") {
+        ShellFrame(null, onSelect = {}) {
+            HistoryCheckContent(breaks.copy(moves = listOf(LineMoveUi(1, "Personal ··11", List(7) { "TJK4AB15A$it" }))), HistoryCheckActions())
+        }
+    }
+
+    @Test
     fun landscape() = snapScreenLandscape("history_check") { ShellFrame(null, onSelect = {}) { HistoryCheckContent(breaks, HistoryCheckActions()) } }
 }

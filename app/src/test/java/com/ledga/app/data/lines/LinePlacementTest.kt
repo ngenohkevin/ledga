@@ -84,6 +84,21 @@ class LinePlacementTest {
     }
 
     @Test
+    fun `moving puts payments on the line given even when they're on another, but never one the person placed (R194)`() = runTest {
+        twoLines(db)
+        val ingest = SmsIngestor(db, deriver)
+        ingest.ingest(RawSms("MPESA", Sms.SEND, Sms.at("2026-03-21T10:30:00Z"), 2, BUSINESS.id, SmsSource.INBOX))
+        ingest.ingest(RawSms("MPESA", Sms.KPLC, Sms.at("2026-03-21T12:00:00Z"), 2, BUSINESS.id, SmsSource.INBOX))
+        edits.setLine("TJK4AB12FA", BUSINESS.id) // the person's own choice
+        val moved = edits.moveToLines(mapOf("TJK4AB12FB" to PERSONAL.id, "TJK4AB12FA" to PERSONAL.id))
+        assertEquals(listOf("TJK4AB12FB"), moved)
+        assertEquals(PERSONAL.id, db.transactionsDao().get("TJK4AB12FB")?.lineId)
+        assertEquals(BUSINESS.id, db.transactionsDao().get("TJK4AB12FA")?.lineId, "the person's choice stands")
+        edits.unplace(moved)
+        assertEquals(BUSINESS.id, db.transactionsDao().get("TJK4AB12FB")?.lineId, "Undo: back to the line its message is on")
+    }
+
+    @Test
     fun `a date range is whole Nairobi days, both ends, and only payments not on a line`() = runTest {
         twoLines(db)
         db.transactionsDao().upsertAll(

@@ -86,4 +86,25 @@ class HistoryCheckBehaviourTest {
         compose.onNodeWithText("Put them on a line").performClick()
         assertEquals(1, opened)
     }
+
+    @Test
+    fun `payments on the wrong line get a card that moves them in one tap (R194)`() {
+        val move = LineMoveUi(1, "Line 1", List(7) { "TJK4AB15A$it" })
+        val tapped = mutableListOf<LineMoveUi>()
+        compose.setContent {
+            LedgaTheme(Appearance.LIGHT, reducedMotion = true) {
+                HistoryCheckContent(
+                    HistoryCheckUi(loaded = true, checked = 208, moves = listOf(move), today = LocalDate.parse("2026-10-06")),
+                    HistoryCheckActions(onMove = { tapped += it }),
+                )
+            }
+        }
+        val line1 = "Line${Char(0x00A0)}1" // the name stays whole when the title wraps
+        compose.onNodeWithText("7 payments belong on $line1").assertIsDisplayed()
+        compose.onNodeWithText("Move 7 payments to $line1").performClick()
+        assertEquals(listOf(move), tapped)
+        assertEquals("Moved 7 payments to $line1", HistoryText.moved(move))
+        assertEquals("1 payment belongs on $line1", HistoryText.moveTitle(move.copy(codes = listOf("TJK4AB15A0"))))
+    }
 }
+

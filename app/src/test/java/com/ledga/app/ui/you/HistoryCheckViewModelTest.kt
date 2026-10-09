@@ -8,6 +8,12 @@ import com.ledga.app.testing.MutableClock
 import com.ledga.app.testing.TestDb
 import com.ledga.app.testing.TestViewModels
 import com.ledga.app.testing.PERSONAL
+import com.ledga.app.data.room.LineRow
+import com.ledga.app.data.room.SmsSource
+import com.ledga.app.data.ingest.SmsIngestor
+import com.ledga.app.data.ingest.RawSms
+import com.ledga.app.testing.Sms
+import com.ledga.app.testing.BUSINESS
 import com.ledga.app.testing.twoLines
 import com.ledga.app.testing.txRow
 import com.ledga.app.time.LiveClock
@@ -151,4 +157,45 @@ class HistoryCheckViewModelTest {
         assertEquals(listOf("TJK4AB12HH"), ui.breaks.map { it.tx.code })
         assertTrue(ui.lines.none { it.mixed })
     }
+
+    /** Personal runs 1,000 → 900 → 700, but its 100 payment came in on Business, whose own balance is 5,000 (R194). */
+    private suspend fun misfiled() {
+        twoLines(db)
+        val ingest = SmsIngestor(db, Deriver(db, clock))
+        fun on(line: LineRow, body: String) = RawSms("MPESA", body, clock.instant(), line.subscriptionId, line.id, SmsSource.INBOX)
+        ingest.ingestAll(
+            listOf(
+                on(PERSONAL, Sms.receive("TJK4AB15AA", "JANE TESTER 0712345111", "1,000.00", "1/9/26 at 9:00 AM", balance = "1,000.00")),
+                on(BUSINESS, Sms.receive("TJK4AB15BA", "JANE TESTER 0712345111", "5,000.00", "1/9/26 at 10:00 AM", balance = "5,000.00")),
+                on(BUSINESS, Sms.buyGoods("TJK4AB15AB", "SAMPLE SHOP", "100.00", "2/9/26 at 9:00 AM", balance = "900.00")),
+                on(PERSONAL, Sms.buyGoods("TJK4AB15AC", "SAMPLE SHOP", "200.00", "3/9/26 at 9:00 AM", balance = "700.00")),
+                on(BUSINESS, Sms.buyGoods("TJK4AB15BB", "SAMPLE SHOP", "50.00", "4/9/26 at 9:00 AM", balance = "4,950.00")),
+            ),
+        )
+    }
+
+    @Test
+    fun `a payment whose balances carry on another line's is offered a move there, and Undo takes it back (R194)`() = runTest {
+        misfiled()
+        val vm = vm()
+        val ui = vm.ui.first { it.loaded }
+        assertEquals(listOf(LineMoveUi(PERSONAL.id, "Personal ··11", listOf("TJK4AB15AB"))), ui.moves)
+        assertEquals(3, ui.breaks.size, "both lines break around it")
+        var moved = emptyList<String>()
+        vm.move(ui.moves.single()) { moved = it }
+        val after = vm.ui.first { it.loaded && it.moves.isEmpty() }
+        assertEquals(0, after.breaks.size)
+        assertEquals(PERSONAL.id, db.transactionsDao().get("TJK4AB15AB")?.lineId)
+        vm.undoMove(moved)
+        vm.ui.first { it.moves.isNotEmpty() }
+        assertEquals(BUSINESS.id, db.transactionsDao().get("TJK4AB15AB")?.lineId)
+    }
+
+    @Test
+    fun `a payment the person put on its line is never offered a move (R194)`() = runTest {
+        misfiled()
+        TransactionEdits(db, Deriver(db, clock), clock).setLine("TJK4AB15AB", BUSINESS.id)
+        assertEquals(emptyList(), vm().ui.first { it.loaded }.moves)
+    }
 }
+

@@ -28,6 +28,10 @@ interface OverridesDao {
     @Query("SELECT * FROM overrides WHERE code IN (:codes)")
     suspend fun byCodes(codes: List<String>): List<OverrideRow>
 
+    /** R194: the payments the person put on a line themselves. */
+    @Query("SELECT code FROM overrides WHERE lineId IS NOT NULL")
+    suspend fun placedCodes(): List<String>
+
     @Query("SELECT * FROM overrides")
     suspend fun all(): List<OverrideRow>
 

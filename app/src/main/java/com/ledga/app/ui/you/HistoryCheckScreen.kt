@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
@@ -63,6 +64,8 @@ data class HistoryCheckActions(
     val onRescan: () -> Unit = {},
     val onOpenTx: (String) -> Unit = {},
     val onUnassigned: () -> Unit = {},
+    /** R194: move misfiled payments to the line their balances belong on. */
+    val onMove: (LineMoveUi) -> Unit = {},
 )
 
 /** History check (R79): the verdict, each line's result, then every break, newest first. */
@@ -101,6 +104,19 @@ fun HistoryCheckContent(ui: HistoryCheckUi, actions: HistoryCheckActions, modifi
                             }
                         }
                         if (ui.breaks.isNotEmpty()) PrimaryPill("Rescan SMS inbox", actions.onRescan, Modifier.fillMaxWidth().padding(top = Spacing.m))
+                    }
+                }
+                // R194: the most useful thing to do about the breaks, when the balances prove where payments belong.
+                items(ui.moves, key = { "move-${it.lineId}" }) { m ->
+                    LedgaCard(Modifier.fillMaxWidth().padding(top = Spacing.l)) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(Spacing.m)) {
+                            CategoryIcon("fluent_mobile_phone_with_arrow", contentDescription = null, size = WellSize.Large)
+                            Column(Modifier.weight(1f)) {
+                                Text(HistoryText.moveTitle(m), style = LedgaType.section, color = c.ink)
+                                Text(HistoryText.moveBody(m), style = LedgaType.body, color = c.muted)
+                            }
+                        }
+                        PrimaryPill(HistoryText.moveAction(m), { actions.onMove(m) }, Modifier.fillMaxWidth().padding(top = Spacing.m))
                     }
                 }
                 if (ui.lines.isNotEmpty()) {
@@ -191,6 +207,14 @@ fun HistoryCheckScreen(onBack: () -> Unit, onOpenCategory: (String) -> Unit, onU
                 },
                 onOpenTx = { sheets = sheets.copy(payment = it) },
                 onUnassigned = onUnassigned,
+                onMove = { m ->
+                    vm.move(m) { moved ->
+                        scope.launch {
+                            val undo = snackbar.showSnackbar(HistoryText.moved(m), actionLabel = "Undo", duration = SnackbarDuration.Short)
+                            if (undo == SnackbarResult.ActionPerformed) vm.undoMove(moved)
+                        }
+                    }
+                },
             ),
         )
         SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter).windowInsetsPadding(WindowInsets.navigationBars).padding(Spacing.l))

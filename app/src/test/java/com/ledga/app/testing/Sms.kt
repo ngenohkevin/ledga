@@ -24,9 +24,9 @@ object Sms {
     fun paybill(code: String, name: String, account: String, amount: String, whenText: String = "22/3/26 at 9:00 AM") =
         "$code Confirmed. Ksh$amount sent to $name for account $account on $whenText New M-PESA balance is Ksh3,000.00. Transaction cost, Ksh0.00."
 
-    fun receive(code: String, from: String, amount: String, whenText: String = "24/3/26 at 6:00 PM") =
-        "$code Confirmed.You have received Ksh$amount from $from on $whenText New M-PESA balance is Ksh1,800.00."
+    fun receive(code: String, from: String, amount: String, whenText: String = "24/3/26 at 6:00 PM", balance: String = "1,800.00") =
+        "$code Confirmed.You have received Ksh$amount from $from on $whenText New M-PESA balance is Ksh$balance."
 
-    fun buyGoods(code: String, merchant: String, amount: String, whenText: String = "5/4/26 at 8:05 AM") =
-        "$code Confirmed. Ksh$amount paid to $merchant. on $whenText.New M-PESA balance is Ksh820.00. Transaction cost, Ksh0.00."
+    fun buyGoods(code: String, merchant: String, amount: String, whenText: String = "5/4/26 at 8:05 AM", balance: String = "820.00") =
+        "$code Confirmed. Ksh$amount paid to $merchant. on $whenText.New M-PESA balance is Ksh$balance. Transaction cost, Ksh0.00."
 }

@@ -79,8 +79,21 @@ class TransactionEdits(private val db: LedgaDatabase, private val deriver: Deriv
      * rebuild keeps it. Returns the codes it moved, for Undo; a payment placed meanwhile is left where it is.
      */
     suspend fun placeOnLines(byCode: Map<String, Long>): List<String> = serial {
-        val now = clock.instant()
         val moving = byCode.keys.toList().chunked(Deriver.CHUNK).flatMap { db.transactionsDao().unassignedAmong(it) }
+        putOnLines(moving, byCode)
+    }
+
+    /**
+     * R194: each payment in [byCode] goes to its line as the person's placement (like [setLine]), whatever line it is on
+     * now, unless the person put it on one already. Returns the codes it moved, for Undo ([unplace]).
+     */
+    suspend fun moveToLines(byCode: Map<String, Long>): List<String> = serial {
+        val placed = byCode.keys.toList().chunked(Deriver.CHUNK).flatMap { db.overridesDao().byCodes(it) }.filter { it.lineId != null }.map { it.code }.toSet()
+        putOnLines(byCode.keys.filterNot { it in placed }, byCode)
+    }
+
+    private suspend fun putOnLines(moving: List<String>, byCode: Map<String, Long>): List<String> {
+        val now = clock.instant()
         moving.chunked(Deriver.CHUNK).forEach { chunk ->
             db.withTransaction {
                 val existing = db.overridesDao().byCodes(chunk).associateBy { it.code }
@@ -93,7 +106,7 @@ class TransactionEdits(private val db: LedgaDatabase, private val deriver: Deriv
             }
         }
         deriver.rederive(moving)
-        moving
+        return moving
     }
 
     /** Undo of [placeOnLines]: those payments leave their line again; override rows left saying nothing go. */
