@@ -24,6 +24,9 @@ import kotlin.test.assertTrue
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.yield
 import kotlinx.coroutines.withTimeout
 import org.junit.After
@@ -87,6 +90,48 @@ class CategoryPickerViewModelTest {
         vm.save { saved = true }
         withTimeout(10_000) { while (!saved) yield() }
         assertEquals(listOf(Categories.SCHOOL, Categories.SCHOOL), listOf("TJK4AB12JA", "TJK4AB12JB").map { db.transactionsDao().get(it)!!.categoryKey })
+    }
+
+    @Test
+    fun `a Save before any counts are in still decides on the chosen category's counts (final review M3)`() = runTest {
+        ingest(academy1024, academy2048)
+        // The payments' own category isn't offered (archived), so the picker opens with nothing selected and no counts:
+        // "apply to all" can only be right if Save fetches the chosen category's counts itself.
+        val own = db.transactionsDao().get("TJK4AB12JA")!!.categoryKey
+        db.categoriesDao().setArchived(own, true)
+        val vm = vm()
+        vm.open("TJK4AB12JA", session = 106)
+        assertNull(vm.state.first { it.loaded }.countsFor)
+        vm.select(Categories.SCHOOL)
+        var saved = false
+        vm.save { saved = true }
+        withTimeout(10_000) { while (!saved) yield() }
+        assertEquals(listOf(Categories.SCHOOL, Categories.SCHOOL), listOf("TJK4AB12JA", "TJK4AB12JB").map { db.transactionsDao().get(it)!!.categoryKey })
+    }
+
+    @Test
+    fun `a Save whose payment changed while its counts came in does nothing to the new one (final review M4)`() = runTest {
+        ingest(academy1024, academy2048, Sms.KPLC)
+        val own = db.transactionsDao().get("TJK4AB12JA")!!.categoryKey
+        db.categoriesDao().setArchived(own, true)
+        // Coroutines wait their turn, so the picker can reopen before the Save's counts are in.
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        fun pump(until: () -> Boolean = { false }) = repeat(300) {
+            testScheduler.runCurrent()
+            if (until()) return
+            Thread.sleep(5)
+        }
+        val vm = vm()
+        vm.open("TJK4AB12JA", session = 107)
+        pump { vm.state.value.loaded }
+        vm.select(Categories.SCHOOL)
+        var saved = false
+        vm.save { saved = true }
+        vm.open("TJK4AB12FA", session = 108)
+        pump()
+        assertFalse(saved, "the old Save neither closes the new picker nor files anything")
+        assertEquals(listOf(own, own), listOf("TJK4AB12JA", "TJK4AB12JB").map { db.transactionsDao().get(it)!!.categoryKey })
+        assertEquals("TJK4AB12FA", vm.state.value.code)
     }
 
     @Test

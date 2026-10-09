@@ -152,11 +152,15 @@ class CategoryPickerViewModel @Inject constructor(
     fun save(onDone: () -> Unit) {
         val c = code ?: return
         val key = _state.value.selected ?: return
+        val opened = session
         viewModelScope.launch {
             // dev-e2 review: a Save right after a tap waits for that category's counts. The previous category's decided
             // "apply to all" before, and a quick Save filed only this payment.
             if (_state.value.countsFor != key) recount(key)
             val s = _state.value
+            // Final review M4: if the picker reopened, or another category was tapped, while the counts came in, this
+            // Save is stale: it decides nothing and closes nothing.
+            if (session != opened || s.code != c || s.selected != key) return@launch
             // Nothing changed: an unchanged Save must not pin the category or file the name's other payments.
             if (key == initial && s.applyTo == ApplyTo.THIS_ONE) return@launch onDone()
             edits.setCategory(c, key, s.applyTo)
