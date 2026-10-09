@@ -276,10 +276,16 @@
   the old line and re-derives the moved payments. "Not the same" is remembered per pair on this phone
   (`Settings.lineMergesDismissed`, not in backups). A line the SIM can't name is "Line N", one above the highest
   automatic number in use (`LinesRepository.autoName`), because a merge can leave a gap such as Line 1 + Line 3.
-- **Misfiled payments (beta.4, R194).** History check runs `LineMisfits` (`:core`): at a break on line A, a payment on
-  another line whose balance carries on A's exactly, both into it and out of it, while not carrying on its own line's, and
-  which is the only such payment and not placed by the person (`OverridesDao.placedCodes`), belongs on A. Lines are
-  re-checked after each find. The screen offers "Move N payments to <line>": `TransactionEdits.moveToLines` writes the
+- **Misfiled payments (beta.4, R194).** History check runs `LineMisfits` (`:core`). At a break on line A, a payment on
+  another line belongs on A when all of these hold:
+  - its balance carries on A's exactly, both into it and out of it;
+  - it is a break on its own line;
+  - it is the only such payment;
+  - it wasn't placed by the person (`OverridesDao.placedCodes`);
+  - moving it leaves fewer breaks in all.
+  Balances come from `BalanceChain`'s own reading, which reorders within a minute and carries through payments with no
+  stated balance (final review I1). Lines are re-checked after each find. Two misfiled payments in one gap aren't found,
+  and nor is a payment that is first on its own line. The screen offers "Move N payments to <line>": `TransactionEdits.moveToLines` writes the
   person's placement (an override, so a rebuild keeps it; Undo is `unplace`). On the owner's post-merge data this found 7
   payments, Line 2 → Line 1, taking Line 2's breaks from 20 to 12.
 

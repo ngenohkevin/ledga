@@ -11,9 +11,9 @@ import kotlin.test.assertEquals
 class LineMisfitsTest {
     private fun ksh(s: String) = Money.parse(s)!!
 
-    private fun tx(code: String, kind: TxKind, at: String, amount: String, balance: String, line: Long) = DerivedTx(
+    private fun tx(code: String, kind: TxKind, at: String, amount: String, balance: String?, line: Long) = DerivedTx(
         code = code, lineId = line, occurredAt = Instant.parse(at), occurredAtApprox = false,
-        kind = kind, flow = kind.defaultFlow, amount = ksh(amount), fee = Money.ZERO, balance = ksh(balance),
+        kind = kind, flow = kind.defaultFlow, amount = ksh(amount), fee = Money.ZERO, balance = balance?.let(::ksh),
         counterpartyName = null, counterpartyPhone = null, counterpartyAccount = null, counterpartyKey = null,
         destinationCountry = null, reversesCode = null, isReversed = false,
         fulizaDrawn = null, fulizaFee = null, fulizaOutstanding = null,
@@ -50,4 +50,53 @@ class LineMisfitsTest {
         // Line 2 happens to stand at 1,000 too, so the payment fits where it is: the balances can't tell.
         assertEquals(emptyMap(), LineMisfits.find(misfiled(line2Start = "1000").filterNot { it.code == "TJK4AB15BB" }, chosen = emptySet()))
     }
+
+    /** Line 1 runs 1,000 and breaks at a 200 payment stating 700: a 100 payment stating 900 would bridge it. */
+    private fun line1Break() = listOf(
+        tx("TJK4AB15AA", TxKind.RECEIVE, "2026-09-01T06:00:00Z", "1000", "1000", line = 1),
+        tx("TJK4AB15AC", TxKind.BUY_GOODS, "2026-09-03T06:00:00Z", "200", "700", line = 1),
+    )
+
+    @Test
+    fun `a payment that carries on its own line once the minute is in order stays (final review I1)`() {
+        // Line 2: 1,000, then 100 out (900) and 50 out (850) in one minute. The 50's time comes first, but SMS times
+        // within a minute don't say the order and the balances do, so line 2 adds up and the 100 is its own.
+        val rows = line1Break() + listOf(
+            tx("TJK4AB15BA", TxKind.RECEIVE, "2026-09-01T07:00:00Z", "1000", "1000", line = 2),
+            tx("TJK4AB15BB", TxKind.BUY_GOODS, "2026-09-02T06:00:00Z", "50", "850", line = 2),
+            tx("TJK4AB15BZ", TxKind.BUY_GOODS, "2026-09-02T06:00:30Z", "100", "900", line = 2),
+        )
+        assertEquals(emptyMap(), LineMisfits.find(rows, chosen = emptySet()))
+    }
+
+    @Test
+    fun `a payment that carries on its own line through one with no stated balance stays (final review I1)`() {
+        // Line 2: 1,100, then 100 out with no balance stated (1,000), then the 100 stating 900: line 2 adds up.
+        val rows = line1Break() + listOf(
+            tx("TJK4AB15BA", TxKind.RECEIVE, "2026-09-01T07:00:00Z", "1100", "1100", line = 2),
+            tx("TJK4AB15BC", TxKind.BUY_GOODS, "2026-09-01T08:00:00Z", "100", null, line = 2),
+            tx("TJK4AB15BZ", TxKind.BUY_GOODS, "2026-09-02T06:00:00Z", "100", "900", line = 2),
+        )
+        assertEquals(emptyMap(), LineMisfits.find(rows, chosen = emptySet()))
+    }
+
+    @Test
+    fun `two payments that could each bridge the break move neither`() {
+        val rows = misfiled() + tx("TJK4AB15CA", TxKind.BUY_GOODS, "2026-09-02T07:00:00Z", "100", "900", line = 3) +
+            tx("TJK4AB15CB", TxKind.RECEIVE, "2026-09-01T08:00:00Z", "3000", "3000", line = 3)
+        assertEquals(emptyMap(), LineMisfits.find(rows, chosen = emptySet()))
+    }
+
+    @Test
+    fun `two misfiled payments in a row aren't found (neither bridges the break alone, a known limit)`() {
+        val rows = listOf(
+            tx("TJK4AB15AA", TxKind.RECEIVE, "2026-09-01T06:00:00Z", "1000", "1000", line = 1),
+            tx("TJK4AB15BA", TxKind.RECEIVE, "2026-09-01T07:00:00Z", "5000", "5000", line = 2),
+            tx("TJK4AB15AB", TxKind.BUY_GOODS, "2026-09-02T06:00:00Z", "100", "900", line = 2),
+            tx("TJK4AB15AD", TxKind.BUY_GOODS, "2026-09-02T07:00:00Z", "100", "800", line = 2),
+            tx("TJK4AB15AC", TxKind.BUY_GOODS, "2026-09-03T06:00:00Z", "200", "600", line = 1),
+        )
+        assertEquals(emptyMap(), LineMisfits.find(rows, chosen = emptySet()))
+    }
 }
+
