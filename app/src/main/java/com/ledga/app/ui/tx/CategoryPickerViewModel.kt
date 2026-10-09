@@ -36,6 +36,8 @@ data class PickerState(
     val selected: String? = null,
     val query: String = "",
     val counts: ApplyCounts = ApplyCounts(0, null),
+    /** The category [counts] were made for: right after a tap they are still the previous one's (dev-e2 review). */
+    val countsFor: String? = null,
     val applyAll: Boolean = false,
     val accountOnly: Boolean = false,
     /** The group whose "+ New category" editor is open. */
@@ -111,8 +113,12 @@ class CategoryPickerViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Until [key]'s counts land, "apply to all" takes its default from the counts on hand (a name's count rarely changes
+     * with the category), so the switch doesn't flicker; [save] waits for the real ones.
+     */
     fun select(key: String) {
-        _state.update { it.copy(selected = key) }
+        _state.update { it.copy(selected = key, applyAll = if (applyAllTouched) it.applyAll else byDefault(it.counts, key)) }
         viewModelScope.launch { recount(key) }
     }
 
@@ -145,14 +151,14 @@ class CategoryPickerViewModel @Inject constructor(
 
     fun save(onDone: () -> Unit) {
         val c = code ?: return
-        val s = _state.value
-        val key = s.selected ?: return
-        // Nothing changed: an unchanged Save must not pin the category or file the name's other payments.
-        if (key == initial && s.applyTo == ApplyTo.THIS_ONE) {
-            onDone()
-            return
-        }
+        val key = _state.value.selected ?: return
         viewModelScope.launch {
+            // dev-e2 review: a Save right after a tap waits for that category's counts. The previous category's decided
+            // "apply to all" before, and a quick Save filed only this payment.
+            if (_state.value.countsFor != key) recount(key)
+            val s = _state.value
+            // Nothing changed: an unchanged Save must not pin the category or file the name's other payments.
+            if (key == initial && s.applyTo == ApplyTo.THIS_ONE) return@launch onDone()
             edits.setCategory(c, key, s.applyTo)
             onDone()
         }
@@ -162,11 +168,12 @@ class CategoryPickerViewModel @Inject constructor(
         val c = code ?: return
         val counts = edits.categoryCounts(c, key)
         _state.update { s ->
-            // "Apply to all" defaults on only for a change (spec §7.4): the current category starts off.
-            val byDefault = counts.fromName > 1 && key != initial
-            if (s.selected != key) s else s.copy(counts = counts, applyAll = if (applyAllTouched) s.applyAll else byDefault)
+            if (s.selected != key) s else s.copy(counts = counts, countsFor = key, applyAll = if (applyAllTouched) s.applyAll else byDefault(counts, key))
         }
     }
+
+    /** "Apply to all" defaults on only for a change (spec §7.4) that would label more than this payment. */
+    private fun byDefault(counts: ApplyCounts, key: String) = counts.fromName > 1 && key != initial
 
     /** Only categories whose group fits the payment's flow (owner decision B1): a category never changes what counts as spending. */
     private suspend fun groupsFor(flow: FlowKind): List<PickerGroup> {

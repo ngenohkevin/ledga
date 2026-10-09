@@ -24,6 +24,8 @@ import kotlin.test.assertTrue
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.yield
+import kotlinx.coroutines.withTimeout
 import org.junit.After
 import org.junit.Rule
 import org.junit.Test
@@ -74,6 +76,20 @@ class CategoryPickerViewModelTest {
     }
 
     @Test
+    fun `a Save straight after choosing a category still files every payment from the name (dev-e2 race)`() = runTest {
+        ingest(academy1024, academy2048)
+        val vm = vm()
+        vm.open("TJK4AB12JA", session = 105)
+        // The counts for the category the payment had have landed; the new category's haven't yet.
+        vm.state.first { it.loaded && it.counts.fromName == 2 }
+        vm.select(Categories.SCHOOL)
+        var saved = false
+        vm.save { saved = true }
+        withTimeout(10_000) { while (!saved) yield() }
+        assertEquals(listOf(Categories.SCHOOL, Categories.SCHOOL), listOf("TJK4AB12JA", "TJK4AB12JB").map { db.transactionsDao().get(it)!!.categoryKey })
+    }
+
+    @Test
     fun `apply to all defaults on for more than one, off for one, and is absent with no name`() = runTest {
         ingest(academy1024, academy2048, Sms.SEND, Sms.REPAY_FULL)
 
@@ -81,7 +97,7 @@ class CategoryPickerViewModelTest {
         many.open("TJK4AB12JA", session = 103)
         many.state.first { it.loaded }
         many.select(Categories.SCHOOL)
-        val m = many.state.first { it.selected == Categories.SCHOOL && it.counts.fromName == 2 }
+        val m = many.state.first { it.countsFor == Categories.SCHOOL }
         assertTrue(m.showApplyAll)
         assertTrue(m.applyAll, "two payments: on by default")
         assertEquals(2, m.applyCount)
@@ -90,7 +106,7 @@ class CategoryPickerViewModelTest {
         one.open("TJK4AB12FB", session = 104)
         one.state.first { it.loaded }
         one.select(Categories.HEALTH)
-        val o = one.state.first { it.selected == Categories.HEALTH && it.counts.fromName == 1 }
+        val o = one.state.first { it.countsFor == Categories.HEALTH }
         assertTrue(o.showApplyAll, "a rule still helps future payments")
         assertFalse(o.applyAll, "one payment: off by default")
 
